@@ -7,7 +7,7 @@
 **Deploy apps from Git to Docker on your own servers — a modern, self-hosted alternative to Heroku/Vercel.**
 
 [![CI](https://github.com/KROWIEL/self-hosted-public/actions/workflows/ci.yml/badge.svg)](https://github.com/KROWIEL/self-hosted-public/actions/workflows/ci.yml)
-[![License: AGPL v3](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE)
+[![License: Elastic 2.0](https://img.shields.io/badge/license-Elastic--2.0-f5a800.svg)](LICENSE)
 [![Made with NestJS](https://img.shields.io/badge/API-NestJS-e0234e.svg)](https://nestjs.com)
 [![Made with Next.js](https://img.shields.io/badge/UI-Next.js%2014-black.svg)](https://nextjs.org)
 [![Agent in Go](https://img.shields.io/badge/agent-Go-00add8.svg)](https://go.dev)
@@ -117,11 +117,11 @@ Never commit your `.env` or private keys — see the bundled `gitleaks` pre-comm
 
 ### 🤝 Contributing
 
-Issues and PRs are welcome. By contributing you agree your changes are licensed under AGPL-3.0.
+Issues and PRs are welcome. By contributing you agree your changes are licensed under the Elastic License 2.0.
 
 ### 📄 License
 
-[GNU AGPL-3.0](LICENSE). A separate commercial license key unlocks paid modules — see [`docs/LICENSING.md`](docs/LICENSING.md).
+Source-available under the [Elastic License 2.0](LICENSE): use, copy, modify and self-host freely. You may **not** provide the software to third parties as a managed/hosted service, and you may **not** remove or circumvent the license-key functionality. A commercial license key unlocks paid modules — see [`docs/LICENSING.md`](docs/LICENSING.md).
 
 ---
 
@@ -221,8 +221,8 @@ Open-core: бесплатный тариф без ограничений. Пла
 
 ### 🤝 Вклад
 
-Issues и PR приветствуются. Внося вклад, вы соглашаетесь лицензировать изменения под AGPL-3.0.
+Issues и PR приветствуются. Внося вклад, вы соглашаетесь лицензировать изменения под Elastic License 2.0.
 
 ### 📄 Лицензия
 
-[GNU AGPL-3.0](LICENSE). Отдельный коммерческий ключ лицензии открывает платные модули — см. [`docs/LICENSING.md`](docs/LICENSING.md).
+Source-available под [Elastic License 2.0](LICENSE): свободно используйте, копируйте, изменяйте и разворачивайте у себя. **Нельзя** предоставлять ПО третьим лицам как управляемый/хостинговый сервис и **нельзя** удалять или обходить механизм проверки ключа лицензии. Коммерческий ключ лицензии открывает платные модули — см. [`docs/LICENSING.md`](docs/LICENSING.md).

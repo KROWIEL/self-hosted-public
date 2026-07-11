@@ -126,6 +126,32 @@ function BillingContent() {
             <p className="mt-2 text-sm text-neutral-400">
               {t('billing.expires')}: {expiry}
             </p>
+            {entitlements.activation?.required && (
+              <p
+                className={`mt-2 flex items-center gap-1.5 text-sm ${
+                  entitlements.activation.ok
+                    ? 'text-emerald-300'
+                    : 'text-amber-300'
+                }`}
+              >
+                <span
+                  className={`inline-block h-2 w-2 rounded-full ${
+                    entitlements.activation.ok ? 'bg-emerald-400' : 'bg-amber-400'
+                  }`}
+                />
+                {entitlements.activation.ok
+                  ? t('billing.activation.online')
+                  : t('billing.activation.offline')}
+                {entitlements.activation.lastCheckAt != null && (
+                  <span className="text-neutral-500">
+                    · {t('billing.activation.lastCheck')}:{' '}
+                    {new Date(
+                      entitlements.activation.lastCheckAt * 1000,
+                    ).toLocaleString()}
+                  </span>
+                )}
+              </p>
+            )}
           </div>
           <div className="text-right">
             <p className="text-xs uppercase tracking-wide text-neutral-500">

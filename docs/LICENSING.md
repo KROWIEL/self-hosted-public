@@ -10,6 +10,18 @@ unlock add-on modules through a signed, offline-verifiable license key.
 > generator) is **not** part of this public repository. This repo only contains
 > the offline *verifier* (a public key) — that is by design and safe to publish.
 
+## Activation modes
+
+The panel supports two modes, chosen by the operator via `.env`:
+
+- **Offline / key-only** (default, no `LICENSE_ACTIVATION_URL`): the key is
+  verified locally (signature + expiry). Works air-gapped.
+- **Online activation** (`LICENSE_ACTIVATION_URL` set): the panel sends a
+  periodic heartbeat to an activation server. Paid modules stay unlocked only
+  while a recent heartbeat succeeded; without contact they lock after the grace
+  window (`LICENSE_ACTIVATION_MAX_AGE_MS`). This enables revocation and seat
+  limits. The activation server is seller-side and not distributed here.
+
 ## Tiers
 
 | Tier | Price (suggested) | What it unlocks |

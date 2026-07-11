@@ -394,6 +394,14 @@ export const licenses = pgTable('licenses', {
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });
 
+// Singleton row holding this installation's stable identity, used as the
+// activation "seat" id when reporting heartbeats to the license server.
+export const installation = pgTable('installation', {
+  id: text('id').primaryKey().default('default'),
+  instanceId: uuid('instance_id').notNull().defaultRandom(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+
 export type DbSchema = {
   users: typeof users;
   nodes: typeof nodes;
@@ -413,4 +421,5 @@ export type DbSchema = {
   backupSchedules: typeof backupSchedules;
   tunnels: typeof tunnels;
   licenses: typeof licenses;
+  installation: typeof installation;
 };

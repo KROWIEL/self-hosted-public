@@ -85,6 +85,22 @@ export interface LicensePayload {
 }
 
 /**
+ * Online-activation status. When the deployment is configured with an
+ * activation server (`LICENSE_ACTIVATION_URL`), paid modules require a recent
+ * successful heartbeat; otherwise the instance runs in offline / key-only mode.
+ */
+export interface ActivationStatus {
+  /** True when an activation server is configured (online enforcement on). */
+  required: boolean;
+  /** True when the last heartbeat succeeded and is still fresh. */
+  ok: boolean;
+  /** Unix seconds of the last successful heartbeat, or null. */
+  lastCheckAt: number | null;
+  /** Machine-readable reason when `ok` is false (e.g. `stale`, `revoked`). */
+  reason?: string;
+}
+
+/**
  * The effective, resolved entitlements for the instance. Computed from a
  * verified license (or the Free defaults) and surfaced to the frontend.
  */
@@ -100,6 +116,8 @@ export interface Entitlements {
   subject?: string;
   /** Customer / organization name from the license, if any. */
   name?: string;
+  /** Online-activation status (present when relevant). */
+  activation?: ActivationStatus;
 }
 
 /** The entitlements applied when no license (or an invalid one) is present. */

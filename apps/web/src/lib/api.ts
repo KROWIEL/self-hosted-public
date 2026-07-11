@@ -346,6 +346,13 @@ export type LicenseModule =
   | 'api-cli'
   | 'white-label';
 
+export interface ActivationStatus {
+  required: boolean;
+  ok: boolean;
+  lastCheckAt: number | null;
+  reason?: string;
+}
+
 export interface Entitlements {
   tier: LicenseTier;
   modules: LicenseModule[];
@@ -353,6 +360,7 @@ export interface Entitlements {
   licensed: boolean;
   subject?: string;
   name?: string;
+  activation?: ActivationStatus;
 }
 
 export const FREE_ENTITLEMENTS: Entitlements = {
