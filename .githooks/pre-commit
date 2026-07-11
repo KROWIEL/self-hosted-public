@@ -1,0 +1,31 @@
+#!/bin/sh
+# Secret-scanning pre-commit hook.
+# Blocks commits that contain secrets (API keys, private keys, tokens, .env, …).
+# Powered by gitleaks: https://github.com/gitleaks/gitleaks
+#
+# Enable once per clone:
+#   git config core.hooksPath .githooks
+#
+# Install gitleaks:
+#   macOS:    brew install gitleaks
+#   Windows:  scoop install gitleaks   (or winget install gitleaks.gitleaks)
+#   Linux:    see the releases page
+
+if ! command -v gitleaks >/dev/null 2>&1; then
+  echo "[pre-commit] WARNING: gitleaks is not installed — skipping secret scan."
+  echo "[pre-commit] Strongly recommended: https://github.com/gitleaks/gitleaks"
+  exit 0
+fi
+
+echo "[pre-commit] Scanning staged changes for secrets…"
+gitleaks protect --staged --redact --config .gitleaks.toml
+if [ $? -ne 0 ]; then
+  echo ""
+  echo "[pre-commit] BLOCKED: a potential secret was found in your staged changes."
+  echo "[pre-commit] Remove it, move it to .env / a secret manager, or (if it is a"
+  echo "[pre-commit] false positive) add an allowlist entry to .gitleaks.toml."
+  exit 1
+fi
+
+echo "[pre-commit] No secrets detected."
+exit 0

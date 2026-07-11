@@ -1,0 +1,27 @@
+{
+  "name": "self-hosted",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Self-hosted PaaS panel for deploying SaaS projects (Java backends + React/Next.js frontends) from git into Docker.",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "dev:cp": "npm run start:dev --workspace @selfhosted/control-plane",
+    "dev:web": "npm run dev --workspace @selfhosted/web",
+    "db:push": "npm run db:push --workspace @selfhosted/control-plane",
+    "db:seed": "npm run db:seed --workspace @selfhosted/control-plane",
+    "db:generate": "npm run db:generate --workspace @selfhosted/control-plane",
+    "db:migrate": "npm run db:migrate --workspace @selfhosted/control-plane"
+  },
+  "devDependencies": {
+    "drizzle-kit": "^0.24.2",
+    "drizzle-orm": "^0.33.0"
+  }
+}

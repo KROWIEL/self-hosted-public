@@ -1,0 +1,20 @@
+# gitleaks configuration — https://github.com/gitleaks/gitleaks
+# Extends the built-in ruleset with a small allowlist for placeholder files.
+title = "self-hosted secret scan"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Example / placeholder files and non-secret public keys"
+paths = [
+  '''\.env\.example$''',
+  # Public keys are not secrets (the private signing key is gitignored).
+  '''tools/license-issuer/keys/public\.pem$''',
+  '''apps/control-plane/src/common/licensing/license\.ts$''',
+]
+regexes = [
+  # Obvious dev placeholders shipped in .env.example.
+  '''change-me[-a-z0-9]*''',
+  '''changeme[0-9]*''',
+]

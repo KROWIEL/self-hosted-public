@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Self-Hosted PaaS — deploy from Git to your own servers</title>
+    <meta
+      name="description"
+      content="Open-core, self-hosted platform to deploy apps from Git to Docker: managed databases, HTTPS, RBAC, 2FA, reverse tunnels for home-lab nodes."
+    />
+    <style>
+      :root {
+        --bg: #0a0a0f;
+        --card: rgba(255, 255, 255, 0.04);
+        --border: rgba(255, 255, 255, 0.1);
+        --text: #ededed;
+        --muted: #a0a0ab;
+        --brand1: #6366f1;
+        --brand2: #a855f7;
+        --accent: #34d399;
+      }
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      html { scroll-behavior: smooth; }
+      body {
+        background: var(--bg);
+        color: var(--text);
+        font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+        line-height: 1.6;
+        -webkit-font-smoothing: antialiased;
+      }
+      a { color: inherit; text-decoration: none; }
+      .wrap { max-width: 1080px; margin: 0 auto; padding: 0 20px; }
+      .btn {
+        display: inline-flex; align-items: center; gap: 8px;
+        padding: 12px 22px; border-radius: 12px; font-weight: 600; font-size: 15px;
+        border: 1px solid var(--border); transition: transform .15s, background .2s;
+      }
+      .btn:hover { transform: translateY(-1px); }
+      .btn-primary { background: linear-gradient(135deg, var(--brand1), var(--brand2)); border: none; color: #fff; }
+      .btn-ghost { background: var(--card); }
+
+      header {
+        position: sticky; top: 0; z-index: 20;
+        backdrop-filter: blur(12px);
+        background: rgba(10, 10, 15, 0.7);
+        border-bottom: 1px solid var(--border);
+      }
+      .nav { display: flex; align-items: center; justify-content: space-between; height: 64px; }
+      .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 17px; }
+      .logo { width: 30px; height: 30px; border-radius: 9px; background: linear-gradient(135deg, var(--brand1), var(--brand2)); }
+      .nav-right { display: flex; align-items: center; gap: 14px; }
+      .lang { display: flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+      .lang button { background: transparent; color: var(--muted); border: 0; padding: 7px 12px; cursor: pointer; font-size: 13px; font-weight: 600; }
+      .lang button.active { background: var(--card); color: #fff; }
+
+      .hero { text-align: center; padding: 90px 0 70px; }
+      .badge {
+        display: inline-block; padding: 6px 14px; border-radius: 999px; font-size: 13px;
+        color: var(--accent); background: rgba(52, 211, 153, 0.1);
+        border: 1px solid rgba(52, 211, 153, 0.25); margin-bottom: 22px;
+      }
+      h1 { font-size: clamp(34px, 6vw, 58px); line-height: 1.1; letter-spacing: -0.02em; }
+      .grad { background: linear-gradient(135deg, #818cf8, #c084fc); -webkit-background-clip: text; background-clip: text; color: transparent; }
+      .sub { color: var(--muted); font-size: clamp(16px, 2.4vw, 20px); max-width: 640px; margin: 20px auto 34px; }
+      .cta { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+      .shot { margin-top: 60px; border: 1px solid var(--border); border-radius: 16px; overflow: hidden; box-shadow: 0 30px 80px rgba(99, 102, 241, 0.15); }
+      .shot img { width: 100%; display: block; }
+
+      section { padding: 70px 0; }
+      h2 { font-size: clamp(26px, 4vw, 36px); text-align: center; letter-spacing: -0.01em; }
+      .section-sub { color: var(--muted); text-align: center; max-width: 600px; margin: 14px auto 46px; }
+
+      .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px; }
+      .feature { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 24px; }
+      .feature h3 { font-size: 17px; margin-bottom: 8px; }
+      .feature p { color: var(--muted); font-size: 14.5px; }
+      .ic { width: 40px; height: 40px; border-radius: 11px; display: grid; place-items: center; margin-bottom: 14px; background: rgba(99,102,241,0.12); color: #a5b4fc; font-size: 20px; }
+
+      .plans { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px; align-items: stretch; }
+      .plan { background: var(--card); border: 1px solid var(--border); border-radius: 18px; padding: 28px; display: flex; flex-direction: column; }
+      .plan.featured { border-color: rgba(99,102,241,0.55); box-shadow: 0 0 0 1px rgba(99,102,241,0.35); }
+      .plan h3 { font-size: 20px; }
+      .price { font-size: 40px; font-weight: 700; margin: 12px 0 2px; }
+      .price span { font-size: 15px; color: var(--muted); font-weight: 400; }
+      .plan ul { list-style: none; margin: 20px 0; flex: 1; }
+      .plan li { color: var(--muted); font-size: 14.5px; padding: 6px 0 6px 26px; position: relative; }
+      .plan li::before { content: "✓"; position: absolute; left: 0; color: var(--accent); font-weight: 700; }
+      .pill { align-self: flex-start; font-size: 12px; color: #c084fc; background: rgba(168,85,247,0.12); border: 1px solid rgba(168,85,247,0.3); border-radius: 999px; padding: 3px 10px; margin-bottom: 8px; }
+
+      footer { border-top: 1px solid var(--border); padding: 40px 0; color: var(--muted); font-size: 14px; }
+      .foot { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+      [data-ru] { display: none; }
+      html[lang="ru"] [data-en] { display: none; }
+      html[lang="ru"] [data-ru] { display: initial; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="wrap nav">
+        <div class="brand"><span class="logo"></span> Self-Hosted</div>
+        <div class="nav-right">
+          <a class="btn btn-ghost" href="https://github.com/KROWIEL/self-hosted-public" target="_blank" rel="noopener">GitHub ★</a>
+          <div class="lang">
+            <button data-lang="en" class="active">EN</button>
+            <button data-lang="ru">RU</button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <div class="wrap hero">
+        <span class="badge">
+          <span data-en>Open-core · self-hosted · MIT-friendly stack</span>
+          <span data-ru>Open-core · self-hosted · современный стек</span>
+        </span>
+        <h1>
+          <span data-en>Deploy from Git to <span class="grad">your own servers</span></span>
+          <span data-ru>Деплой из Git на <span class="grad">свои серверы</span></span>
+        </h1>
+        <p class="sub">
+          <span data-en>A modern, self-hosted alternative to Heroku/Vercel. Ship backends & frontends to Docker with managed databases, HTTPS, RBAC, 2FA and reverse tunnels for home-lab nodes.</span>
+          <span data-ru>Современная self-hosted альтернатива Heroku/Vercel. Деплойте бэкенды и фронтенды в Docker с managed-базами, HTTPS, RBAC, 2FA и обратными туннелями для home-lab нод.</span>
+        </p>
+        <div class="cta">
+          <a class="btn btn-primary" href="#pricing">
+            <span data-en>Get started</span><span data-ru>Начать</span>
+          </a>
+          <a class="btn btn-ghost" href="https://github.com/KROWIEL/self-hosted-public" target="_blank" rel="noopener">
+            <span data-en>View on GitHub</span><span data-ru>Открыть на GitHub</span>
+          </a>
+        </div>
+        <div class="shot">
+          <img src="../docs/screenshots/dashboard.png" alt="Dashboard screenshot" />
+        </div>
+      </div>
+
+      <section id="features">
+        <div class="wrap">
+          <h2><span data-en>Everything you need to self-host</span><span data-ru>Всё для self-hosting</span></h2>
+          <p class="section-sub">
+            <span data-en>The free core is unlimited. Paid modules add power when you need it.</span>
+            <span data-ru>Бесплатное ядро — без ограничений. Платные модули добавляют мощь, когда нужно.</span>
+          </p>
+          <div class="grid">
+            <div class="feature"><div class="ic">⚡</div><h3><span data-en>Git → Docker deploys</span><span data-ru>Деплой Git → Docker</span></h3><p><span data-en>Build & run from a repo with isolated builds and one-click redeploys.</span><span data-ru>Сборка и запуск из репозитория с изолированной сборкой и редеплоем в клик.</span></p></div>
+            <div class="feature"><div class="ic">🗄️</div><h3><span data-en>Managed databases</span><span data-ru>Managed-базы</span></h3><p><span data-en>Postgres/MySQL per project with scheduled backups & restore.</span><span data-ru>Postgres/MySQL на проект с бэкапами по расписанию и восстановлением.</span></p></div>
+            <div class="feature"><div class="ic">🔒</div><h3><span data-en>Security built-in</span><span data-ru>Безопасность внутри</span></h3><p><span data-en>RBAC, 2FA, encrypted secrets, append-only audit log.</span><span data-ru>RBAC, 2FA, шифрование секретов, append-only аудит-лог.</span></p></div>
+            <div class="feature"><div class="ic">🌐</div><h3><span data-en>Automatic HTTPS</span><span data-ru>Автоматический HTTPS</span></h3><p><span data-en>Traefik + Let's Encrypt, incl. DNS-01 wildcard certs.</span><span data-ru>Traefik + Let's Encrypt, включая wildcard-сертификаты DNS-01.</span></p></div>
+            <div class="feature"><div class="ic">🕳️</div><h3><span data-en>Reverse tunnels</span><span data-ru>Обратные туннели</span></h3><p><span data-en>Expose NAT / home-lab nodes to the internet via a public relay.</span><span data-ru>Публикация NAT / home-lab нод в интернет через публичный релей.</span></p></div>
+            <div class="feature"><div class="ic">📊</div><h3><span data-en>Live logs & metrics</span><span data-ru>Live-логи и метрики</span></h3><p><span data-en>Real-time logs, resource usage and an in-browser terminal.</span><span data-ru>Логи в реальном времени, ресурсы и терминал в браузере.</span></p></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="pricing">
+        <div class="wrap">
+          <h2><span data-en>Simple pricing</span><span data-ru>Простые тарифы</span></h2>
+          <p class="section-sub">
+            <span data-en>Start free. Upgrade with a license key when you need more.</span>
+            <span data-ru>Начните бесплатно. Апгрейд по ключу лицензии, когда нужно больше.</span>
+          </p>
+          <div class="plans">
+            <div class="plan">
+              <h3>Free</h3>
+              <div class="price">$0</div>
+              <ul>
+                <li><span data-en>Deploys, templates, HTTPS</span><span data-ru>Деплой, шаблоны, HTTPS</span></li>
+                <li><span data-en>Managed DBs, logs, metrics</span><span data-ru>Managed-БД, логи, метрики</span></li>
+                <li><span data-en>Projects, RBAC, 2FA</span><span data-ru>Проекты, RBAC, 2FA</span></li>
+                <li><span data-en>Unlimited nodes</span><span data-ru>Неограниченные ноды</span></li>
+              </ul>
+              <a class="btn btn-ghost" href="https://github.com/KROWIEL/self-hosted-public" target="_blank" rel="noopener"><span data-en>Self-host free</span><span data-ru>Поставить бесплатно</span></a>
+            </div>
+            <div class="plan featured">
+              <span class="pill">home-lab</span>
+              <h3>Home-Lab</h3>
+              <div class="price">$3<span>/mo</span></div>
+              <ul>
+                <li><span data-en>Everything in Free</span><span data-ru>Всё из Free</span></li>
+                <li><span data-en><b>+ Reverse-tunnels module</b></span><span data-ru><b>+ модуль Reverse-tunnels</b></span></li>
+                <li><span data-en>Publish NAT / home nodes</span><span data-ru>Публикация NAT / домашних нод</span></li>
+              </ul>
+              <a class="btn btn-primary" href="https://selfhosted.example.com/buy/home-lab"><span data-en>Get Home-Lab</span><span data-ru>Купить Home-Lab</span></a>
+            </div>
+            <div class="plan">
+              <h3>Pro</h3>
+              <div class="price">$15<span>/mo</span></div>
+              <ul>
+                <li><span data-en>Everything in Home-Lab</span><span data-ru>Всё из Home-Lab</span></li>
+                <li><span data-en>Preview-envs, zero-downtime</span><span data-ru>Preview-env, zero-downtime</span></li>
+                <li><span data-en>Off-site backups, alerts, metrics history</span><span data-ru>Офсайт-бэкапы, алерты, история метрик</span></li>
+                <li><span data-en>SSO, API/CLI, white-label</span><span data-ru>SSO, API/CLI, white-label</span></li>
+              </ul>
+              <a class="btn btn-ghost" href="https://selfhosted.example.com/buy/pro"><span data-en>Get Pro</span><span data-ru>Купить Pro</span></a>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <div class="wrap foot">
+        <div>© <span id="year"></span> Self-Hosted PaaS · AGPL-3.0</div>
+        <div>
+          <a href="https://github.com/KROWIEL/self-hosted-public" target="_blank" rel="noopener">GitHub</a>
+        </div>
+      </div>
+    </footer>
+
+    <script>
+      (function () {
+        var saved = localStorage.getItem("landing-lang");
+        if (saved === "ru" || saved === "en") document.documentElement.lang = saved;
+        function sync() {
+          var lang = document.documentElement.lang === "ru" ? "ru" : "en";
+          document.querySelectorAll(".lang button").forEach(function (b) {
+            b.classList.toggle("active", b.dataset.lang === lang);
+          });
+        }
+        document.querySelectorAll(".lang button").forEach(function (b) {
+          b.addEventListener("click", function () {
+            document.documentElement.lang = b.dataset.lang;
+            localStorage.setItem("landing-lang", b.dataset.lang);
+            sync();
+          });
+        });
+        document.getElementById("year").textContent = new Date().getFullYear();
+        sync();
+      })();
+    </script>
+  </body>
+</html>

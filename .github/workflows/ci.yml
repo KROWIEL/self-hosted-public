@@ -1,0 +1,68 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+jobs:
+  js:
+    name: Control plane & web
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci || npm install
+
+      - name: Build shared package
+        run: npm run build --workspace @selfhosted/shared
+
+      - name: Test control plane
+        run: npm test --workspace @selfhosted/control-plane
+
+      - name: Build control plane
+        run: npm run build --workspace @selfhosted/control-plane
+
+      - name: Build web
+        run: npm run build --workspace @selfhosted/web
+
+  agent:
+    name: Go agent
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/agent
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+
+      - name: Build
+        run: go build ./...
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Test
+        run: go test ./...
+
+      - name: Cross-compile Linux binaries
+        run: |
+          mkdir -p dist
+          GOOS=linux GOARCH=amd64 go build -trimpath -ldflags="-s -w" -o dist/agent-linux-amd64 ./cmd/agent
+          GOOS=linux GOARCH=arm64 go build -trimpath -ldflags="-s -w" -o dist/agent-linux-arm64 ./cmd/agent
+
+      - name: Upload agent binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent-linux
+          path: services/agent/dist/*
+          if-no-files-found: error

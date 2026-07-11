@@ -1,0 +1,4 @@
+# Keep shell scripts LF so they run on Linux/macOS regardless of host OS.
+*.sh text eol=lf
+# Keep PowerShell scripts CRLF for Windows.
+*.ps1 text eol=crlf

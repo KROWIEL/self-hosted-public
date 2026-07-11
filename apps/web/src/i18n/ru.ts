@@ -1,0 +1,823 @@
+import type { Dict } from './index';
+
+// Russian message catalog. Must implement every key declared in en.ts.
+export const ru: Dict = {
+  // Common
+  'common.loading': 'Загрузка…',
+  'common.failed': 'Что-то пошло не так',
+  'common.delete': 'Удалить',
+  'common.create': 'Создать',
+  'common.creating': 'Создание…',
+  'common.save': 'Сохранить',
+  'common.saving': 'Сохранение…',
+  'common.set': 'Задать',
+  'common.dismiss': 'Скрыть',
+  'common.guideHide': 'Скрыть гайд',
+  'common.guideShow': 'Показать гайд',
+  'common.collapse': 'Свернуть',
+  'common.expand': 'Развернуть',
+  'common.signOut': 'Выйти',
+  'common.edit': 'Изменить',
+  'common.cancel': 'Отмена',
+  'common.confirm': 'Подтвердить',
+  'common.saved': 'Сохранено',
+  'common.close': 'Закрыть',
+  'common.done': 'Готово',
+  'common.remove': 'Удалить',
+
+  // Участники / роли
+  'members.title': 'Участники',
+  'members.hint':
+    'Пользователи с доступом к проекту. Роли: Наблюдатель (только чтение), Участник (деплой и управление), Админ (настройки и участники), Владелец (полный контроль).',
+  'members.email': 'Email',
+  'members.roleLabel': 'Роль',
+  'members.add': 'Добавить',
+  'members.added': 'Участник добавлен',
+  'members.role.OWNER': 'Владелец',
+  'members.role.ADMIN': 'Админ',
+  'members.role.MEMBER': 'Участник',
+  'members.role.VIEWER': 'Наблюдатель',
+  'members.role.NONE': 'нет',
+
+  // Журнал аудита
+  'audit.title': 'Журнал аудита',
+  'audit.show': 'Показать',
+  'audit.hide': 'Скрыть',
+  'audit.empty': 'Пока нет записей активности.',
+
+  // Cleanup / prune
+  'cleanup.button': 'Очистить',
+  'cleanup.title': 'Освободить место на диске',
+  'cleanup.subtitle':
+    'Удаляет мусор Docker, который накапливается со временем — остановленные контейнеры, dangling-образы, кэш сборки и неиспользуемые сети.',
+  'cleanup.always':
+    'Всегда удаляется: остановленные контейнеры, неиспользуемые сети, dangling-образы и кэш сборки.',
+  'cleanup.allImages': 'Также удалить все неиспользуемые образы',
+  'cleanup.allImagesHint':
+    'Удаляет все образы, не занятые запущенным контейнером. Они будут заново скачаны/собраны при следующем деплое.',
+  'cleanup.volumes': 'Также удалить неиспользуемые тома',
+  'cleanup.volumesHint':
+    'Опасно: удаляет тома, не подключённые ни к одному контейнеру. Может стереть данные остановленных баз.',
+  'cleanup.confirm':
+    'Запустить очистку этой ноды? Будут удалены остановленные контейнеры, dangling-образы и кэш сборки.',
+  'cleanup.confirmVolumes':
+    'Запустить очистку вместе с неиспользуемыми томами? Это может безвозвратно удалить данные из томов, не подключённых к запущенному контейнеру.',
+  'cleanup.confirmTitle': 'Подтвердите очистку',
+  'cleanup.running': 'Очистка…',
+  'cleanup.done': 'Очистка завершена.',
+  'cleanup.freedSystem': 'System prune',
+  'cleanup.freedBuilder': 'Кэш сборки',
+  'cleanup.freedVolumes': 'Тома',
+
+  // Language switcher
+  'lang.ru': 'RU',
+  'lang.en': 'EN',
+
+  // Shared field labels
+  'field.node': 'Нода',
+  'field.template': 'Шаблон',
+
+  // Navigation
+  'nav.projects': 'Проекты',
+  'nav.nodes': 'Ноды',
+  'nav.tunnels': 'Публикация',
+  'nav.templates': 'Шаблоны',
+  'nav.git': 'Git-доступы',
+  'nav.settings': 'Настройки',
+  'nav.billing': 'Тарифы',
+  'nav.locked': 'Требуется апгрейд',
+  'nav.openMenu': 'Открыть меню',
+  'nav.closeMenu': 'Закрыть меню',
+  'nav.collapse': 'Скрыть панель',
+  'nav.expand': 'Показать панель',
+
+  // Home
+  'home.subtitle':
+    'Разворачивайте свои SaaS-проекты — Java-бэкенды и React/Next.js-фронтенды — из git-репозитория в Docker, за реверс-прокси с HTTPS.',
+  'home.signIn': 'Войти',
+  'home.openDashboard': 'Открыть панель',
+
+  // Login
+  'login.welcome': 'С возвращением',
+  'login.subtitle': 'Войдите в свою панель Self-Hosted',
+  'login.email': 'Email',
+  'login.password': 'Пароль',
+  'login.signIn': 'Войти',
+  'login.signingIn': 'Вход…',
+  'login.failed': 'Не удалось войти',
+  'login.totp': 'Код двухфакторной аутентификации',
+  'login.totpHint': 'Введите 6-значный код из приложения-аутентификатора.',
+  'login.noAccount': 'Нет аккаунта?',
+  'login.register': 'Создать',
+
+  // Регистрация (этап 1)
+  'register.title': 'Создание аккаунта',
+  'register.subtitle': 'Шаг 1 из 2 — данные аккаунта',
+  'register.passwordHint': 'Минимум 8 символов.',
+  'register.continue': 'Продолжить',
+  'register.creating': 'Создание…',
+  'register.haveAccount': 'Уже есть аккаунт?',
+  'register.signIn': 'Войти',
+
+  // Онбординг (этап 2)
+  'onboarding.title': 'Заполните профиль',
+  'onboarding.subtitle': 'Шаг 2 из 2 — личные данные и двухфакторная аутентификация',
+  'onboarding.firstName': 'Имя',
+  'onboarding.lastName': 'Фамилия',
+  'onboarding.2faTitle': 'Двухфакторная аутентификация',
+  'onboarding.2faHint':
+    'Отсканируйте QR-код в Google Authenticator, 1Password или любом TOTP-приложении и введите 6-значный код для подтверждения.',
+  'onboarding.secretManual': 'Не получается отсканировать? Введите ключ вручную:',
+  'onboarding.code': '6-значный код',
+  'onboarding.finish': 'Завершить настройку',
+  'onboarding.finishing': 'Завершение…',
+
+  // Настройки аккаунта
+  'settings.title': 'Настройки аккаунта',
+  'settings.subtitle': 'Управляйте профилем, паролем и двухфакторной аутентификацией.',
+  'settings.profileTitle': 'Персональные данные',
+  'settings.profileHint': 'Ваше имя отображается в панели.',
+  'settings.firstName': 'Имя',
+  'settings.lastName': 'Фамилия',
+  'settings.email': 'Email',
+  'settings.emailHint': 'Email используется для входа и здесь не меняется.',
+  'settings.save': 'Сохранить',
+  'settings.saving': 'Сохранение…',
+  'settings.profileSaved': 'Профиль обновлён',
+  'settings.passwordTitle': 'Пароль',
+  'settings.passwordHint': 'Минимум 8 символов.',
+  'settings.currentPassword': 'Текущий пароль',
+  'settings.newPassword': 'Новый пароль',
+  'settings.confirmPassword': 'Повторите новый пароль',
+  'settings.changePassword': 'Сменить пароль',
+  'settings.changingPassword': 'Смена…',
+  'settings.passwordChanged': 'Пароль изменён',
+  'settings.passwordMismatch': 'Новые пароли не совпадают.',
+  'settings.2faTitle': 'Двухфакторная аутентификация',
+  'settings.2faStatusOn': 'Включена',
+  'settings.2faStatusOff': 'Выключена',
+  'settings.2faOnHint': 'При входе требуется код из приложения-аутентификатора.',
+  'settings.2faOffHint':
+    'Добавьте дополнительный уровень защиты с помощью TOTP-приложения.',
+  'settings.enable2fa': 'Включить 2FA',
+  'settings.enabling': 'Включение…',
+  'settings.confirmEnable': 'Подтвердить и включить',
+  'settings.disable2fa': 'Выключить 2FA',
+  'settings.disabling': 'Выключение…',
+  'settings.2faEnabledMsg': 'Двухфакторная аутентификация включена',
+  'settings.2faDisabledMsg': 'Двухфакторная аутентификация выключена',
+  'settings.scanHint':
+    'Отсканируйте QR-код в приложении-аутентификаторе и введите 6-значный код.',
+  'settings.secretManual': 'Не получается отсканировать? Введите ключ вручную:',
+  'settings.code': '6-значный код',
+  'settings.passwordToDisable': 'Введите пароль, чтобы выключить 2FA.',
+  'settings.mustChangeTitle': 'Требуется обновить пароль',
+  'settings.mustChangeHint':
+    'Ваш текущий пароль не соответствует политике безопасности. Задайте более надёжный пароль ниже, чтобы продолжить.',
+
+  // Требования к паролю
+  'password.rule.length': 'Минимум 12 символов',
+  'password.rule.upper': 'Заглавная буква (A–Z)',
+  'password.rule.lower': 'Строчная буква (a–z)',
+  'password.rule.digits': 'Минимум 3 цифры',
+  'password.rule.special': 'Спецсимвол (!@#$…)',
+
+  // Коды ошибок API (из поля `code` control-plane)
+  'error.auth.emailTaken': 'Аккаунт с таким email уже существует.',
+  'error.auth.invalidCredentials': 'Неверный email или пароль.',
+  'error.auth.totpRequired': 'Требуется код двухфакторной аутентификации.',
+  'error.auth.totpInvalid': 'Код двухфакторной аутентификации неверен или истёк.',
+  'error.auth.alreadyOnboarded': 'Онбординг уже завершён.',
+  'error.auth.invalidRefresh': 'Сессия истекла. Войдите снова.',
+  'error.auth.currentPasswordInvalid': 'Текущий пароль неверен.',
+  'error.auth.weakPassword':
+    'Пароль должен содержать минимум 12 символов, заглавную и строчную буквы, спецсимвол и не менее 3 цифр.',
+  'error.auth.twoFactorAlreadyEnabled':
+    'Двухфакторная аутентификация уже включена.',
+  'error.auth.twoFactorNotEnabled':
+    'Двухфакторная аутентификация не включена.',
+  'error.common.adminOnly': 'Действие доступно только администраторам.',
+  'error.template.notFound': 'Шаблон не найден.',
+  'error.template.inUse':
+    'Шаблон используется одним или несколькими сервисами и не может быть удалён.',
+  'error.members.userNotFound':
+    'Пользователь с таким email не найден — сначала он должен зарегистрироваться.',
+  'error.members.ownerReserved':
+    'Роль «Владелец» назначается через передачу владения.',
+  'error.members.ownerImmutable':
+    'Роль владельца проекта нельзя изменить напрямую.',
+  'error.members.ownerRemoval': 'Владельца проекта нельзя удалить.',
+  'error.members.forbidden':
+    'Требуется роль «{min}» в этом проекте (у вас «{role}»).',
+  'error.project.limitBelowAllocated':
+    'Лимит не может быть ниже ресурсов, уже выделенных сервисам.',
+  'error.project.cpuOverCapacity': 'Лимит CPU превышает ёмкость платформы.',
+  'error.project.memOverCapacity':
+    'Лимит памяти превышает ёмкость платформы.',
+  'error.nodes.agentUnreachable':
+    'Агент на ноде «{node}» недоступен. Убедитесь, что он запущен (Ноды → Запустить агента).',
+  'error.license.invalidKey': 'Ключ лицензии недействителен или повреждён.',
+  'error.license.expiredKey': 'Срок действия ключа лицензии истёк.',
+  'error.license.moduleLocked':
+    'Эта функция доступна в тарифе {tier}. Откройте её в разделе «Тарифы».',
+
+  // Projects (dashboard)
+  'projects.title': 'Проекты',
+  'projects.subtitle': 'Группируйте сервисы. Каждый разворачивается из git в контейнер.',
+  'projects.aboutTitle': 'Что такое проект?',
+  'projects.aboutBody':
+    'Проект объединяет связанные сервисы (например, бэкенд и фронтенд) и общие управляемые БД. Это единица организации — вы создаёте сервисы внутри проекта, и они могут обращаться к одной базе.',
+  'projects.step1Title': 'Создайте проект',
+  'projects.step1Body':
+    'Назовите по приложению или окружению («Магазин», «Staging»). Создавайте столько, сколько нужно.',
+  'projects.step2Title': 'Добавьте сервисы и БД',
+  'projects.step2Body':
+    'Откройте проект, чтобы добавить сервисы (из git) и, при необходимости, управляемые БД для подключения.',
+  'projects.step3Title': 'Деплойте и следите',
+  'projects.step3Body':
+    'Задеплойте каждый сервис, задайте env и домен — статус виден прямо здесь, на обзоре.',
+  'projects.newPlaceholder': 'Название нового проекта',
+  'projects.nameLabel': 'Название проекта',
+  'projects.create': 'Создать проект',
+  'projects.empty': 'Проектов пока нет. Создайте один выше.',
+  'projects.noServices': 'Нет сервисов',
+  'projects.confirmDelete': 'Удалить этот проект и все его сервисы?',
+
+  // Nodes
+  'nodes.title': 'Ноды',
+  'nodes.subtitle':
+    'Серверы, на которых реально собираются и работают ваши приложения. Зарегистрируйте сервер, запустите его агент — и деплойте на него сервисы.',
+  'nodes.aboutTitle': 'Что такое нода и как это работает?',
+  'nodes.aboutBody':
+    'Нода — это любой сервер (VPS или железо) с Docker и лёгким агентом. Панель никогда не работает с Docker напрямую — она шлёт команды агенту каждой ноды, а тот собирает образы, запускает контейнеры и возвращает статус. Любой развёрнутый сервис живёт на конкретной ноде.',
+  'nodes.step1Title': 'Зарегистрируйте ноду',
+  'nodes.step1Body':
+    'Добавьте сервер ниже: название, хост/IP и порт агента. Вы получите одноразовый daemon-токен — по нему панель авторизуется у агента.',
+  'nodes.step2Title': 'Установите и запустите агент',
+  'nodes.step2Body':
+    'На сервере запустите агент с этим токеном (показанной командой или как systemd-сервис). Он слушает порт агента и связывает ноду с панелью.',
+  'nodes.step3Title': 'Запустите и деплойте',
+  'nodes.step3Body':
+    'Когда агент поднят, нода показывает статус «Работает» и живые метрики. Выберите эту ноду при создании сервиса и задеплойте из git.',
+  'nodes.manageTitle': 'Управление нодами',
+  'nodes.manageBody':
+    'Кнопки «Запустить» / «Остановить» управляют агентом, «Лог» показывает его вывод, а метрики отражают контейнеры, размер образов и что можно освободить. «Удалить» убирает ноду из панели (сам сервер не затрагивается). Ноду с работающими сервисами удалить нельзя, пока они не сняты.',
+  'nodes.guideHide': 'Скрыть гайд',
+  'nodes.guideShow': 'Показать гайд',
+  'nodes.addTitle': 'Регистрация ноды',
+  'nodes.connectionSection': 'Подключение',
+  'nodes.capacitySection': 'Ресурсный бюджет',
+  'nodes.tokenOnce': 'Daemon-токен для {name} — показан только один раз.',
+  'nodes.namePlaceholder': 'напр. prod-eu-1',
+  'nodes.fqdnPlaceholder': 'напр. 203.0.113.5 или node.example.com',
+  'nodes.portPlaceholder': '8443',
+  'nodes.nameLabel': 'Название',
+  'nodes.nameHint': 'Метка, по которой узнаёте сервер в панели.',
+  'nodes.fqdnLabel': 'Хост / адрес',
+  'nodes.fqdnHint': 'Публичный IP или домен, по которому панель достучится до агента.',
+  'nodes.portLabel': 'Порт агента',
+  'nodes.portHint': 'Порт, который слушает агент (по умолчанию 8443).',
+  'nodes.capacityHint':
+    'Capacity — это сколько ресурсов этой машины платформа может использовать под нагрузки. Отметка «рекомендовано» здесь — небольшой baseline под агент/служебный overhead ноды, а не лимит для всех сервисов.',
+  'nodes.add': 'Добавить ноду',
+  'nodes.addLocal': 'Локальный агент',
+  'nodes.addRemote': 'Добавить удалённую ноду',
+  'nodes.addRemoteTitle': 'Добавление удалённой ноды',
+  'nodes.addRemoteHint':
+    'Зарегистрируйте сервер, затем выполните на нём одну команду — агент установится и подключится по TLS.',
+  'nodes.installTitle': 'Команда установки',
+  'nodes.installBody':
+    'Выполните на целевом сервере (нужны Docker и root). Агент создаст TLS-идентичность, подключится к панели по одноразовому токену и автоматически выйдет в онлайн.',
+  'nodes.installCommand': 'Команда установки (Linux)',
+  'nodes.joinTokenNote':
+    'Токен подключения одноразовый и действует 1 час. Откройте это окно снова, чтобы сгенерировать новую команду.',
+  'nodes.agentVersion': 'агент {version}',
+  'nodes.lastSeen': 'был(а) в сети {time}',
+  'nodes.notEnrolled': 'ожидает подключения',
+  'nodes.adding': 'Добавление…',
+  'nodes.empty': 'Ноды ещё не зарегистрированы.',
+  'nodes.start': 'Запустить агент',
+  'nodes.stop': 'Остановить агент',
+  'nodes.startConfirm': 'Запустить агент этой ноды?',
+  'nodes.stopConfirm':
+    'Остановить агент этой ноды? Работающие сервисы могут стать неуправляемыми из панели.',
+  'nodes.log': 'Лог',
+  'nodes.hideLog': 'Скрыть лог',
+  'nodes.confirmDelete': 'Удалить эту ноду?',
+  'nodes.disabledHint':
+    'Управление локальным агентом отключено. Запустите его вручную или задайте LOCAL_AGENT_ENABLED=1.',
+  'nodes.disabledTitle':
+    'Задайте LOCAL_AGENT_ENABLED=1, чтобы управлять агентом из UI',
+  'nodes.agentUnreachable': 'Агент помечен как запущенный, но недоступен',
+  'nodes.containers': 'Контейнеры',
+  'nodes.images': 'Образы',
+  'nodes.reclaimable': 'Можно освободить',
+  'nodes.volumes': 'Тома',
+  'nodes.hostLoad': 'Нагрузка CPU / ядра',
+  'nodes.hostRam': 'ОЗУ хоста',
+  'nodes.hostDisk': 'Диск хоста',
+  'nodes.hostMemPerc': 'ОЗУ занято',
+  'nodes.servicesOnNode': 'Сервисы',
+  'nodes.databasesOnNode': 'Базы данных',
+  'nodes.noServices': 'На этой ноде нет сервисов.',
+  'nodes.noDatabases': 'На этой ноде нет баз данных.',
+
+  // Resources
+  'resources.serviceTitle': 'Ресурсы',
+  'resources.serviceHint':
+    'Выделенные лимиты настроены у сервиса; текущее потребление приходит от агента ноды вживую.',
+  'resources.allocatedCpu': 'Выделено CPU',
+  'resources.allocatedRam': 'Выделено RAM',
+  'resources.currentCpu': 'Текущий CPU',
+  'resources.currentRam': 'Текущая RAM',
+  'resources.currentUsage': 'Текущее потребление',
+  'resources.allocated': 'Выделено',
+  'resources.cpuUnit': 'ядра CPU',
+  'resources.ramUnit': 'Лимит памяти в МБ',
+  'resources.limitConfigured': 'настроенный лимит',
+  'resources.liveFromAgent': 'данные от агента',
+  'resources.partialLive': 'частичные live-данные',
+  'resources.agentStatsUnavailable': 'Статистика агента недоступна',
+  'resources.services': 'Сервисы',
+  'resources.runningTotal': 'запущено / всего',
+  'resources.runningServices': 'Запущенные сервисы',
+  'resources.cpuRam': 'CPU / RAM',
+  'resources.cpu': 'CPU',
+  'resources.memory': 'Память',
+  'resources.cpuLimit': 'Лимит CPU',
+  'resources.memLimit': 'Лимит памяти (MB)',
+  'resources.cpuCapacity': 'CPU capacity',
+  'resources.memCapacity': 'Memory capacity (MB)',
+  'resources.available': 'доступно',
+  'resources.inUse': 'в работе',
+  'resources.recommended': 'рекомендовано',
+  'resources.nodeOverheadRecommended': 'baseline overhead ноды',
+  'resources.platformCapacity': 'Ресурсы платформы',
+  'resources.detectedHardware': 'обнаруженное железо',
+  'resources.projectResources': 'Ресурсы проекта',
+  'resources.configureProject': 'Настроить лимиты проекта',
+  'resources.configureCapacity': 'Настроить capacity',
+  'resources.editServiceLimits': 'Изменить лимиты сервиса',
+  'resources.projectLimitHint':
+    'Лимиты проекта резервируют часть capacity платформы. Сервисы внутри проекта не смогут превысить остаток квоты проекта.',
+  'resources.alreadyAllocated':
+    'Уже выделено сервисам: {cpu} CPU / {mem} MB RAM.',
+
+  // Templates
+  'templates.title': 'Шаблоны',
+  'templates.subtitle': 'Определения стеков для сборки и запуска сервисов.',
+  'templates.aboutTitle': 'Что такое шаблоны?',
+  'templates.aboutBody':
+    'Шаблон — готовый рецепт стека: какой образ собирает код, какой его запускает, Dockerfile и порт по умолчанию. При создании сервиса вы выбираете шаблон, и агент ноды по нему собирает и запускает приложение. Порт или использование собственного Dockerfile репозитория можно переопределить у каждого сервиса.',
+  'templates.noteTitle': 'Встроенные и свои шаблоны',
+  'templates.noteBody':
+    'Панель поставляется с шаблонами частых Java и JS/TS стеков. Администраторы могут создавать новые шаблоны, редактировать любые (включая встроенные) и группировать их по категориям.',
+  'templates.builtIn': 'встроенный',
+  'templates.new': 'Новый шаблон',
+  'templates.empty': 'Шаблонов пока нет.',
+  'templates.uncategorized': 'Прочее',
+  'templates.created': 'Шаблон создан',
+  'templates.updated': 'Шаблон обновлён',
+  'templates.deleted': 'Шаблон удалён',
+  'templates.editTitle': 'Редактирование шаблона',
+  'templates.editBuiltInHint':
+    'Это встроенный шаблон. Изменения применятся ко всем пользователям панели.',
+  'templates.deleteTitle': 'Удалить шаблон',
+  'templates.deleteConfirm':
+    'Удалить этот шаблон? Уже созданные сервисы продолжат работать; шаблон исчезнет только для новых.',
+  'templates.f.name': 'Название',
+  'templates.f.category': 'Категория',
+  'templates.f.categoryHint': 'Метка группы (пусто — «Прочее»).',
+  'templates.f.description': 'Описание',
+  'templates.f.type': 'Тип',
+  'templates.f.port': 'Порт по умолчанию',
+  'templates.f.healthcheck': 'Путь healthcheck',
+  'templates.f.baseImage': 'Образ запуска',
+  'templates.f.installImage': 'Образ сборки',
+  'templates.f.dockerfilePath': 'Путь к Dockerfile',
+  'templates.f.dockerfilePathHint': 'Путь к Dockerfile внутри репозитория панели.',
+  'templates.f.buildCommand': 'Команда сборки',
+  'templates.f.runCommand': 'Команда запуска',
+  'templates.f.installScript': 'Скрипт сборки',
+  'templates.f.installScriptHint':
+    'Shell-скрипт, выполняемый в образе сборки для создания артефакта.',
+  'templates.f.variables': 'Переменные',
+  'templates.f.addVariable': 'Добавить переменную',
+  'templates.f.noVariables': 'Переменные не заданы.',
+  'templates.f.varName': 'Метка',
+  'templates.f.varDefault': 'Значение по умолчанию',
+  'templates.f.varDescription': 'Описание (необязательно)',
+  'templates.desc.javaMaven':
+    'Собирает Maven-проект в JAR и запускает на Temurin 21.',
+  'templates.desc.javaGradle':
+    'Собирает Gradle-проект (через wrapper из репозитория) в JAR и запускает на Temurin 25.',
+  'templates.desc.nextjs':
+    'Собирает Next.js-приложение (standalone) и запускает на Node 20.',
+  'templates.desc.reactVite':
+    'Собирает Vite React SPA и отдаёт статику через nginx.',
+
+  // Project detail
+  'project.back': '← Проекты',
+  'project.aboutTitle': 'Работа внутри проекта',
+  'project.aboutBody':
+    'Здесь вы добавляете сервисы и управляемые БД, а затем деплоите. Сервис собирает образ из git и работает контейнером на ноде; база — общий сайдкар-контейнер, к которому подключаются другие сервисы проекта.',
+  'project.step1Title': 'Добавьте сервис',
+  'project.step1Body':
+    'Выберите ноду, шаблон и git-репозиторий. При желании используйте собственный Dockerfile репозитория.',
+  'project.step2Title': 'Добавьте БД (опционально)',
+  'project.step2Body':
+    'Разверните Postgres/MySQL один раз; несколько сервисов делят её через подставляемые env с подключением.',
+  'project.step3Title': 'Откройте сервис для деплоя',
+  'project.step3Body':
+    'Задайте env, домен и тома, затем деплойте и управляйте бэкапами со страницы сервиса.',
+  'project.services': 'Сервисы',
+  'project.noServices': 'Сервисов пока нет. Создайте один ниже.',
+  'project.newService': 'Новый сервис',
+  'project.registerNodeFirst': 'Сначала зарегистрируйте ноду на странице «Ноды».',
+  'project.serviceName': 'Название сервиса',
+  'project.repoPlaceholder': 'https://github.com/you/repo',
+  'project.branch': 'Ветка',
+  'project.port': 'Порт',
+  'project.createService': 'Создать сервис',
+  'project.createServiceHint':
+    'Создайте сервис из git-репозитория, выберите ноду и задайте начальные лимиты CPU/RAM.',
+  'project.useRepoDockerfile': 'Использовать Dockerfile из репозитория (если есть)',
+  'project.useRepoDockerfileHint':
+    'Выкл: сборка по выбранному шаблону. Вкл: использовать Dockerfile из репозитория (он должен собирать из исходников).',
+  'project.gitCred': 'Git-доступ',
+  'project.gitCredNone': 'Публичный (без токена)',
+  'project.gitCredHint': 'Выберите доступ для клонирования приватного репозитория.',
+
+  // Git credentials
+  'git.title': 'Git-доступы',
+  'git.subtitle':
+    'Personal Access Token для клонирования приватных репозиториев. Токены хранятся в зашифрованном виде и не возвращаются.',
+  'git.aboutTitle': 'Зачем git-доступы?',
+  'git.aboutBody':
+    'Публичные репозитории клонируются без авторизации, приватным нужен токен. Добавьте Personal Access Token (PAT) один раз и привяжите к сервису — нода использует его только при сборке для клонирования кода. Токены шифруются и больше не показываются.',
+  'git.step1Title': 'Создайте PAT',
+  'git.step1Body':
+    'На GitHub/GitLab создайте токен с доступом на чтение репозиториев (scope repo / read_repository).',
+  'git.step2Title': 'Добавьте его сюда',
+  'git.step2Body':
+    'Укажите название, выберите провайдера и вставьте токен. Добавьте логин, если провайдер требует.',
+  'git.step3Title': 'Используйте и проверьте',
+  'git.step3Body':
+    'Выберите этот доступ при создании сервиса, а кнопкой «Проверить» ниже протестируйте доступ к URL репозитория.',
+  'git.securityNote':
+    'Безопасность: вставляйте только read-only токены для репозиториев. После сохранения токен шифруется и дальше показывается только маской.',
+  'git.name': 'Название',
+  'git.namePlaceholder': 'напр. GitHub (личный)',
+  'git.provider': 'Провайдер',
+  'git.username': 'Имя пользователя (необязательно)',
+  'git.usernamePlaceholder': 'оставьте пустым для токен-авторизации',
+  'git.pat': 'Personal Access Token',
+  'git.patPlaceholder': 'ghp_… / glpat-…',
+  'git.add': 'Добавить доступ',
+  'git.adding': 'Добавление…',
+  'git.empty': 'Git-доступов пока нет. Добавьте один выше.',
+  'git.confirmDelete': 'Удалить этот доступ?',
+  'git.verify': 'Проверить',
+  'git.verifying': 'Проверка…',
+  'git.verifyRepoPlaceholder': 'https://github.com/you/private-repo',
+  'git.repoLabel': 'URL репозитория',
+  'git.verifyHint': 'Введите URL репозитория, чтобы проверить доступ через git ls-remote.',
+
+  // Service detail
+  'service.back': '← Проект',
+  'service.aboutTitle': 'Как сервис деплоится и работает',
+  'service.aboutBody':
+    'Сервис собирает Docker-образ из вашего git-репозитория и запускает его контейнером на своей ноде. Всё, что вы настраиваете здесь — env, домен, тома, ресурсы, деплой без простоя — применяется при следующем деплое.',
+  'service.step1Title': 'Настройте',
+  'service.step1Body':
+    'Задайте env и секреты, привяжите домен, добавьте тома и лимиты CPU/памяти в «Настройках».',
+  'service.step2Title': 'Задеплойте',
+  'service.step2Body':
+    'Нажмите «Деплой», чтобы собрать из git и запустить контейнер. Смотрите логи сборки и рантайма вживую.',
+  'service.step3Title': 'Управляйте',
+  'service.step3Body':
+    'Откатывайтесь на прошлый образ, открывайте терминал, стримьте логи и метрики или включите деплой без простоя.',
+  'service.image': 'образ',
+  'service.deploy': 'Деплой',
+  'service.deployConfirm':
+    'Запустить новый деплой сейчас? Будет сборка из git и возможная замена работающего контейнера.',
+  'service.start': 'Запустить',
+  'service.startConfirm': 'Запустить контейнер этого сервиса?',
+  'service.stop': 'Остановить',
+  'service.stopConfirm': 'Остановить контейнер этого сервиса? Приложение может стать недоступным.',
+  'service.restart': 'Перезапустить',
+  'service.restartConfirm': 'Перезапустить контейнер этого сервиса сейчас?',
+  'service.delete': 'Удалить',
+  'service.confirmDelete': 'Удалить этот сервис и его контейнер?',
+  'service.deployments': 'Деплои',
+  'service.noDeployments': 'Деплоев пока нет.',
+  'service.showLog': 'Показать лог',
+  'service.hideLog': 'Скрыть лог',
+  'service.noBuildLog': '(лог сборки пуст)',
+  'service.buildLogLive': 'Лог сборки (в реальном времени)',
+  'service.buildLogWaiting': 'Ожидание вывода сборки…',
+  'service.environment': 'Переменные окружения',
+  'service.noVariables': 'Переменных нет.',
+  'service.secret': 'секрет',
+  'service.envDelete': 'Удалить переменную',
+  'service.envDeleteConfirm':
+    'Удалить эту переменную? Применится при следующем деплое.',
+  'service.envSetConfirm':
+    'Задать эту переменную окружения? Это может повлиять на следующий деплой/рантайм.',
+  'service.envImport': 'Импорт .env',
+  'service.envImportConfirm':
+    'Импортировать эти переменные окружения? Существующие ключи с тем же именем будут перезаписаны.',
+  'service.envImportHint':
+    'Вставьте .env-файл. По строке KEY=VALUE; #комментарии и кавычки обрабатываются. Существующие ключи перезапишутся. Секреты определяются по имени.',
+  'service.envImportBtn': 'Импортировать',
+  'service.envImportCount': 'Найдено переменных: {n}',
+  'service.envImportEmpty': 'Не найдено корректных строк KEY=VALUE.',
+  // Авто-настройка из репозитория
+  'setup.button': 'Сканировать и настроить',
+  'setup.title': 'Сканировать репозиторий и авто-настроить',
+  'setup.hint':
+    'Клонирует репозиторий и определяет базы (docker-compose / .env) и env-ключи. Выбранные базы создаются и подключаются; выбранные ключи заводятся (ключи БД заполняются автоматически, остальные — пустыми).',
+  'setup.scanning': 'Сканирование репозитория…',
+  'setup.databases': 'Найденные базы данных',
+  'setup.noDatabases': 'Базы не обнаружены.',
+  'setup.willCreate': '— будет создана и подключена',
+  'setup.schemas': 'схемы',
+  'setup.envFrom': 'Переменные из {file}',
+  'setup.envNone': 'Файл .env-примера не найден.',
+  'setup.exists': 'уже есть',
+  'setup.apply': 'Применить',
+  'setup.applyConfirm':
+    'Применить найденные изменения? Это может создать базы данных и перезаписать выбранные env-переменные.',
+  'setup.applying': 'Применение…',
+  'service.keyPlaceholder': 'КЛЮЧ',
+  'service.valuePlaceholder': 'значение',
+  'service.domain': 'Домен',
+  'service.domainConfirm':
+    'Сохранить настройку домена? Маршрутизация трафика и сертификаты могут измениться.',
+  'service.domainPlaceholder': 'example.com',
+  'service.domainHint':
+    'Укажите корневой домен (example.com). Traefik маршрутизирует и все поддомены (admin.example.com, tenant.example.com). Для HTTPS добавьте DNS: A *.example.com → IP VDS. Для одного wildcard-сертификата: ACME_WILDCARD_CERTS=1 + Cloudflare DNS API token в .env.',
+  'service.https': 'HTTPS (Let’s Encrypt)',
+  'service.logs': 'Логи в реальном времени',
+  'service.logsStart': 'Смотреть',
+  'service.logsStop': 'Остановить',
+  'service.logsClear': 'Очистить',
+  'service.logsEmpty': 'Стрим не запущен. Нажмите «Смотреть», чтобы видеть живой вывод контейнера.',
+  'service.logsConnecting': 'Подключение…',
+  'service.logsEnded': '— стрим завершён —',
+  'service.rollback': 'Откатить',
+  'service.rollbackConfirm': 'Передеплоить этот образ (откат)?',
+  'service.webhook': 'Webhook авто-деплоя',
+  'service.webhookHint':
+    'Отправьте POST на этот URL (например, из webhook git-пуша), чтобы запустить деплой. Держите токен в секрете.',
+  'service.copy': 'Копировать',
+  'service.copied': 'Скопировано',
+  'service.info': 'Обзор',
+  'service.node': 'Нода',
+  'service.template': 'Шаблон',
+  'service.port': 'Порт',
+  'service.repo': 'Репозиторий',
+  'service.gitAccess': 'Git-доступ',
+  'service.open': 'Открыть приложение',
+  'service.settings': 'Настройки',
+  'service.settingsHint': 'Изменения применяются при следующем деплое.',
+  'service.settingsConfirm':
+    'Сохранить настройки сервиса? Изменения могут повлиять на следующий деплой и runtime-лимиты.',
+  'service.name': 'Название',
+  'service.cpu': 'Лимит CPU',
+  'service.mem': 'Лимит памяти (МБ)',
+  'service.zeroDowntime': 'Деплой без простоя',
+  'service.zeroDowntimeHint':
+    'Поднять новый экземпляр и дождаться его health-check, прежде чем переключить трафик и остановить старый. Требуется домен.',
+  'service.healthcheckPath': 'Путь health-check',
+  'service.healthTimeout': 'Таймаут health (с)',
+  'service.activeColor': 'Активный экземпляр',
+  'service.zeroDowntimeVolumeWarn':
+    'Недоступно, пока у сервиса есть постоянные тома — два экземпляра будут делить один том.',
+  'service.stepBuild': 'Сборка',
+  'service.stepHealth': 'Health-check',
+  'service.stepSwitchover': 'Переключение',
+  'service.stepDeploy': 'Запуск',
+  'service.stepLive': 'В строю',
+  'service.deploymentsShowAll': 'Показать историю ({count})',
+  'service.deploymentsHide': 'Скрыть историю',
+  'service.terminal': 'Терминал',
+  'service.terminalTitle': 'Консоль контейнера',
+  'service.terminalHint':
+    'Интерактивная оболочка внутри работающего контейнера — посмотреть файлы, подключиться к базе, поправить что-то руками.',
+  'service.terminalConnecting': 'Подключение…',
+  'service.terminalClosed': 'Сессия закрыта',
+  'service.terminalReconnecting': 'Переподключение…',
+  'service.terminalReconnected': 'Переподключено',
+  'service.terminalNotRunning': 'Запустите контейнер, чтобы открыть консоль.',
+  'service.close': 'Закрыть',
+  // Постоянные тома
+  'volume.title': 'Постоянные тома',
+  'volume.hint': 'Монтируются в контейнер. Данные переживают редеплой. Применяется при следующем деплое.',
+  'volume.mountPath': 'Путь монтирования (напр. /data)',
+  'volume.add': 'Добавить том',
+  'volume.addConfirm':
+    'Добавить этот постоянный том? Он будет смонтирован в сервис при следующем деплое.',
+  'volume.none': 'Томов пока нет.',
+  'volume.removeConfirm': 'Удалить том? Сохранённые данные могут быть потеряны.',
+  // Управляемые базы данных
+  'db.title': 'Базы данных',
+  'db.new': 'Новая база данных',
+  'db.name': 'Название',
+  'db.engine': 'Движок',
+  'db.version': 'Версия',
+  'db.dbName': 'Имя базы',
+  'db.username': 'Пользователь',
+  'db.create': 'Создать базу',
+  'db.createHint':
+    'Создаёт managed database контейнер на ноде. Подключить сервисы можно после создания.',
+  'db.creating': 'Создаётся…',
+  'db.none': 'Баз данных пока нет.',
+  'db.host': 'Хост',
+  'db.port': 'Порт',
+  'db.connection': 'Подключение',
+  'db.reveal': 'Показать доступы',
+  'db.hide': 'Скрыть',
+  'db.password': 'Пароль',
+  'db.url': 'URL подключения',
+  'db.attach': 'Привязать к сервису',
+  'db.attachConfirm':
+    'Привязать эту базу к выбранному сервису? Env-переменные подключения будут записаны.',
+  'db.attachHint': 'Прокидывает DATABASE_URL + DB_* в env. Применяется при следующем деплое сервиса.',
+  'db.attached': 'Привязано',
+  'db.selectService': 'Выберите сервис…',
+  'db.deleteConfirm': 'Удалить эту базу данных?',
+  'db.startConfirm': 'Запустить контейнер этой базы данных?',
+  'db.stopConfirm':
+    'Остановить контейнер этой базы данных? Подключённые сервисы могут падать, пока база не запущена снова.',
+  'db.keepVolume': 'Сохранить том с данными',
+  'db.keepVolumeTitle': 'Оставить volume базы?',
+  'db.keepVolumeConfirm': 'Оставить volume',
+  'db.copy': 'Копировать',
+  'db.copied': 'Скопировано',
+  'db.internalNote': 'Доступна вашим сервисам внутри сети по этому хосту.',
+  // Backups
+  'backup.title': 'Резервные копии',
+  'backup.now': 'Создать копию',
+  'backup.running': 'Создание…',
+  'backup.none': 'Копий пока нет.',
+  'backup.download': 'Скачать',
+  'backup.restore': 'Восстановить',
+  'backup.restoring': 'Восстановление…',
+  'backup.restoreConfirm':
+    'Восстановить из этой копии? Текущие данные будут перезаписаны.',
+  'backup.restoreDone': 'Восстановление завершено.',
+  'backup.delete': 'Удалить',
+  'backup.deleteConfirm': 'Удалить этот файл копии?',
+  'backup.size': 'Размер',
+  'backup.failed': 'Ошибка',
+  'backup.schedule': 'Расписание',
+  'backup.schedules': 'Расписания',
+  'backup.cron': 'Cron (напр. 0 3 * * *)',
+  'backup.keepLast': 'Хранить последних',
+  'backup.addSchedule': 'Добавить расписание',
+  'backup.noSchedules': 'Расписаний нет.',
+  'backup.scheduleHint':
+    'Запускается автоматически. Старые копии сверх «хранить последних» удаляются.',
+  'service.metrics': 'Метрики',
+  'metrics.cpu': 'CPU',
+  'metrics.memory': 'Память',
+  'metrics.network': 'Сеть I/O',
+  'metrics.pids': 'Процессы',
+  'metrics.health': 'Health',
+  'metrics.notRunning': 'Контейнер не запущен.',
+
+  // Tunnels / exposure
+  'tunnel.title': 'Публикация',
+  'tunnel.subtitle':
+    'Опубликуйте панель через лёгкий публичный VDS-реле. VDS только перекладывает трафик на ваш локальный прокси — без Docker и без настройки под каждое приложение.',
+  'tunnel.lockedTitle': 'Обратные туннели — платный модуль',
+  'tunnel.lockedBody':
+    'Публикуйте ноды за NAT / домашние серверы в интернет через публичный релей — killer-фича для self-hosting за серым IP. Откройте её в тарифе Home-Lab (или Pro).',
+  'tunnel.aboutTitle': 'Что такое обратный туннель?',
+  'tunnel.aboutBody':
+    'Если нода за серым/NAT IP, из интернета она недоступна. Обратный туннель решает это: небольшой клиент с вашей стороны исходящим соединением подключается к серверу туннеля на дешёвом публичном VDS, а тот перекладывает публичные порты (например, 443) обратно на ваш Traefik. Посетители попадают на VDS, трафик уходит на вашу ноду.',
+  'tunnel.step1Title': 'Зарегистрируйте туннель',
+  'tunnel.step1Body':
+    'Укажите хост VDS, управляющий порт и какие порты перекладывать (обычно 443). Цель — ваш локальный прокси.',
+  'tunnel.step2Title': 'Установите клиент',
+  'tunnel.step2Body':
+    'Через «Установка» получите команду в одну строку. Выполните её на VDS (сервер) и запустите клиент у себя.',
+  'tunnel.step3Title': 'Запустите и настройте DNS',
+  'tunnel.step3Body':
+    'Запустите туннель, затем направьте A-запись домена на IP VDS. Статус станет «Онлайн» после подключения.',
+  'tunnel.add': 'Добавить туннель',
+  'tunnel.adding': 'Добавление…',
+  'tunnel.empty':
+    'Туннелей пока нет. Добавьте, чтобы опубликовать панель через публичный VDS.',
+  'tunnel.namePlaceholder': 'Название (напр. дом → vds)',
+  'tunnel.serverHostPlaceholder': 'Хост или IP публичного VDS',
+  'tunnel.controlPortPlaceholder': 'Порт управления',
+  'tunnel.relayPortsPlaceholder': 'Порты релея (напр. 443 или 443,80)',
+  'tunnel.targetHostPlaceholder': 'Локальный хост-цель',
+  'tunnel.nameLabel': 'Название',
+  'tunnel.serverHostLabel': 'Хост / IP публичного VDS',
+  'tunnel.controlPortLabel': 'Порт управления',
+  'tunnel.relayPortsLabel': 'Порты релея',
+  'tunnel.targetHostLabel': 'Локальный хост-цель',
+  'tunnel.proxyProtocol': 'PROXY-протокол (сохранять IP клиента)',
+  'tunnel.start': 'Запустить',
+  'tunnel.stop': 'Остановить',
+  'tunnel.connected': 'На связи',
+  'tunnel.disconnected': 'Нет связи',
+  'tunnel.install': 'Настроить VDS',
+  'tunnel.installTitle': 'Установка на публичном VDS',
+  'tunnel.installHint':
+    'Выполните ОДНУ из команд на вашем публичном VDS (белый IP). Она скачает реле и запустит его как сервис. Токен встроен — держите его в секрете.',
+  'tunnel.linux': 'Linux (systemd)',
+  'tunnel.windows': 'Windows (PowerShell от админа)',
+  'tunnel.token': 'Токен',
+  'tunnel.copy': 'Копировать',
+  'tunnel.copied': 'Скопировано',
+  'tunnel.offlineTitle': 'Панель на сером IP? (offline через scp)',
+  'tunnel.offlineHint':
+    'Если панель на локалке/сером IP, VDS не сможет скачать файлы с неё. Выполни шаг 1 на машине с панелью, затем скопируй файлы на VDS и запусти установщик.',
+  'tunnel.offlineStep1': '1. На машине с панелью — скачать релей и скрипт',
+  'tunnel.offlineStep2': '2. На машине с панелью — скопировать на VDS (scp)',
+  'tunnel.offlineStep3': '3. Установить на VDS (по ssh)',
+  'tunnel.relayingTo': 'Релей на',
+  'tunnel.disabledHint':
+    'Локальное управление туннелем выключено. Установите LOCAL_AGENT_ENABLED=1, чтобы запускать клиент из панели.',
+  'tunnel.log': 'Лог',
+  'tunnel.hideLog': 'Скрыть лог',
+  'tunnel.startConfirm': 'Запустить этот туннель?',
+  'tunnel.stopConfirm':
+    'Остановить этот туннель? Публичный трафик через реле прекратится.',
+  'tunnel.confirmDelete': 'Удалить этот туннель?',
+  'tunnel.dnsHint':
+    'DNS: A example.com and A *.example.com → VDS IP (ports 80/443 via tunnel). TLS on local Traefik: HTTP-01 per subdomain (default) or ACME_WILDCARD_CERTS=1 + Cloudflare token for *.example.com cert.',
+
+  // Service / deployment statuses
+  'status.RUNNING': 'Работает',
+  'status.SUCCESS': 'Успешно',
+  'status.ONLINE': 'Онлайн',
+  'status.BUILDING': 'Сборка',
+  'status.DEPLOYING': 'Деплой',
+  'status.QUEUED': 'В очереди',
+  'status.CREATED': 'Создан',
+  'status.STOPPED': 'Остановлен',
+  'status.OFFLINE': 'Офлайн',
+  'status.ERROR': 'Ошибка',
+  'status.FAILED': 'Сбой',
+
+  // Service types
+  'type.BACKEND': 'Бэкенд',
+  'type.FRONTEND': 'Фронтенд',
+
+  // Billing / licensing
+  'billing.subtitle':
+    'Управление тарифом этой установки. Бесплатное ядро — без ограничений; платные тарифы открывают дополнительные модули.',
+  'billing.currentPlan': 'Текущий тариф',
+  'billing.active': 'Активна',
+  'billing.free': 'Бесплатно',
+  'billing.expires': 'Действует до',
+  'billing.perpetual': 'Бессрочно',
+  'billing.unlockedModules': 'Открытые модули',
+  'billing.noModules': 'Только базовые функции',
+  'billing.licenseKey': 'Ключ лицензии',
+  'billing.licenseKeyHint':
+    'Вставьте ключ лицензии из письма о покупке, чтобы активировать платный тариф на этой установке.',
+  'billing.licenseKeyPlaceholder': 'вставьте ключ лицензии…',
+  'billing.activate': 'Активировать лицензию',
+  'billing.activating': 'Активация…',
+  'billing.remove': 'Удалить лицензию',
+  'billing.activated': 'Лицензия активирована.',
+  'billing.removed': 'Лицензия удалена. Возврат к Free.',
+  'billing.adminOnly':
+    'Активировать или менять ключ лицензии может только администратор.',
+  'billing.plansTitle': 'Тарифы',
+  'billing.yourPlan': 'Ваш тариф',
+  'billing.buy': 'Оформить',
+  'billing.viewPlans': 'Смотреть тарифы',
+  'billing.requiresPlan': 'Требуется тариф {plan}',
+  'billing.forever': 'навсегда',
+  'billing.perMonth': '/мес',
+  'billing.price.free': '$0',
+  'billing.price.homelab': '$3',
+  'billing.price.pro': '$15',
+  'billing.tier.free': 'Free',
+  'billing.tier.homelab': 'Home-Lab',
+  'billing.tier.pro': 'Pro',
+  'billing.feat.core': 'Деплой из git, шаблоны, HTTPS',
+  'billing.feat.dbLogs': 'Managed БД, логи, live-метрики',
+  'billing.feat.rbac': 'Проекты, RBAC, 2FA, неогранич. ноды',
+  'billing.feat.allFree': 'Всё из Free',
+  'billing.feat.tunnels': '+ модуль Reverse-tunnels (NAT / home-lab)',
+  'billing.feat.allHomelab': 'Всё из Home-Lab',
+  'billing.feat.proAll':
+    'Все модули: preview-env, S3-бэкапы, алерты, история метрик, SSO, API/CLI, white-label',
+  'billing.module.reverse-tunnels': 'Reverse-tunnels',
+  'billing.module.preview-envs': 'Preview-окружения',
+  'billing.module.offsite-backups': 'Офсайт-бэкапы',
+  'billing.module.alerts': 'Алерты',
+  'billing.module.metrics-history': 'История метрик',
+  'billing.module.sso': 'SSO / OIDC',
+  'billing.module.audit-export': 'Экспорт аудита',
+  'billing.module.api-cli': 'API и CLI',
+  'billing.module.white-label': 'White-label',
+};
