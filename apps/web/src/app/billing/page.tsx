@@ -17,10 +17,10 @@ import { useToast } from '@/components/toast';
 const BUY_URL: Record<Exclude<LicenseTier, 'free'>, string> = {
   homelab:
     process.env.NEXT_PUBLIC_BUY_HOMELAB_URL ??
-    'https://selfhosted.example.com/buy/home-lab',
+    'https://sh.m2by.ru/buy?tier=homelab',
   pro:
     process.env.NEXT_PUBLIC_BUY_PRO_URL ??
-    'https://selfhosted.example.com/buy/pro',
+    'https://sh.m2by.ru/buy?tier=pro',
 };
 
 export default function BillingPage() {
