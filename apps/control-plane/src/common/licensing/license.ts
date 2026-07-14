@@ -103,3 +103,14 @@ export function isLicenseUsable(key: string): boolean {
   const now = Math.floor(Date.now() / 1000);
   return !(payload.exp && payload.exp > 0 && payload.exp < now);
 }
+
+/**
+ * True when license verification is falling back to the built-in DEVELOPMENT
+ * public key (no `LICENSE_PUBLIC_KEY` override). The matching dev private key is
+ * published in the repo, so anyone could mint valid keys — sellers MUST generate
+ * their own keypair and set `LICENSE_PUBLIC_KEY` before issuing real licenses.
+ */
+export function isUsingDefaultLicenseKey(): boolean {
+  const env = process.env.LICENSE_PUBLIC_KEY;
+  return !(env && env.trim());
+}

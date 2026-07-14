@@ -6,14 +6,14 @@
 #   1. Ensures .env exists (copies from .env.example on first run)
 #   2. Installs npm dependencies if node_modules is missing
 #   3. Starts Postgres + Redis via docker compose
-#   4. Waits for Postgres, then pushes the DB schema and seeds the admin
+#   4. Waits for Postgres, then applies DB migrations and seeds the admin
 #   5. Runs the control-plane API and the web UI together
 #
 # Usage:
 #   ./start.sh                 # full boot
 #   ./start.sh --skip-infra    # don't touch docker (DB/Redis already running)
 #   ./start.sh --skip-install  # don't run npm install
-#   ./start.sh --skip-setup    # don't push schema / seed admin
+#   ./start.sh --skip-setup    # don't apply migrations / seed admin
 #
 # Stop everything with Ctrl+C.
 # ============================================================
@@ -87,8 +87,8 @@ fi
 
 # 4. Schema + seed (non-fatal: seed is idempotent-ish and may error if admin exists)
 if [ "$SKIP_SETUP" -eq 0 ]; then
-  log "Pushing database schema…"
-  npm run db:push
+  log "Applying database migrations…"
+  npm run db:migrate
   log "Seeding admin user (ignored if it already exists)…"
   npm run db:seed || warn "Seed skipped or already applied."
 fi

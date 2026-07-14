@@ -3,7 +3,7 @@
 # service. The VDS only relays bytes to your panel — no Docker, no app config.
 #
 # Usage (as root):
-#   TUNNEL_TOKEN=xxxx BIN_URL=https://panel.example/api/tunnels/bin/linux-amd64 \
+#   TUNNEL_TOKEN=xxxx BIN_URL=https://panel.example/api/v1/tunnels/assets/bin/linux-amd64 \
 #     sh install.sh
 #
 # Env:

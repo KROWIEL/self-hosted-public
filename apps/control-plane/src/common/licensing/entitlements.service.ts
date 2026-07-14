@@ -17,6 +17,7 @@ import { LicenseErrors } from '../errors/app-errors';
 import {
   entitlementsFromKey,
   isLicenseUsable,
+  isUsingDefaultLicenseKey,
   verifyLicenseKey,
 } from './license';
 
@@ -52,10 +53,21 @@ export class EntitlementsService implements OnModuleInit, OnModuleDestroy {
   private lastOkAt = 0;
   private lastAttempt: { ok: boolean; at: number; reason?: string } | null = null;
   private timer: NodeJS.Timeout | null = null;
+  // Start of the current grace window (service start or last key change). Used so
+  // a freshly-activated license isn't locked out before its first heartbeat lands.
+  private activationBaselineAt = Date.now();
 
   constructor(@Inject(DRIZZLE) private readonly db: Database) {}
 
   onModuleInit(): void {
+    if (isUsingDefaultLicenseKey()) {
+      this.logger.warn(
+        'Licensing is using the built-in DEV public key — the matching private ' +
+          'key is public, so anyone could mint valid license keys. Generate a ' +
+          'production keypair and set LICENSE_PUBLIC_KEY before selling licenses ' +
+          '(see docs/LICENSING.md).',
+      );
+    }
     if (!this.activationUrl) {
       this.logger.log('License activation: offline / key-only mode (no LICENSE_ACTIVATION_URL).');
       return;
@@ -154,10 +166,18 @@ export class EntitlementsService implements OnModuleInit, OnModuleDestroy {
 
   private activationOk(): boolean {
     const reason = this.lastAttempt?.reason;
+    // Hard denials (revoked / rejected / expired / seat limit / auth) lock
+    // immediately, regardless of any grace window.
     if (this.lastAttempt && !this.lastAttempt.ok && reason && DEFINITIVE_DENY.has(reason)) {
       return false;
     }
-    return this.lastOkAt > 0 && Date.now() - this.lastOkAt < this.maxAgeMs;
+    const now = Date.now();
+    // Normal case: a recent successful heartbeat keeps modules unlocked.
+    if (this.lastOkAt > 0) return now - this.lastOkAt < this.maxAgeMs;
+    // Never succeeded yet (fresh key / first contact / server briefly down):
+    // stay unlocked during the initial grace window measured from the baseline,
+    // so a just-activated license isn't blocked before its first heartbeat lands.
+    return now - this.activationBaselineAt < this.maxAgeMs;
   }
 
   private activationStatus(ok: boolean): ActivationStatus {
@@ -222,6 +242,8 @@ export class EntitlementsService implements OnModuleInit, OnModuleDestroy {
     this.cache = null;
     this.lastOkAt = 0;
     this.lastAttempt = null;
+    // New key → fresh grace window so activation can't lock a just-entered key.
+    this.activationBaselineAt = Date.now();
     // Re-activate immediately so the UI reflects the new key without waiting.
     if (this.activationUrl) await this.heartbeat();
     return this.get(true);
@@ -233,6 +255,7 @@ export class EntitlementsService implements OnModuleInit, OnModuleDestroy {
     this.cache = null;
     this.lastOkAt = 0;
     this.lastAttempt = null;
+    this.activationBaselineAt = Date.now();
     return this.get(true);
   }
 }

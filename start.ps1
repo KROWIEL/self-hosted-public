@@ -5,14 +5,14 @@
 #   1. Ensures .env exists (copies from .env.example on first run)
 #   2. Installs npm dependencies if node_modules is missing
 #   3. Starts Postgres + Redis via docker compose
-#   4. Waits for Postgres, then pushes the DB schema and seeds the admin
+#   4. Waits for Postgres, then applies DB migrations and seeds the admin
 #   5. Opens the control-plane API and the web UI in two new windows
 #
 # Usage:
 #   ./start.ps1                  # full boot
 #   ./start.ps1 -SkipInfra       # don't touch docker (DB/Redis already running)
 #   ./start.ps1 -SkipInstall     # don't run npm install
-#   ./start.ps1 -SkipSetup       # don't push schema / seed admin
+#   ./start.ps1 -SkipSetup       # don't apply migrations / seed admin
 #
 # If scripts are blocked, run once:
 #   Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
@@ -84,8 +84,8 @@ if (-not $SkipInfra) {
 
 # 4. Schema + seed (seed is non-fatal: it may error if the admin already exists)
 if (-not $SkipSetup) {
-  Write-Log "Pushing database schema..."
-  npm run db:push
+  Write-Log "Applying database migrations..."
+  npm run db:migrate
   Write-Log "Seeding admin user (ignored if it already exists)..."
   try { npm run db:seed } catch { Write-Warn "Seed skipped or already applied." }
 }

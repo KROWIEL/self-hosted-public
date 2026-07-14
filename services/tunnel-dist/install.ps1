@@ -2,7 +2,7 @@
 # scheduled task (console binaries are not native services). Run as Administrator.
 #
 # Usage:
-#   .\install.ps1 -Token xxxx -BinUrl https://panel.example/api/tunnels/bin/windows-amd64
+#   .\install.ps1 -Token xxxx -BinUrl https://panel.example/api/v1/tunnels/assets/bin/windows-amd64
 #
 param(
   [Parameter(Mandatory = $true)][string]$Token,
