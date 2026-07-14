@@ -11,7 +11,7 @@ import {
 import { AppShell } from '@/components/shell';
 import { useEntitlements } from '@/components/entitlements';
 import { Card, ErrorBox, Field, PageHeader, Spinner } from '@/components/ui';
-import { TKey, useI18n } from '@/i18n';
+import { TKey, useErrorText, useI18n } from '@/i18n';
 import { useToast } from '@/components/toast';
 
 const BUY_URL: Record<Exclude<LicenseTier, 'free'>, string> = {
@@ -33,6 +33,7 @@ export default function BillingPage() {
 
 function BillingContent() {
   const { t } = useI18n();
+  const errorText = useErrorText();
   const toast = useToast();
   const { entitlements, loading, refresh } = useEntitlements();
   const [me, setMe] = useState<AuthMe | null>(null);
@@ -58,7 +59,7 @@ function BillingContent() {
       setKey('');
       toast.success(t('billing.activated'));
     } catch (e) {
-      setError(e instanceof Error ? e.message : t('common.failed'));
+      setError(errorText(e));
     } finally {
       setBusy(false);
     }
@@ -72,7 +73,7 @@ function BillingContent() {
       await refresh();
       toast.success(t('billing.removed'));
     } catch (e) {
-      setError(e instanceof Error ? e.message : t('common.failed'));
+      setError(errorText(e));
     } finally {
       setBusy(false);
     }
@@ -92,6 +93,11 @@ function BillingContent() {
     entitlements.expiresAt != null
       ? new Date(entitlements.expiresAt * 1000).toLocaleDateString()
       : t('billing.perpetual');
+  const daysLeft =
+    entitlements.expiresAt != null
+      ? Math.ceil((entitlements.expiresAt * 1000 - Date.now()) / 86_400_000)
+      : null;
+  const expiringSoon = daysLeft != null && daysLeft <= 14;
 
   return (
     <>
@@ -112,6 +118,10 @@ function BillingContent() {
                 <span className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-2.5 py-0.5 text-xs font-medium text-emerald-300">
                   {t('billing.active')}
                 </span>
+              ) : entitlements.tier !== 'free' ? (
+                <span className="rounded-full border border-amber-400/20 bg-amber-400/10 px-2.5 py-0.5 text-xs font-medium text-amber-300">
+                  {t('billing.inactive')}
+                </span>
               ) : (
                 <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-0.5 text-xs font-medium text-neutral-400">
                   {t('billing.free')}
@@ -126,6 +136,11 @@ function BillingContent() {
             <p className="mt-2 text-sm text-neutral-400">
               {t('billing.expires')}: {expiry}
             </p>
+            {expiringSoon && (
+              <p className="mt-1 text-sm text-amber-300">
+                {t('billing.expiresSoon', { days: Math.max(daysLeft ?? 0, 0) })}
+              </p>
+            )}
             {entitlements.activation?.required && (
               <p
                 className={`mt-2 flex items-center gap-1.5 text-sm ${
