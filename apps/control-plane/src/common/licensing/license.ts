@@ -16,11 +16,21 @@ import {
  */
 
 /**
- * Default verification public key. The matching private key lives ONLY in the
- * seller's issuer tool (never shipped). Override per-deployment with
+ * Default verification public key — the seller's PRODUCTION signing key. The
+ * matching private key lives ONLY in the seller's signer (self-hosted-pay /
+ * tools/license-issuer) and is never shipped. Override per-deployment with
  * `LICENSE_PUBLIC_KEY` (full PEM, or a single line with `\n` escapes).
  */
 const DEFAULT_PUBLIC_KEY_PEM = `-----BEGIN PUBLIC KEY-----
+MCowBQYDK2VwAyEArcXE4cUrEDz66l0umXQGq1dxX1QVYAFOO6JqTx6BjWs=
+-----END PUBLIC KEY-----`;
+
+/**
+ * The throwaway development key that shipped in early builds. Kept only so the
+ * panel can warn operators who somehow still verify against it (its private key
+ * is public). Not used for verification unless it is the active key.
+ */
+const DEV_PUBLIC_KEY_PEM = `-----BEGIN PUBLIC KEY-----
 MCowBQYDK2VwAyEAzT28H6B1h8HEt/YMfxbJI2AIWGZBwu2XU6Z9YEqj6qo=
 -----END PUBLIC KEY-----`;
 
@@ -105,12 +115,12 @@ export function isLicenseUsable(key: string): boolean {
 }
 
 /**
- * True when license verification is falling back to the built-in DEVELOPMENT
- * public key (no `LICENSE_PUBLIC_KEY` override). The matching dev private key is
- * published in the repo, so anyone could mint valid keys — sellers MUST generate
- * their own keypair and set `LICENSE_PUBLIC_KEY` before issuing real licenses.
+ * True when license verification is still using the throwaway DEVELOPMENT key —
+ * either baked into an un-rotated build or supplied via `LICENSE_PUBLIC_KEY`. The
+ * dev private key is public, so anyone could mint valid keys; this MUST be false
+ * before issuing real licenses (rotate the embedded key or set LICENSE_PUBLIC_KEY).
  */
-export function isUsingDefaultLicenseKey(): boolean {
-  const env = process.env.LICENSE_PUBLIC_KEY;
-  return !(env && env.trim());
+export function isUsingDevLicenseKey(): boolean {
+  const norm = (s: string) => s.replace(/\s+/g, '');
+  return norm(publicKeyPem()) === norm(DEV_PUBLIC_KEY_PEM);
 }

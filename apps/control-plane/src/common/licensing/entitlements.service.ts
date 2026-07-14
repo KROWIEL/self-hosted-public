@@ -17,7 +17,7 @@ import { LicenseErrors } from '../errors/app-errors';
 import {
   entitlementsFromKey,
   isLicenseUsable,
-  isUsingDefaultLicenseKey,
+  isUsingDevLicenseKey,
   verifyLicenseKey,
 } from './license';
 
@@ -60,11 +60,11 @@ export class EntitlementsService implements OnModuleInit, OnModuleDestroy {
   constructor(@Inject(DRIZZLE) private readonly db: Database) {}
 
   onModuleInit(): void {
-    if (isUsingDefaultLicenseKey()) {
+    if (isUsingDevLicenseKey()) {
       this.logger.warn(
-        'Licensing is using the built-in DEV public key — the matching private ' +
-          'key is public, so anyone could mint valid license keys. Generate a ' +
-          'production keypair and set LICENSE_PUBLIC_KEY before selling licenses ' +
+        'Licensing is using the throwaway DEV public key — the matching private ' +
+          'key is public, so anyone could mint valid license keys. Rotate to your ' +
+          'production keypair (or set LICENSE_PUBLIC_KEY) before selling licenses ' +
           '(see docs/LICENSING.md).',
       );
     }
