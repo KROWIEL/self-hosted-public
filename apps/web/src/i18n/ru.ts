@@ -829,6 +829,8 @@ export const ru: Dict = {
   'billing.plansTitle': 'Тарифы',
   'billing.yourPlan': 'Ваш тариф',
   'billing.buy': 'Оформить',
+  'billing.downgradeHint':
+    'У вас уже подключён более старший тариф. Чтобы перейти на более дешёвый, сначала отключите текущую подписку.',
   'billing.viewPlans': 'Смотреть тарифы',
   'billing.requiresPlan': 'Требуется тариф {plan}',
   'billing.forever': 'навсегда',

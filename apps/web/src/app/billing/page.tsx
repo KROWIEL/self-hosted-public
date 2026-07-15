@@ -37,6 +37,13 @@ const PRO_MODULES = [
   'email',
 ] as const;
 
+/** Tier ordering for upgrade/downgrade comparisons (free < homelab < pro). */
+const TIER_RANK: Record<LicenseTier, number> = {
+  free: 0,
+  homelab: 1,
+  pro: 2,
+};
+
 /** A single scannable capability: a short title plus an optional "why" line. */
 type Feature = { title: string; desc?: string };
 
@@ -121,6 +128,10 @@ function BillingContent() {
     title: t(`${base}.title` as TKey),
     desc: t(`${base}.desc` as TKey),
   });
+
+  // A plan cheaper than the active one can't be "bought" — you cancel the
+  // current subscription to move down instead.
+  const currentRank = TIER_RANK[entitlements.tier];
 
   return (
     <>
@@ -272,6 +283,7 @@ function BillingContent() {
           price={t('billing.price.free')}
           period={t('billing.forever')}
           current={entitlements.tier === 'free'}
+          lowerThanCurrent={TIER_RANK.free < currentRank}
           features={[
             feat('billing.feat.free.deploy'),
             feat('billing.feat.free.https'),
@@ -286,6 +298,7 @@ function BillingContent() {
           price={t('billing.price.homelab')}
           period={t('billing.perMonth')}
           current={entitlements.tier === 'homelab'}
+          lowerThanCurrent={TIER_RANK.homelab < currentRank}
           highlight
           features={[
             feat('billing.feat.homelab.allFree'),
@@ -301,6 +314,7 @@ function BillingContent() {
           price={t('billing.price.pro')}
           period={t('billing.perMonth')}
           current={entitlements.tier === 'pro'}
+          lowerThanCurrent={TIER_RANK.pro < currentRank}
           features={[
             feat('billing.feat.pro.allHomelab'),
             feat('billing.feat.pro.unlimited'),
@@ -358,6 +372,7 @@ function PlanCard({
   modules,
   modulesTitle,
   current,
+  lowerThanCurrent = false,
   highlight = false,
 }: {
   tier: LicenseTier;
@@ -367,6 +382,7 @@ function PlanCard({
   modules?: Feature[];
   modulesTitle?: string;
   current: boolean;
+  lowerThanCurrent?: boolean;
   highlight?: boolean;
 }) {
   const { t } = useI18n();
@@ -407,7 +423,11 @@ function PlanCard({
           </ul>
         </div>
       )}
-      {tier !== 'free' && !current && (
+      {!current && lowerThanCurrent ? (
+        <p className="mt-5 rounded-xl border border-white/10 bg-white/[0.02] px-3 py-2.5 text-center text-xs leading-relaxed text-neutral-400">
+          {t('billing.downgradeHint')}
+        </p>
+      ) : !current && tier !== 'free' ? (
         <a
           href={BUY_URL[tier]}
           target="_blank"
@@ -418,7 +438,7 @@ function PlanCard({
         >
           {t('billing.buy')}
         </a>
-      )}
+      ) : null}
     </Card>
   );
 }

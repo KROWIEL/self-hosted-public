@@ -827,6 +827,8 @@ export const en = {
   'billing.plansTitle': 'Plans',
   'billing.yourPlan': 'Your plan',
   'billing.buy': 'Get started',
+  'billing.downgradeHint':
+    'You already have a higher plan. To switch to a cheaper tier, cancel your current subscription first.',
   'billing.viewPlans': 'View plans',
   'billing.requiresPlan': 'Requires the {plan} plan',
   'billing.forever': 'forever',
