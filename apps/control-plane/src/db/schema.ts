@@ -1,6 +1,7 @@
 import { sql } from 'drizzle-orm';
 import {
   boolean,
+  index,
   integer,
   jsonb,
   pgEnum,
@@ -439,6 +440,24 @@ export const alertEvents = pgTable('alert_events', {
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });
 
+/// Time-series host metrics (Pro: metrics-history). One row per node per sample.
+export const metricSamples = pgTable(
+  'metric_samples',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    nodeId: uuid('node_id')
+      .notNull()
+      .references(() => nodes.id, { onDelete: 'cascade' }),
+    cpuPct: integer('cpu_pct'),
+    memPct: integer('mem_pct'),
+    diskPct: integer('disk_pct'),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+  },
+  (t) => ({
+    nodeTs: index('metric_samples_node_ts_idx').on(t.nodeId, t.createdAt),
+  }),
+);
+
 /// White-label branding (Pro: white-label). Singleton row.
 export const brandingConfig = pgTable('branding_config', {
   id: text('id').primaryKey().default('default'),
@@ -521,4 +540,5 @@ export type DbSchema = {
   offsiteUploads: typeof offsiteUploads;
   apiTokens: typeof apiTokens;
   brandingConfig: typeof brandingConfig;
+  metricSamples: typeof metricSamples;
 };

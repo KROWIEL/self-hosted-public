@@ -114,6 +114,12 @@ const Icon = {
       <path d="M6.5 16.5 16 7a2.1 2.1 0 0 1 3 3l-9.5 9.5" />
     </Svg>
   ),
+  metrics: (p: IconProps) => (
+    <Svg {...p}>
+      <path d="M3 3v18h18" />
+      <path d="m7 14 3-4 3 3 4-6" />
+    </Svg>
+  ),
   lock: (p: IconProps) => (
     <Svg {...p}>
       <rect x="5" y="11" width="14" height="9" rx="2" />
@@ -182,6 +188,12 @@ const NAV: NavItem[] = [
     label: 'nav.apiTokens',
     icon: Icon.key,
     module: 'api-cli',
+  },
+  {
+    href: '/metrics',
+    label: 'nav.metrics',
+    icon: Icon.metrics,
+    module: 'metrics-history',
   },
   {
     href: '/white-label',

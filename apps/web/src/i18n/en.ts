@@ -86,6 +86,7 @@ export const en = {
   'nav.alerts': 'Alerts',
   'nav.offsite': 'Offsite backups',
   'nav.apiTokens': 'API tokens',
+  'nav.metrics': 'Metrics',
   'nav.whiteLabel': 'White-label',
   'nav.settings': 'Settings',
   'nav.billing': 'Billing',
@@ -984,4 +985,16 @@ export const en = {
   'whiteLabel.saving': 'Saving…',
   'whiteLabel.saved': 'Branding saved. Reload to see it everywhere.',
   'whiteLabel.reloadHint': 'Changes apply after a page reload.',
+
+  // Metrics history (Pro: metrics-history)
+  'metricsHistory.title': 'Metrics',
+  'metricsHistory.subtitle': 'Historical CPU, memory and disk usage per node.',
+  'metricsHistory.lockedTitle': 'Metrics history is a Pro feature',
+  'metricsHistory.lockedBody':
+    'Collect and chart CPU, memory and disk usage over time for every node.',
+  'metricsHistory.empty':
+    'No data yet — samples are collected every few minutes.',
+  'metricsHistory.cpu': 'CPU load',
+  'metricsHistory.mem': 'Memory',
+  'metricsHistory.disk': 'Disk',
 };

@@ -87,6 +87,7 @@ export const ru: Dict = {
   'nav.alerts': 'Оповещения',
   'nav.offsite': 'Внешние бэкапы',
   'nav.apiTokens': 'API-токены',
+  'nav.metrics': 'Метрики',
   'nav.whiteLabel': 'White-label',
   'nav.settings': 'Настройки',
   'nav.billing': 'Тарифы',
@@ -991,4 +992,17 @@ export const ru: Dict = {
   'whiteLabel.saving': 'Сохранение…',
   'whiteLabel.saved': 'Брендинг сохранён. Перезагрузите страницу, чтобы увидеть везде.',
   'whiteLabel.reloadHint': 'Изменения применяются после перезагрузки страницы.',
+
+  // История метрик (Pro: metrics-history)
+  'metricsHistory.title': 'Метрики',
+  'metricsHistory.subtitle':
+    'История загрузки CPU, памяти и диска по каждой ноде.',
+  'metricsHistory.lockedTitle': 'История метрик — функция Pro',
+  'metricsHistory.lockedBody':
+    'Собирайте и стройте графики загрузки CPU, памяти и диска по каждой ноде во времени.',
+  'metricsHistory.empty':
+    'Данных пока нет — замеры собираются каждые несколько минут.',
+  'metricsHistory.cpu': 'Загрузка CPU',
+  'metricsHistory.mem': 'Память',
+  'metricsHistory.disk': 'Диск',
 };

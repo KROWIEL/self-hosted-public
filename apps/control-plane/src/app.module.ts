@@ -19,6 +19,7 @@ import { AlertsModule } from './modules/alerts/alerts.module';
 import { OffsiteModule } from './modules/offsite/offsite.module';
 import { ApiTokensModule } from './modules/api-tokens/api-tokens.module';
 import { BrandingModule } from './modules/branding/branding.module';
+import { MetricsModule } from './modules/metrics/metrics.module';
 
 @Module({
   imports: [
@@ -45,6 +46,7 @@ import { BrandingModule } from './modules/branding/branding.module';
     OffsiteModule,
     ApiTokensModule,
     BrandingModule,
+    MetricsModule,
   ],
 })
 export class AppModule {}

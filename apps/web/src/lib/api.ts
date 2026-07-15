@@ -339,6 +339,18 @@ export const setBranding = (body: Partial<BrandingConfig>) =>
     body: JSON.stringify(body),
   });
 
+// ---- Metrics history (Pro: metrics-history) ----
+
+export interface MetricPoint {
+  ts: string;
+  cpuPct: number | null;
+  memPct: number | null;
+  diskPct: number | null;
+}
+
+export const getNodeMetrics = (nodeId: string, hours: number) =>
+  api<MetricPoint[]>(`/metrics/nodes/${nodeId}?hours=${hours}`);
+
 export interface Node {
   id: string;
   name: string;
