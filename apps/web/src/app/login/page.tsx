@@ -1,9 +1,15 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ApiError, login } from '@/lib/api';
+import {
+  ApiError,
+  getSsoStatus,
+  login,
+  ssoStartUrl,
+  type SsoStatus,
+} from '@/lib/api';
 import { ErrorBox } from '@/components/ui';
 import { useErrorText, useI18n } from '@/i18n';
 import { LangSwitcher } from '@/components/lang-switcher';
@@ -20,6 +26,13 @@ export default function LoginPage() {
   const [needTotp, setNeedTotp] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [sso, setSso] = useState<SsoStatus | null>(null);
+
+  useEffect(() => {
+    getSsoStatus()
+      .then(setSso)
+      .catch(() => setSso(null));
+  }, []);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -135,6 +148,23 @@ export default function LoginPage() {
           <button type="submit" disabled={loading} className="btn-primary w-full">
             {loading ? t('login.signingIn') : t('login.signIn')}
           </button>
+          {sso?.enabled && !needTotp && (
+            <>
+              <div className="flex items-center gap-3 pt-1">
+                <span className="h-px flex-1 bg-white/10" />
+                <span className="text-[11px] uppercase tracking-wide text-neutral-500">
+                  {t('login.or')}
+                </span>
+                <span className="h-px flex-1 bg-white/10" />
+              </div>
+              <a
+                href={ssoStartUrl()}
+                className="flex w-full items-center justify-center rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-medium text-neutral-100 transition-colors hover:bg-white/10"
+              >
+                {sso.label}
+              </a>
+            </>
+          )}
           <p className="pt-1 text-center text-xs text-neutral-500">
             {t('login.noAccount')}{' '}
             <Link

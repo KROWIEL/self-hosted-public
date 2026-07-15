@@ -187,6 +187,15 @@ export class AuthService {
     }
   }
 
+  /**
+   * Mint a panel session for an already-authenticated principal (e.g. after a
+   * successful SSO / OIDC sign-in). The caller is responsible for verifying the
+   * external identity before calling this.
+   */
+  issueSessionFor(user: { id: string; email: string; role: string }) {
+    return this.issueTokens(user.id, user.email, user.role);
+  }
+
   private async issueTokens(sub: string, email: string, role: string) {
     const payload = { sub, email, role };
     const accessToken = await this.jwt.signAsync(payload, {

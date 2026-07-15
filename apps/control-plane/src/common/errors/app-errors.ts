@@ -65,6 +65,19 @@ export const AuthErrors = {
     }),
 };
 
+export const SsoErrors = {
+  notLicensed: () =>
+    new ForbiddenException({
+      code: 'sso.notLicensed',
+      message: 'Single sign-on requires the Pro plan.',
+    }),
+  notConfigured: () =>
+    new BadRequestException({
+      code: 'sso.notConfigured',
+      message: 'Single sign-on is not configured. Ask an administrator to set it up.',
+    }),
+};
+
 export const CommonErrors = {
   adminOnly: () =>
     new ForbiddenException({

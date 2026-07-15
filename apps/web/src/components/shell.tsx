@@ -120,6 +120,14 @@ const Icon = {
       <path d="m7 14 3-4 3 3 4-6" />
     </Svg>
   ),
+  sso: (p: IconProps) => (
+    <Svg {...p}>
+      <path d="M12 3a9 9 0 1 0 9 9" />
+      <path d="M12 7v5l3 2" />
+      <path d="M16 3h5v5" />
+      <path d="m21 3-5 5" />
+    </Svg>
+  ),
   lock: (p: IconProps) => (
     <Svg {...p}>
       <rect x="5" y="11" width="14" height="9" rx="2" />
@@ -200,6 +208,12 @@ const NAV: NavItem[] = [
     label: 'nav.whiteLabel',
     icon: Icon.brush,
     module: 'white-label',
+  },
+  {
+    href: '/sso',
+    label: 'nav.sso',
+    icon: Icon.sso,
+    module: 'sso',
   },
 ];
 

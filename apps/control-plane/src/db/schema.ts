@@ -499,6 +499,24 @@ export const offsiteConfig = pgTable('offsite_config', {
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });
 
+/// Single sign-on (Pro: sso). Singleton OIDC identity-provider configuration.
+/// The client secret is encrypted at rest (AES-256-GCM).
+export const ssoConfig = pgTable('sso_config', {
+  id: text('id').primaryKey().default('default'),
+  enabled: boolean('enabled').notNull().default(false),
+  // OIDC issuer URL (e.g. https://accounts.google.com). Discovery document is
+  // fetched from `${issuer}/.well-known/openid-configuration`.
+  issuer: text('issuer').notNull().default(''),
+  clientId: text('client_id').notNull().default(''),
+  clientSecretEnc: text('client_secret_enc').notNull().default(''),
+  // Restrict sign-in to these email domains (comma-separated); empty = any.
+  allowedDomains: text('allowed_domains').notNull().default(''),
+  // Just-in-time provisioning: create a local account on first SSO sign-in.
+  autoCreate: boolean('auto_create').notNull().default(true),
+  buttonLabel: text('button_label').notNull().default('Sign in with SSO'),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+});
+
 /// Ledger of backup objects pushed to the offsite destination (one per backup).
 export const offsiteUploads = pgTable('offsite_uploads', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -541,4 +559,5 @@ export type DbSchema = {
   apiTokens: typeof apiTokens;
   brandingConfig: typeof brandingConfig;
   metricSamples: typeof metricSamples;
+  ssoConfig: typeof ssoConfig;
 };

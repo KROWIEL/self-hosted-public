@@ -88,6 +88,7 @@ export const en = {
   'nav.apiTokens': 'API tokens',
   'nav.metrics': 'Metrics',
   'nav.whiteLabel': 'White-label',
+  'nav.sso': 'Single sign-on',
   'nav.settings': 'Settings',
   'nav.billing': 'Billing',
   'nav.locked': 'Requires an upgrade',
@@ -114,6 +115,7 @@ export const en = {
   'login.totpHint': 'Enter the 6-digit code from your authenticator app.',
   'login.noAccount': "Don't have an account?",
   'login.register': 'Create one',
+  'login.or': 'or',
 
   // Registration (stage 1)
   'register.title': 'Create your account',
@@ -226,6 +228,9 @@ export const en = {
   'error.license.expiredKey': 'The license key has expired.',
   'error.license.moduleLocked':
     'This feature requires the {tier} plan. Upgrade in Billing to unlock it.',
+  'error.sso.notLicensed': 'Single sign-on requires the Pro plan.',
+  'error.sso.notConfigured':
+    'Single sign-on is not configured. Ask an administrator to set it up.',
 
   // Projects (dashboard)
   'projects.title': 'Projects',
@@ -997,4 +1002,45 @@ export const en = {
   'metricsHistory.cpu': 'CPU load',
   'metricsHistory.mem': 'Memory',
   'metricsHistory.disk': 'Disk',
+
+  // Single sign-on (Pro: sso)
+  'sso.title': 'Single sign-on',
+  'sso.subtitle': 'Let users sign in with your OpenID Connect identity provider.',
+  'sso.lockedTitle': 'Single sign-on is a Pro feature',
+  'sso.lockedBody':
+    'Connect Google, Microsoft Entra, Okta, Keycloak or any OpenID Connect provider so your team signs in with their existing accounts.',
+  'sso.adminOnly': 'Only administrators can configure single sign-on.',
+  'sso.enabled': 'Enable single sign-on',
+  'sso.enabledHint':
+    'When enabled and configured, a sign-in button appears on the login page.',
+  'sso.issuer': 'Issuer URL',
+  'sso.clientId': 'Client ID',
+  'sso.clientSecret': 'Client secret',
+  'sso.clientSecretSet': 'Client secret (leave blank to keep current)',
+  'sso.allowedDomains': 'Allowed email domains (optional)',
+  'sso.autoCreate': 'Create accounts on first sign-in',
+  'sso.buttonLabel': 'Sign-in button label',
+  'sso.redirectUri': 'Redirect URI',
+  'sso.redirectUriHint':
+    'Register this exact URL as an allowed redirect URI at your identity provider.',
+  'sso.save': 'Save',
+  'sso.saving': 'Saving…',
+  'sso.saved': 'Single sign-on settings saved.',
+  'sso.signingIn': 'Signing you in…',
+  'sso.error.title': 'Sign-in failed',
+  'sso.error.backToLogin': 'Back to login',
+  'sso.error.invalid_request': 'The sign-in request was incomplete. Please try again.',
+  'sso.error.not_licensed': 'Single sign-on requires the Pro plan.',
+  'sso.error.not_configured': 'Single sign-on is not configured.',
+  'sso.error.bad_state':
+    'The sign-in link expired or was invalid. Please try again.',
+  'sso.error.no_email': 'Your identity provider did not share an email address.',
+  'sso.error.email_unverified':
+    'Your email address is not verified with the identity provider.',
+  'sso.error.domain_not_allowed':
+    'Your email domain is not allowed to sign in here.',
+  'sso.error.no_account':
+    'No account exists for your email, and automatic account creation is off.',
+  'sso.error.access_denied': 'Access was denied by the identity provider.',
+  'sso.error.sso_failed': 'Single sign-on failed. Please try again.',
 };

@@ -351,6 +351,58 @@ export interface MetricPoint {
 export const getNodeMetrics = (nodeId: string, hours: number) =>
   api<MetricPoint[]>(`/metrics/nodes/${nodeId}?hours=${hours}`);
 
+// ---- Single sign-on / OIDC (Pro: sso) ----
+
+/** Public login-page status: whether the SSO button should be shown. */
+export interface SsoStatus {
+  enabled: boolean;
+  label: string;
+}
+
+/** Admin config view (the client secret is never returned). */
+export interface SsoConfig {
+  enabled: boolean;
+  issuer: string;
+  clientId: string;
+  hasSecret: boolean;
+  allowedDomains: string;
+  autoCreate: boolean;
+  buttonLabel: string;
+  /** The exact redirect URI to register at the identity provider. */
+  redirectUri: string;
+}
+
+export interface SsoConfigInput {
+  enabled?: boolean;
+  issuer?: string;
+  clientId?: string;
+  /** Only sent when set/changed; omit to keep the stored secret. */
+  clientSecret?: string;
+  allowedDomains?: string;
+  autoCreate?: boolean;
+  buttonLabel?: string;
+}
+
+/** Public, license-aware SSO status (safe to call before login). */
+export const getSsoStatus = () => api<SsoStatus>('/auth/sso/status');
+
+export const getSsoConfig = () => api<SsoConfig>('/auth/sso/config');
+
+export const setSsoConfig = (body: SsoConfigInput) =>
+  api<SsoConfig>('/auth/sso/config', {
+    method: 'PUT',
+    body: JSON.stringify(body),
+  });
+
+/** Top-level URL to begin the OIDC flow (browser navigates here directly). */
+export const ssoStartUrl = () => `${API_URL}/auth/sso/start`;
+
+/** Persist a session obtained out-of-band (e.g. from the SSO callback). */
+export function setSession(accessToken: string, refreshToken: string) {
+  window.localStorage.setItem('accessToken', accessToken);
+  window.localStorage.setItem('refreshToken', refreshToken);
+}
+
 export interface Node {
   id: string;
   name: string;

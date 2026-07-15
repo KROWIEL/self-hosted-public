@@ -43,6 +43,13 @@
       "when": 1784110347622,
       "tag": "0005_confused_piledriver",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1784112048823,
+      "tag": "0006_clever_stature",
+      "breakpoints": true
     }
   ]
 }

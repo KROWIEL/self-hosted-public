@@ -89,6 +89,7 @@ export const ru: Dict = {
   'nav.apiTokens': 'API-токены',
   'nav.metrics': 'Метрики',
   'nav.whiteLabel': 'White-label',
+  'nav.sso': 'Единый вход (SSO)',
   'nav.settings': 'Настройки',
   'nav.billing': 'Тарифы',
   'nav.locked': 'Требуется апгрейд',
@@ -115,6 +116,7 @@ export const ru: Dict = {
   'login.totpHint': 'Введите 6-значный код из приложения-аутентификатора.',
   'login.noAccount': 'Нет аккаунта?',
   'login.register': 'Создать',
+  'login.or': 'или',
 
   // Регистрация (этап 1)
   'register.title': 'Создание аккаунта',
@@ -226,6 +228,9 @@ export const ru: Dict = {
   'error.license.expiredKey': 'Срок действия ключа лицензии истёк.',
   'error.license.moduleLocked':
     'Эта функция доступна в тарифе {tier}. Откройте её в разделе «Тарифы».',
+  'error.sso.notLicensed': 'Единый вход доступен в тарифе Pro.',
+  'error.sso.notConfigured':
+    'Единый вход не настроен. Обратитесь к администратору.',
 
   // Projects (dashboard)
   'projects.title': 'Проекты',
@@ -1005,4 +1010,47 @@ export const ru: Dict = {
   'metricsHistory.cpu': 'Загрузка CPU',
   'metricsHistory.mem': 'Память',
   'metricsHistory.disk': 'Диск',
+
+  // Единый вход (Pro: sso)
+  'sso.title': 'Единый вход (SSO)',
+  'sso.subtitle':
+    'Разрешите вход через ваш провайдер OpenID Connect.',
+  'sso.lockedTitle': 'Единый вход — функция Pro',
+  'sso.lockedBody':
+    'Подключите Google, Microsoft Entra, Okta, Keycloak или любой провайдер OpenID Connect, чтобы команда входила под своими учётными записями.',
+  'sso.adminOnly': 'Настраивать единый вход могут только администраторы.',
+  'sso.enabled': 'Включить единый вход',
+  'sso.enabledHint':
+    'Когда включено и настроено, на странице входа появляется кнопка входа.',
+  'sso.issuer': 'URL издателя (Issuer)',
+  'sso.clientId': 'Client ID',
+  'sso.clientSecret': 'Client secret',
+  'sso.clientSecretSet': 'Client secret (оставьте пустым, чтобы не менять)',
+  'sso.allowedDomains': 'Разрешённые домены почты (необязательно)',
+  'sso.autoCreate': 'Создавать аккаунты при первом входе',
+  'sso.buttonLabel': 'Текст кнопки входа',
+  'sso.redirectUri': 'Redirect URI',
+  'sso.redirectUriHint':
+    'Укажите этот точный URL как разрешённый redirect URI у вашего провайдера.',
+  'sso.save': 'Сохранить',
+  'sso.saving': 'Сохранение…',
+  'sso.saved': 'Настройки единого входа сохранены.',
+  'sso.signingIn': 'Выполняем вход…',
+  'sso.error.title': 'Не удалось войти',
+  'sso.error.backToLogin': 'Вернуться ко входу',
+  'sso.error.invalid_request':
+    'Запрос на вход был неполным. Попробуйте ещё раз.',
+  'sso.error.not_licensed': 'Единый вход доступен в тарифе Pro.',
+  'sso.error.not_configured': 'Единый вход не настроен.',
+  'sso.error.bad_state':
+    'Ссылка для входа истекла или недействительна. Попробуйте ещё раз.',
+  'sso.error.no_email': 'Провайдер не передал адрес электронной почты.',
+  'sso.error.email_unverified':
+    'Ваш адрес почты не подтверждён у провайдера.',
+  'sso.error.domain_not_allowed':
+    'Ваш домен почты не допущен ко входу здесь.',
+  'sso.error.no_account':
+    'Для вашей почты нет аккаунта, а автосоздание отключено.',
+  'sso.error.access_denied': 'Провайдер отклонил вход.',
+  'sso.error.sso_failed': 'Единый вход не удался. Попробуйте ещё раз.',
 };

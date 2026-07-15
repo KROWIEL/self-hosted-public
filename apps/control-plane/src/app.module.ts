@@ -20,6 +20,7 @@ import { OffsiteModule } from './modules/offsite/offsite.module';
 import { ApiTokensModule } from './modules/api-tokens/api-tokens.module';
 import { BrandingModule } from './modules/branding/branding.module';
 import { MetricsModule } from './modules/metrics/metrics.module';
+import { SsoModule } from './modules/sso/sso.module';
 
 @Module({
   imports: [
@@ -47,6 +48,7 @@ import { MetricsModule } from './modules/metrics/metrics.module';
     ApiTokensModule,
     BrandingModule,
     MetricsModule,
+    SsoModule,
   ],
 })
 export class AppModule {}
