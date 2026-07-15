@@ -830,14 +830,60 @@ export const ru: Dict = {
   'billing.tier.free': 'Free',
   'billing.tier.homelab': 'Home-Lab',
   'billing.tier.pro': 'Pro',
-  'billing.feat.core': 'Деплой из git, шаблоны, HTTPS',
-  'billing.feat.dbLogs': 'Managed БД, логи, live-метрики',
-  'billing.feat.rbac': 'Проекты, RBAC, 2FA, неогранич. ноды',
-  'billing.feat.allFree': 'Всё из Free',
-  'billing.feat.tunnels': '+ модуль Reverse-tunnels (NAT / home-lab)',
-  'billing.feat.allHomelab': 'Всё из Home-Lab',
-  'billing.feat.proAll':
-    'Все модули: превью-среды, S3-бэкапы, алерты, история метрик, SSO, экспорт аудита, API/CLI, white-label',
+  // Тариф Free — базовый PaaS, лицензия не нужна.
+  'billing.feat.free.deploy.title': 'Деплой из Git, шаблонов и Docker',
+  'billing.feat.free.deploy.desc':
+    'Push-to-deploy любого репозитория, запуск из готовых шаблонов приложений или любого Docker-образа — без ручной настройки сервера.',
+  'billing.feat.free.https.title': 'Автоматический HTTPS',
+  'billing.feat.free.https.desc':
+    'Traefik выпускает и продлевает сертификаты Let’s Encrypt для каждого поддомена, поэтому все сервисы работают по TLS из коробки.',
+  'billing.feat.free.databases.title': 'Managed-базы данных',
+  'billing.feat.free.databases.desc':
+    'Разворачивайте PostgreSQL или MySQL для каждого проекта — с бэкапами по расписанию и восстановлением в один клик.',
+  'billing.feat.free.observability.title': 'Логи и live-метрики',
+  'billing.feat.free.observability.desc':
+    'Смотрите логи контейнеров в реальном времени и следите за CPU, RAM и диском по каждому сервису и ноде.',
+  'billing.feat.free.access.title': 'Проекты, RBAC и 2FA',
+  'billing.feat.free.access.desc':
+    'Разбивайте работу на проекты, разграничивайте доступ по ролям и защищайте аккаунты двухфакторной аутентификацией.',
+  'billing.feat.free.node.title': '1 нода включена',
+  'billing.feat.free.node.desc':
+    'Запускайте всю платформу на одном сервере — идеально для личного проекта или знакомства.',
+  // Тариф Home-Lab — ядро Free плюс reverse-туннели.
+  'billing.feat.homelab.allFree.title': 'Всё из Free',
+  'billing.feat.homelab.allFree.desc':
+    'Полное бесплатное ядро плюс возможности для домашней лаборатории ниже.',
+  'billing.feat.homelab.tunnels.title': 'Защищённые reverse-туннели',
+  'billing.feat.homelab.limits.title': '3 ноды + 3 туннеля',
+  'billing.feat.homelab.limits.desc':
+    'Подключайте до трёх серверов и публикуйте до трёх туннелируемых сервисов — достаточно для полноценной домашней лаборатории на нескольких машинах.',
+  // Тариф Pro — всё, без ограничений, все модули.
+  'billing.feat.pro.allHomelab.title': 'Всё из Free и Home-Lab',
+  'billing.feat.pro.allHomelab.desc':
+    'Полное бесплатное ядро и reverse-туннели плюс все дополнительные модули ниже.',
+  'billing.feat.pro.unlimited.title': 'Неограниченные ноды и туннели',
+  'billing.feat.pro.unlimited.desc':
+    'Масштабируйтесь на любое число серверов и публикуйте сколько угодно сервисов — без ограничений.',
+  'billing.proModulesTitle': 'Все модули Pro',
+  // Ценность каждого модуля (что делает + зачем это нужно).
+  'billing.moduleDesc.reverse-tunnels':
+    'Публикуйте сервисы за NAT или в домашней/локальной сети в интернет через лёгкий публичный релей — без проброса портов, статического IP и настройки роутера.',
+  'billing.moduleDesc.preview-envs':
+    'Разворачивайте любую ветку как одноразовую изолированную копию с собственным поддоменом и авто-удалением по TTL — безопасно проверяйте изменения до релиза.',
+  'billing.moduleDesc.offsite-backups':
+    'Копируйте бэкапы managed-баз в любой S3-совместимый бакет с шифрованием доступов, чтобы данные уцелели, даже если нода потеряна.',
+  'billing.moduleDesc.alerts':
+    'Отправляйте уведомления по webhook (Slack, Discord, Telegram, свой endpoint) о падении нод, неудачных деплоях и бэкапах, превышении порогов — узнавайте об инцидентах раньше пользователей.',
+  'billing.moduleDesc.metrics-history':
+    'Периодически собирайте и храните CPU, RAM и диск по каждой ноде с историческими графиками для планирования ёмкости и диагностики.',
+  'billing.moduleDesc.sso':
+    'Позвольте команде входить через ваш провайдер идентификации по OpenID Connect — со списком разрешённых доменов и автоматическим созданием пользователей.',
+  'billing.moduleDesc.audit-export':
+    'Просматривайте журнал действий по всей организации и выгружайте его в CSV или JSON для комплаенса и разбора инцидентов.',
+  'billing.moduleDesc.api-cli':
+    'Выпускайте персональные токены доступа для автоматизации платформы из скриптов, CI/CD-пайплайнов и CLI.',
+  'billing.moduleDesc.white-label':
+    'Оформите панель под свой бренд: имя приложения, логотип, акцентный цвет и атрибуция в интерфейсе и на странице входа.',
   'billing.module.reverse-tunnels': 'Reverse-tunnels',
   'billing.module.preview-envs': 'Preview-окружения',
   'billing.module.offsite-backups': 'Офсайт-бэкапы',

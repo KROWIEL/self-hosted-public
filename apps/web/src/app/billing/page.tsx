@@ -23,6 +23,22 @@ const BUY_URL: Record<Exclude<LicenseTier, 'free'>, string> = {
     'https://sh.m2by.ru/buy?tier=pro',
 };
 
+/** Pro add-on modules, in display order (mirrors ALL_MODULES in shared). */
+const PRO_MODULES = [
+  'reverse-tunnels',
+  'preview-envs',
+  'offsite-backups',
+  'alerts',
+  'metrics-history',
+  'sso',
+  'audit-export',
+  'api-cli',
+  'white-label',
+] as const;
+
+/** A single scannable capability: a short title plus an optional "why" line. */
+type Feature = { title: string; desc?: string };
+
 export default function BillingPage() {
   return (
     <AppShell>
@@ -98,6 +114,12 @@ function BillingContent() {
       ? Math.ceil((entitlements.expiresAt * 1000 - Date.now()) / 86_400_000)
       : null;
   const expiringSoon = daysLeft != null && daysLeft <= 14;
+
+  // Build a title/desc feature from a base i18n key (`<base>.title`, `<base>.desc`).
+  const feat = (base: string): Feature => ({
+    title: t(`${base}.title` as TKey),
+    desc: t(`${base}.desc` as TKey),
+  });
 
   return (
     <>
@@ -249,7 +271,14 @@ function BillingContent() {
           price={t('billing.price.free')}
           period={t('billing.forever')}
           current={entitlements.tier === 'free'}
-          features={[t('billing.feat.core'), t('billing.feat.dbLogs'), t('billing.feat.rbac')]}
+          features={[
+            feat('billing.feat.free.deploy'),
+            feat('billing.feat.free.https'),
+            feat('billing.feat.free.databases'),
+            feat('billing.feat.free.observability'),
+            feat('billing.feat.free.access'),
+            feat('billing.feat.free.node'),
+          ]}
         />
         <PlanCard
           tier="homelab"
@@ -257,17 +286,66 @@ function BillingContent() {
           period={t('billing.perMonth')}
           current={entitlements.tier === 'homelab'}
           highlight
-          features={[t('billing.feat.allFree'), t('billing.feat.tunnels')]}
+          features={[
+            feat('billing.feat.homelab.allFree'),
+            {
+              title: t('billing.feat.homelab.tunnels.title'),
+              desc: t('billing.moduleDesc.reverse-tunnels'),
+            },
+            feat('billing.feat.homelab.limits'),
+          ]}
         />
         <PlanCard
           tier="pro"
           price={t('billing.price.pro')}
           period={t('billing.perMonth')}
           current={entitlements.tier === 'pro'}
-          features={[t('billing.feat.allHomelab'), t('billing.feat.proAll')]}
+          features={[
+            feat('billing.feat.pro.allHomelab'),
+            feat('billing.feat.pro.unlimited'),
+          ]}
+          modulesTitle={t('billing.proModulesTitle')}
+          modules={PRO_MODULES.map((m) => ({
+            title: t(`billing.module.${m}` as TKey),
+            desc: t(`billing.moduleDesc.${m}` as TKey),
+          }))}
         />
       </div>
     </>
+  );
+}
+
+function CheckIcon() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="mt-0.5 shrink-0 text-emerald-400"
+    >
+      <path d="M20 6 9 17l-5-5" />
+    </svg>
+  );
+}
+
+function FeatureItem({ feature }: { feature: Feature }) {
+  return (
+    <li className="flex gap-2 text-sm">
+      <CheckIcon />
+      <span>
+        <span className="text-neutral-200">{feature.title}</span>
+        {feature.desc && (
+          <span className="mt-0.5 block text-xs leading-relaxed text-neutral-500">
+            {feature.desc}
+          </span>
+        )}
+      </span>
+    </li>
   );
 }
 
@@ -276,13 +354,17 @@ function PlanCard({
   price,
   period,
   features,
+  modules,
+  modulesTitle,
   current,
   highlight = false,
 }: {
   tier: LicenseTier;
   price: string;
   period: string;
-  features: string[];
+  features: Feature[];
+  modules?: Feature[];
+  modulesTitle?: string;
   current: boolean;
   highlight?: boolean;
 }) {
@@ -305,26 +387,25 @@ function PlanCard({
         <span className="text-2xl font-semibold text-white">{price}</span>
         <span className="text-sm text-neutral-500">{period}</span>
       </div>
-      <ul className="mt-4 space-y-2">
+      <ul className="mt-4 space-y-2.5">
         {features.map((f, i) => (
-          <li key={i} className="flex gap-2 text-sm text-neutral-300">
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="mt-0.5 shrink-0 text-emerald-400"
-            >
-              <path d="M20 6 9 17l-5-5" />
-            </svg>
-            <span>{f}</span>
-          </li>
+          <FeatureItem key={i} feature={f} />
         ))}
       </ul>
+      {modules && modules.length > 0 && (
+        <div className="mt-5 border-t border-white/5 pt-4">
+          {modulesTitle && (
+            <p className="text-xs font-semibold uppercase tracking-wide text-neutral-400">
+              {modulesTitle}
+            </p>
+          )}
+          <ul className="mt-3 space-y-2.5">
+            {modules.map((m, i) => (
+              <FeatureItem key={i} feature={m} />
+            ))}
+          </ul>
+        </div>
+      )}
       {tier !== 'free' && !current && (
         <a
           href={BUY_URL[tier]}

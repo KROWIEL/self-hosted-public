@@ -828,14 +828,60 @@ export const en = {
   'billing.tier.free': 'Free',
   'billing.tier.homelab': 'Home-Lab',
   'billing.tier.pro': 'Pro',
-  'billing.feat.core': 'Deploy from git, templates, HTTPS',
-  'billing.feat.dbLogs': 'Managed databases, logs, live metrics',
-  'billing.feat.rbac': 'Projects, RBAC, 2FA, unlimited nodes',
-  'billing.feat.allFree': 'Everything in Free',
-  'billing.feat.tunnels': '+ Reverse-tunnels module (NAT / home-lab)',
-  'billing.feat.allHomelab': 'Everything in Home-Lab',
-  'billing.feat.proAll':
-    'All modules: preview environments, S3 backups, alerts, metrics history, SSO, audit export, API/CLI, white-label',
+  // Free tier — the core PaaS, no license required.
+  'billing.feat.free.deploy.title': 'Deploy from Git, templates & Docker',
+  'billing.feat.free.deploy.desc':
+    'Push-to-deploy any repository, launch from one-click app templates, or run any Docker image — no manual server wiring.',
+  'billing.feat.free.https.title': 'Automatic HTTPS',
+  'billing.feat.free.https.desc':
+    'Traefik issues and renews Let’s Encrypt certificates per subdomain, so every service is served over TLS out of the box.',
+  'billing.feat.free.databases.title': 'Managed databases',
+  'billing.feat.free.databases.desc':
+    'Spin up PostgreSQL or MySQL per project, with scheduled backups and one-click restore.',
+  'billing.feat.free.observability.title': 'Logs & live metrics',
+  'billing.feat.free.observability.desc':
+    'Stream container logs and watch real-time CPU, RAM and disk usage for every service and node.',
+  'billing.feat.free.access.title': 'Projects, RBAC & 2FA',
+  'billing.feat.free.access.desc':
+    'Organize work into projects, control who can do what with roles, and protect accounts with two-factor auth.',
+  'billing.feat.free.node.title': '1 node included',
+  'billing.feat.free.node.desc':
+    'Run the whole platform on a single server — perfect for a personal project or a trial.',
+  // Home-Lab tier — Free core plus reverse tunnels.
+  'billing.feat.homelab.allFree.title': 'Everything in Free',
+  'billing.feat.homelab.allFree.desc':
+    'The complete free core, plus the home-lab additions below.',
+  'billing.feat.homelab.tunnels.title': 'Secure reverse tunnels',
+  'billing.feat.homelab.limits.title': '3 nodes + 3 tunnels',
+  'billing.feat.homelab.limits.desc':
+    'Connect up to three servers and publish up to three tunneled services — enough for a real multi-machine home lab.',
+  // Pro tier — everything, unlimited, all modules.
+  'billing.feat.pro.allHomelab.title': 'Everything in Free & Home-Lab',
+  'billing.feat.pro.allHomelab.desc':
+    'The full free core and reverse tunnels, plus every add-on module below.',
+  'billing.feat.pro.unlimited.title': 'Unlimited nodes & tunnels',
+  'billing.feat.pro.unlimited.desc':
+    'Scale across as many servers and expose as many services as you need — no caps.',
+  'billing.proModulesTitle': 'Every Pro module',
+  // Per-module value propositions (what it does + why it matters).
+  'billing.moduleDesc.reverse-tunnels':
+    'Publish services behind NAT or a home/LAN network to the internet through a lightweight public relay — no port-forwarding, static IP or router changes needed.',
+  'billing.moduleDesc.preview-envs':
+    'Deploy any branch as a disposable, isolated copy with its own optional subdomain, auto-torn down by TTL — review changes safely before they ship.',
+  'billing.moduleDesc.offsite-backups':
+    'Mirror managed-database backups to any S3-compatible bucket with encrypted credentials, so your data survives even if a node is lost.',
+  'billing.moduleDesc.alerts':
+    'Send webhook alerts (Slack, Discord, Telegram, custom) for node-offline, failed deploys or backups and resource thresholds — hear about incidents before your users do.',
+  'billing.moduleDesc.metrics-history':
+    'Continuously sample and store per-node CPU, RAM and disk usage, with history charts for capacity planning and troubleshooting.',
+  'billing.moduleDesc.sso':
+    'Let your team sign in with your identity provider over OpenID Connect, with a domain allow-list and just-in-time user provisioning.',
+  'billing.moduleDesc.audit-export':
+    'Review an organization-wide activity trail and export it as CSV or JSON for compliance and incident investigations.',
+  'billing.moduleDesc.api-cli':
+    'Issue personal access tokens to automate the platform from scripts, CI/CD pipelines and the CLI.',
+  'billing.moduleDesc.white-label':
+    'Rebrand the panel with your own app name, logo, accent color and attribution across the UI and login page.',
   'billing.module.reverse-tunnels': 'Reverse-tunnels',
   'billing.module.preview-envs': 'Preview environments',
   'billing.module.offsite-backups': 'Off-site backups',
