@@ -86,6 +86,7 @@ export const ru: Dict = {
   'nav.audit': 'Журнал аудита',
   'nav.alerts': 'Оповещения',
   'nav.offsite': 'Внешние бэкапы',
+  'nav.apiTokens': 'API-токены',
   'nav.settings': 'Настройки',
   'nav.billing': 'Тарифы',
   'nav.locked': 'Требуется апгрейд',
@@ -940,4 +941,34 @@ export const ru: Dict = {
   'offsite.colStatus': 'Статус',
   'offsite.statusUploaded': 'Выгружено',
   'offsite.statusFailed': 'Ошибка',
+
+  // Личные API-токены (Pro: api-cli)
+  'apiTokens.title': 'API-токены',
+  'apiTokens.subtitle': 'Личные токены для API и CLI.',
+  'apiTokens.lockedTitle': 'Доступ к API и CLI — функция Pro',
+  'apiTokens.lockedBody':
+    'Создавайте личные токены доступа, чтобы автоматизировать панель или использовать её из CI/CD. Токен наследует ваши права.',
+  'apiTokens.createTitle': 'Создать токен',
+  'apiTokens.name': 'Название',
+  'apiTokens.namePlaceholder': 'напр. CI pipeline',
+  'apiTokens.expiry': 'Срок действия (дней)',
+  'apiTokens.expiryPlaceholder': 'бессрочно',
+  'apiTokens.create': 'Создать токен',
+  'apiTokens.freshTitle': 'Скопируйте новый токен сейчас',
+  'apiTokens.freshHint':
+    'Токен показывается только один раз. Сохраните его в надёжном месте — увидеть снова будет нельзя.',
+  'apiTokens.copy': 'Копировать',
+  'apiTokens.copied': 'Скопировано ✓',
+  'apiTokens.usageTitle': 'Использование токена',
+  'apiTokens.usageHint':
+    'Передавайте его как Bearer-токен в заголовке Authorization:',
+  'apiTokens.listTitle': 'Ваши токены',
+  'apiTokens.empty': 'Токенов пока нет.',
+  'apiTokens.created': 'создан',
+  'apiTokens.lastUsed': 'последний раз',
+  'apiTokens.neverUsed': 'не использовался',
+  'apiTokens.expires': 'истекает',
+  'apiTokens.revoke': 'Отозвать',
+  'apiTokens.confirmRevoke':
+    'Отозвать токен? Любой скрипт, который его использует, перестанет работать.',
 };

@@ -101,6 +101,12 @@ const Icon = {
       <path d="M12 13v6M9.5 15.5 12 13l2.5 2.5" />
     </Svg>
   ),
+  key: (p: IconProps) => (
+    <Svg {...p}>
+      <circle cx="7.5" cy="15.5" r="4.5" />
+      <path d="m10.5 12.5 8-8M17 4l3 3M15 6l2 2" />
+    </Svg>
+  ),
   lock: (p: IconProps) => (
     <Svg {...p}>
       <rect x="5" y="11" width="14" height="9" rx="2" />
@@ -163,6 +169,12 @@ const NAV: NavItem[] = [
     label: 'nav.offsite',
     icon: Icon.offsite,
     module: 'offsite-backups',
+  },
+  {
+    href: '/api-tokens',
+    label: 'nav.apiTokens',
+    icon: Icon.key,
+    module: 'api-cli',
   },
 ];
 

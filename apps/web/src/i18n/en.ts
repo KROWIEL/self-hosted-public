@@ -85,6 +85,7 @@ export const en = {
   'nav.audit': 'Audit log',
   'nav.alerts': 'Alerts',
   'nav.offsite': 'Offsite backups',
+  'nav.apiTokens': 'API tokens',
   'nav.settings': 'Settings',
   'nav.billing': 'Billing',
   'nav.locked': 'Requires an upgrade',
@@ -934,4 +935,34 @@ export const en = {
   'offsite.colStatus': 'Status',
   'offsite.statusUploaded': 'Uploaded',
   'offsite.statusFailed': 'Failed',
+
+  // Personal API tokens (Pro: api-cli)
+  'apiTokens.title': 'API tokens',
+  'apiTokens.subtitle': 'Personal tokens for the API and CLI.',
+  'apiTokens.lockedTitle': 'API & CLI access is a Pro feature',
+  'apiTokens.lockedBody':
+    'Create personal access tokens to script the panel or use it from CI/CD. Tokens carry your own permissions.',
+  'apiTokens.createTitle': 'Create a token',
+  'apiTokens.name': 'Name',
+  'apiTokens.namePlaceholder': 'e.g. CI pipeline',
+  'apiTokens.expiry': 'Expires in (days)',
+  'apiTokens.expiryPlaceholder': 'never',
+  'apiTokens.create': 'Create token',
+  'apiTokens.freshTitle': 'Copy your new token now',
+  'apiTokens.freshHint':
+    "This is the only time the token is shown. Store it somewhere safe — you won't be able to see it again.",
+  'apiTokens.copy': 'Copy',
+  'apiTokens.copied': 'Copied ✓',
+  'apiTokens.usageTitle': 'Using the token',
+  'apiTokens.usageHint':
+    'Send it as a Bearer token in the Authorization header:',
+  'apiTokens.listTitle': 'Your tokens',
+  'apiTokens.empty': 'No tokens yet.',
+  'apiTokens.created': 'created',
+  'apiTokens.lastUsed': 'last used',
+  'apiTokens.neverUsed': 'never used',
+  'apiTokens.expires': 'expires',
+  'apiTokens.revoke': 'Revoke',
+  'apiTokens.confirmRevoke':
+    'Revoke this token? Any script using it will stop working.',
 };

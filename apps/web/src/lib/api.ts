@@ -290,6 +290,29 @@ export const uploadBackupOffsite = (id: string) =>
     method: 'POST',
   });
 
+// ---- Personal API tokens (Pro: api-cli) ----
+
+export interface ApiToken {
+  id: string;
+  name: string;
+  preview: string;
+  lastUsedAt: string | null;
+  expiresAt: string | null;
+  createdAt: string;
+}
+
+export const listApiTokens = () => api<ApiToken[]>('/api-tokens');
+export const createApiToken = (body: {
+  name: string;
+  expiresInDays?: number;
+}) =>
+  api<{ token: string; item: ApiToken }>('/api-tokens', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+export const revokeApiToken = (id: string) =>
+  api<{ ok: true }>(`/api-tokens/${id}`, { method: 'DELETE' });
+
 export interface Node {
   id: string;
   name: string;

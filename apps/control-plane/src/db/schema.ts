@@ -439,6 +439,22 @@ export const alertEvents = pgTable('alert_events', {
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });
 
+/// Personal API tokens (Pro: api-cli). Long-lived bearer tokens for the API/CLI.
+/// Only the SHA-256 hash is stored; the raw token is shown once at creation.
+export const apiTokens = pgTable('api_tokens', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  name: text('name').notNull(),
+  tokenHash: text('token_hash').notNull().unique(),
+  // Non-secret display hint, e.g. 'shpat_ab12cd…'.
+  preview: text('preview').notNull(),
+  lastUsedAt: timestamp('last_used_at'),
+  expiresAt: timestamp('expires_at'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+
 /// Offsite backups (Pro: offsite-backups). Singleton S3-compatible destination.
 export const offsiteConfig = pgTable('offsite_config', {
   id: text('id').primaryKey().default('default'),
@@ -493,4 +509,5 @@ export type DbSchema = {
   alertEvents: typeof alertEvents;
   offsiteConfig: typeof offsiteConfig;
   offsiteUploads: typeof offsiteUploads;
+  apiTokens: typeof apiTokens;
 };
