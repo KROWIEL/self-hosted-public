@@ -16,6 +16,7 @@ import { TunnelsModule } from './modules/tunnels/tunnels.module';
 import { TemplatesModule } from './modules/templates/templates.module';
 import { GitModule } from './modules/git/git.module';
 import { AlertsModule } from './modules/alerts/alerts.module';
+import { OffsiteModule } from './modules/offsite/offsite.module';
 
 @Module({
   imports: [
@@ -39,6 +40,7 @@ import { AlertsModule } from './modules/alerts/alerts.module';
     TemplatesModule,
     GitModule,
     AlertsModule,
+    OffsiteModule,
   ],
 })
 export class AppModule {}

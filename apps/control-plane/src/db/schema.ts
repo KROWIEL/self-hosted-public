@@ -439,6 +439,35 @@ export const alertEvents = pgTable('alert_events', {
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });
 
+/// Offsite backups (Pro: offsite-backups). Singleton S3-compatible destination.
+export const offsiteConfig = pgTable('offsite_config', {
+  id: text('id').primaryKey().default('default'),
+  enabled: boolean('enabled').notNull().default(false),
+  endpoint: text('endpoint').notNull().default(''),
+  region: text('region').notNull().default('us-east-1'),
+  bucket: text('bucket').notNull().default(''),
+  prefix: text('prefix').notNull().default(''),
+  accessKeyId: text('access_key_id').notNull().default(''),
+  secretKeyEnc: text('secret_key_enc').notNull().default(''),
+  // MinIO and most non-AWS providers need path-style addressing.
+  forcePathStyle: boolean('force_path_style').notNull().default(true),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+});
+
+/// Ledger of backup objects pushed to the offsite destination (one per backup).
+export const offsiteUploads = pgTable('offsite_uploads', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  backupId: uuid('backup_id')
+    .notNull()
+    .references(() => backups.id, { onDelete: 'cascade' })
+    .unique(),
+  key: text('key').notNull(),
+  status: text('status').notNull().default('uploaded'), // 'uploaded' | 'failed'
+  sizeBytes: integer('size_bytes'),
+  error: text('error'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+
 export type DbSchema = {
   users: typeof users;
   nodes: typeof nodes;
@@ -462,4 +491,6 @@ export type DbSchema = {
   alertChannels: typeof alertChannels;
   alertRules: typeof alertRules;
   alertEvents: typeof alertEvents;
+  offsiteConfig: typeof offsiteConfig;
+  offsiteUploads: typeof offsiteUploads;
 };

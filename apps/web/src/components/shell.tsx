@@ -95,6 +95,12 @@ const Icon = {
       <path d="M13.7 21a2 2 0 0 1-3.4 0" />
     </Svg>
   ),
+  offsite: (p: IconProps) => (
+    <Svg {...p}>
+      <path d="M7 18a4 4 0 0 1-.8-7.9 5.5 5.5 0 0 1 10.6-1.6A4.5 4.5 0 0 1 17 18" />
+      <path d="M12 13v6M9.5 15.5 12 13l2.5 2.5" />
+    </Svg>
+  ),
   lock: (p: IconProps) => (
     <Svg {...p}>
       <rect x="5" y="11" width="14" height="9" rx="2" />
@@ -151,6 +157,12 @@ const NAV: NavItem[] = [
     label: 'nav.alerts',
     icon: Icon.alerts,
     module: 'alerts',
+  },
+  {
+    href: '/offsite',
+    label: 'nav.offsite',
+    icon: Icon.offsite,
+    module: 'offsite-backups',
   },
 ];
 

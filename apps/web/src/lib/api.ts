@@ -233,6 +233,63 @@ export const deleteAlertRule = (id: string) =>
 
 export const listAlertEvents = () => api<AlertEvent[]>('/alerts/events');
 
+// ---- Offsite backups (Pro: offsite-backups) ----
+
+export interface OffsiteConfig {
+  enabled: boolean;
+  endpoint: string;
+  region: string;
+  bucket: string;
+  prefix: string;
+  accessKeyId: string;
+  forcePathStyle: boolean;
+  /** Whether a secret key is stored; the value itself is never returned. */
+  secretKeySet: boolean;
+  updatedAt: string | null;
+}
+
+export interface OffsiteConfigInput {
+  enabled?: boolean;
+  endpoint?: string;
+  region?: string;
+  bucket?: string;
+  prefix?: string;
+  accessKeyId?: string;
+  /** Omit to keep the stored secret; send a value to rotate it. */
+  secretKey?: string;
+  forcePathStyle?: boolean;
+}
+
+export interface OffsiteUpload {
+  id: string;
+  backupId: string;
+  key: string;
+  status: string;
+  sizeBytes: number | null;
+  error: string | null;
+  createdAt: string;
+  fileName: string | null;
+}
+
+export const getOffsiteConfig = () => api<OffsiteConfig>('/offsite/config');
+export const setOffsiteConfig = (body: OffsiteConfigInput) =>
+  api<OffsiteConfig>('/offsite/config', {
+    method: 'PUT',
+    body: JSON.stringify(body),
+  });
+export const testOffsite = () =>
+  api<{ ok: true }>('/offsite/test', { method: 'POST' });
+export const listOffsiteUploads = () =>
+  api<OffsiteUpload[]>('/offsite/uploads');
+export const syncOffsite = () =>
+  api<{ uploaded: number; failed: number }>('/offsite/sync', {
+    method: 'POST',
+  });
+export const uploadBackupOffsite = (id: string) =>
+  api<{ ok: boolean; key?: string; error?: string }>(`/offsite/backups/${id}`, {
+    method: 'POST',
+  });
+
 export interface Node {
   id: string;
   name: string;
