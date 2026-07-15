@@ -439,6 +439,16 @@ export const alertEvents = pgTable('alert_events', {
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });
 
+/// White-label branding (Pro: white-label). Singleton row.
+export const brandingConfig = pgTable('branding_config', {
+  id: text('id').primaryKey().default('default'),
+  appName: text('app_name').notNull().default('Self-Hosted'),
+  logoUrl: text('logo_url').notNull().default(''),
+  accentColor: text('accent_color').notNull().default(''),
+  hidePoweredBy: boolean('hide_powered_by').notNull().default(false),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+});
+
 /// Personal API tokens (Pro: api-cli). Long-lived bearer tokens for the API/CLI.
 /// Only the SHA-256 hash is stored; the raw token is shown once at creation.
 export const apiTokens = pgTable('api_tokens', {
@@ -510,4 +520,5 @@ export type DbSchema = {
   offsiteConfig: typeof offsiteConfig;
   offsiteUploads: typeof offsiteUploads;
   apiTokens: typeof apiTokens;
+  brandingConfig: typeof brandingConfig;
 };

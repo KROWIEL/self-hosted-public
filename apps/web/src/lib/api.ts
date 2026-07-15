@@ -313,6 +313,32 @@ export const createApiToken = (body: {
 export const revokeApiToken = (id: string) =>
   api<{ ok: true }>(`/api-tokens/${id}`, { method: 'DELETE' });
 
+// ---- White-label branding (Pro: white-label) ----
+
+export interface BrandingEffective {
+  appName: string;
+  logoUrl: string;
+  accentColor: string;
+  showPoweredBy: boolean;
+}
+
+export interface BrandingConfig {
+  appName: string;
+  logoUrl: string;
+  accentColor: string;
+  hidePoweredBy: boolean;
+}
+
+/** Public, license-aware branding (safe to call before login). */
+export const getBranding = () => api<BrandingEffective>('/branding');
+export const getBrandingConfig = () =>
+  api<BrandingConfig>('/branding/config');
+export const setBranding = (body: Partial<BrandingConfig>) =>
+  api<BrandingConfig>('/branding/config', {
+    method: 'PUT',
+    body: JSON.stringify(body),
+  });
+
 export interface Node {
   id: string;
   name: string;

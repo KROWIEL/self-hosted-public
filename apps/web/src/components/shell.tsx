@@ -15,6 +15,7 @@ import {
   EntitlementsProvider,
   useEntitlements,
 } from '@/components/entitlements';
+import { useBranding } from '@/components/branding';
 
 type IconProps = { className?: string };
 
@@ -107,6 +108,12 @@ const Icon = {
       <path d="m10.5 12.5 8-8M17 4l3 3M15 6l2 2" />
     </Svg>
   ),
+  brush: (p: IconProps) => (
+    <Svg {...p}>
+      <path d="M3 21c2 0 3-1 3-3a2 2 0 0 0-2-2c-1.5 0-3 1-3 3 0 1 .5 2 2 2Z" />
+      <path d="M6.5 16.5 16 7a2.1 2.1 0 0 1 3 3l-9.5 9.5" />
+    </Svg>
+  ),
   lock: (p: IconProps) => (
     <Svg {...p}>
       <rect x="5" y="11" width="14" height="9" rx="2" />
@@ -176,18 +183,41 @@ const NAV: NavItem[] = [
     icon: Icon.key,
     module: 'api-cli',
   },
+  {
+    href: '/white-label',
+    label: 'nav.whiteLabel',
+    icon: Icon.brush,
+    module: 'white-label',
+  },
 ];
 
 const COLLAPSE_KEY = 'sidebarCollapsed';
 
 function Brand() {
+  const brand = useBranding();
   return (
     <Link href="/dashboard" className="flex items-center gap-2.5">
-      <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-500 shadow-glow">
-        <span className="h-3 w-3 rounded-[5px] bg-white/90" />
-      </span>
+      {brand.logoUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={brand.logoUrl}
+          alt=""
+          className="h-8 w-8 rounded-xl object-cover"
+        />
+      ) : (
+        <span
+          className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-500 shadow-glow"
+          style={
+            brand.accentColor
+              ? { backgroundImage: 'none', backgroundColor: brand.accentColor }
+              : undefined
+          }
+        >
+          <span className="h-3 w-3 rounded-[5px] bg-white/90" />
+        </span>
+      )}
       <span className="text-[15px] font-semibold tracking-tight text-white">
-        Self-Hosted
+        {brand.appName}
       </span>
     </Link>
   );
@@ -231,6 +261,7 @@ function AppChrome({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const { t } = useI18n();
   const { has } = useEntitlements();
+  const brand = useBranding();
   const [open, setOpen] = useState(false); // mobile drawer
   const [collapsed, setCollapsed] = useState(false); // desktop hide
 
@@ -373,6 +404,11 @@ function AppChrome({ children }: { children: ReactNode }) {
             <Icon.logout className="shrink-0" />
             <span>{t('common.signOut')}</span>
           </button>
+          {brand.showPoweredBy && (
+            <p className="px-3 pt-1 text-center text-[11px] text-neutral-600">
+              {t('brand.poweredBy')}
+            </p>
+          )}
         </div>
       </aside>
 

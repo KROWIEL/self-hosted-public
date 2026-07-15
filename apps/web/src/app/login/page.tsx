@@ -7,10 +7,12 @@ import { ApiError, login } from '@/lib/api';
 import { ErrorBox } from '@/components/ui';
 import { useErrorText, useI18n } from '@/i18n';
 import { LangSwitcher } from '@/components/lang-switcher';
+import { useBranding } from '@/components/branding';
 
 export default function LoginPage() {
   const router = useRouter();
   const { t } = useI18n();
+  const brand = useBranding();
   const errText = useErrorText();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -52,9 +54,28 @@ export default function LoginPage() {
       </div>
       <div className="w-full max-w-sm animate-fade-up">
         <div className="mb-8 flex flex-col items-center text-center">
-          <span className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-500 shadow-glow">
-            <span className="h-4 w-4 rounded-md bg-white/90" />
-          </span>
+          {brand.logoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={brand.logoUrl}
+              alt=""
+              className="mb-4 h-12 w-12 rounded-2xl object-cover"
+            />
+          ) : (
+            <span
+              className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-500 shadow-glow"
+              style={
+                brand.accentColor
+                  ? {
+                      backgroundImage: 'none',
+                      backgroundColor: brand.accentColor,
+                    }
+                  : undefined
+              }
+            >
+              <span className="h-4 w-4 rounded-md bg-white/90" />
+            </span>
+          )}
           <h1 className="text-2xl font-bold tracking-tight text-white">
             {t('login.welcome')}
           </h1>
@@ -124,6 +145,11 @@ export default function LoginPage() {
             </Link>
           </p>
         </form>
+        {brand.showPoweredBy && (
+          <p className="mt-6 text-center text-[11px] text-neutral-600">
+            {t('brand.poweredBy')}
+          </p>
+        )}
       </div>
     </main>
   );

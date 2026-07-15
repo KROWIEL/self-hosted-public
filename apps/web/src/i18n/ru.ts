@@ -87,6 +87,7 @@ export const ru: Dict = {
   'nav.alerts': 'Оповещения',
   'nav.offsite': 'Внешние бэкапы',
   'nav.apiTokens': 'API-токены',
+  'nav.whiteLabel': 'White-label',
   'nav.settings': 'Настройки',
   'nav.billing': 'Тарифы',
   'nav.locked': 'Требуется апгрейд',
@@ -103,7 +104,7 @@ export const ru: Dict = {
 
   // Login
   'login.welcome': 'С возвращением',
-  'login.subtitle': 'Войдите в свою панель Self-Hosted',
+  'login.subtitle': 'Войдите в свою панель',
   'login.email': 'Email',
   'login.password': 'Пароль',
   'login.signIn': 'Войти',
@@ -971,4 +972,23 @@ export const ru: Dict = {
   'apiTokens.revoke': 'Отозвать',
   'apiTokens.confirmRevoke':
     'Отозвать токен? Любой скрипт, который его использует, перестанет работать.',
+
+  // White-label (Pro: white-label)
+  'brand.poweredBy': 'Работает на Self-Hosted',
+  'whiteLabel.title': 'White-label',
+  'whiteLabel.subtitle':
+    'Оформите панель под свой бренд: название, логотип и цвет.',
+  'whiteLabel.lockedTitle': 'White-label — функция Pro',
+  'whiteLabel.lockedBody':
+    'Замените название приложения, логотип и акцентный цвет, а также уберите отметку «Работает на».',
+  'whiteLabel.adminOnly': 'Менять брендинг могут только администраторы.',
+  'whiteLabel.appName': 'Название приложения',
+  'whiteLabel.accentColor': 'Акцентный цвет',
+  'whiteLabel.logoUrl': 'URL логотипа',
+  'whiteLabel.hidePoweredBy': 'Скрыть отметку «Работает на»',
+  'whiteLabel.preview': 'Предпросмотр',
+  'whiteLabel.save': 'Сохранить брендинг',
+  'whiteLabel.saving': 'Сохранение…',
+  'whiteLabel.saved': 'Брендинг сохранён. Перезагрузите страницу, чтобы увидеть везде.',
+  'whiteLabel.reloadHint': 'Изменения применяются после перезагрузки страницы.',
 };

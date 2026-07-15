@@ -29,6 +29,13 @@
       "when": 1784108378769,
       "tag": "0003_solid_thaddeus_ross",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1784109843745,
+      "tag": "0004_flowery_gamora",
+      "breakpoints": true
     }
   ]
 }

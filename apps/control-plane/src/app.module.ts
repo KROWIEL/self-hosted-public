@@ -18,6 +18,7 @@ import { GitModule } from './modules/git/git.module';
 import { AlertsModule } from './modules/alerts/alerts.module';
 import { OffsiteModule } from './modules/offsite/offsite.module';
 import { ApiTokensModule } from './modules/api-tokens/api-tokens.module';
+import { BrandingModule } from './modules/branding/branding.module';
 
 @Module({
   imports: [
@@ -43,6 +44,7 @@ import { ApiTokensModule } from './modules/api-tokens/api-tokens.module';
     AlertsModule,
     OffsiteModule,
     ApiTokensModule,
+    BrandingModule,
   ],
 })
 export class AppModule {}

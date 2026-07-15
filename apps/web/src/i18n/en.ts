@@ -86,6 +86,7 @@ export const en = {
   'nav.alerts': 'Alerts',
   'nav.offsite': 'Offsite backups',
   'nav.apiTokens': 'API tokens',
+  'nav.whiteLabel': 'White-label',
   'nav.settings': 'Settings',
   'nav.billing': 'Billing',
   'nav.locked': 'Requires an upgrade',
@@ -102,7 +103,7 @@ export const en = {
 
   // Login
   'login.welcome': 'Welcome back',
-  'login.subtitle': 'Sign in to your Self-Hosted panel',
+  'login.subtitle': 'Sign in to your panel',
   'login.email': 'Email',
   'login.password': 'Password',
   'login.signIn': 'Sign in',
@@ -965,4 +966,22 @@ export const en = {
   'apiTokens.revoke': 'Revoke',
   'apiTokens.confirmRevoke':
     'Revoke this token? Any script using it will stop working.',
+
+  // White-label (Pro: white-label)
+  'brand.poweredBy': 'Powered by Self-Hosted',
+  'whiteLabel.title': 'White-label',
+  'whiteLabel.subtitle': 'Rebrand the panel with your own name, logo and colour.',
+  'whiteLabel.lockedTitle': 'White-label is a Pro feature',
+  'whiteLabel.lockedBody':
+    'Replace the app name, logo and accent colour, and remove the “Powered by” attribution.',
+  'whiteLabel.adminOnly': 'Only administrators can change branding.',
+  'whiteLabel.appName': 'App name',
+  'whiteLabel.accentColor': 'Accent colour',
+  'whiteLabel.logoUrl': 'Logo URL',
+  'whiteLabel.hidePoweredBy': 'Hide “Powered by” attribution',
+  'whiteLabel.preview': 'Preview',
+  'whiteLabel.save': 'Save branding',
+  'whiteLabel.saving': 'Saving…',
+  'whiteLabel.saved': 'Branding saved. Reload to see it everywhere.',
+  'whiteLabel.reloadHint': 'Changes apply after a page reload.',
 };
