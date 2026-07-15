@@ -891,6 +891,8 @@ export const en = {
     'Issue personal access tokens to automate the platform from scripts, CI/CD pipelines and the CLI.',
   'billing.moduleDesc.white-label':
     'Rebrand the panel with your own app name, logo, accent color and attribution across the UI and login page.',
+  'billing.moduleDesc.email':
+    'Connect your SMTP provider to send transactional and broadcast email from the panel — configure the sender identity, send test messages, notify all users or specific recipients, and review a delivery log.',
   'billing.module.reverse-tunnels': 'Reverse-tunnels',
   'billing.module.preview-envs': 'Preview environments',
   'billing.module.offsite-backups': 'Off-site backups',
@@ -924,6 +926,7 @@ export const en = {
   'audit.colStatus': 'Status',
   'billing.module.api-cli': 'API & CLI',
   'billing.module.white-label': 'White-label',
+  'billing.module.email': 'Email service',
 
   // Alerts (Pro: alerts)
   'alerts.title': 'Alerts',

@@ -893,6 +893,8 @@ export const ru: Dict = {
     'Выпускайте персональные токены доступа для автоматизации платформы из скриптов, CI/CD-пайплайнов и CLI.',
   'billing.moduleDesc.white-label':
     'Оформите панель под свой бренд: имя приложения, логотип, акцентный цвет и атрибуция в интерфейсе и на странице входа.',
+  'billing.moduleDesc.email':
+    'Подключите свой SMTP-провайдер, чтобы панель рассылала письма — задайте отправителя, отправляйте тестовые сообщения, уведомляйте всех пользователей или выбранных получателей и смотрите журнал доставки.',
   'billing.module.reverse-tunnels': 'Reverse-tunnels',
   'billing.module.preview-envs': 'Preview-окружения',
   'billing.module.offsite-backups': 'Офсайт-бэкапы',
@@ -927,6 +929,7 @@ export const ru: Dict = {
   'audit.colStatus': 'Статус',
   'billing.module.api-cli': 'API и CLI',
   'billing.module.white-label': 'White-label',
+  'billing.module.email': 'Почтовый сервис',
 
   // Оповещения (Pro: alerts)
   'alerts.title': 'Оповещения',

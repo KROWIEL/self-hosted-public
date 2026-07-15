@@ -34,6 +34,7 @@ const PRO_MODULES = [
   'audit-export',
   'api-cli',
   'white-label',
+  'email',
 ] as const;
 
 /** A single scannable capability: a short title plus an optional "why" line. */
@@ -265,7 +266,7 @@ function BillingContent() {
       <h3 className="mb-3 mt-8 text-lg font-semibold text-white">
         {t('billing.plansTitle')}
       </h3>
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid items-start gap-4 md:grid-cols-3">
         <PlanCard
           tier="free"
           price={t('billing.price.free')}
