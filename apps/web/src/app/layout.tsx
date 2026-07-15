@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { LanguageProvider } from '@/i18n';
 import { ToastProvider } from '@/components/toast';
+import { BrandingApplier } from '@/components/branding';
 
 export const metadata: Metadata = {
   title: 'Self-Hosted Panel',
@@ -23,6 +24,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <div className="absolute inset-0 bg-[linear-gradient(to_bottom,transparent,rgba(7,10,18,0.6))]" />
         </div>
         <LanguageProvider>
+          <BrandingApplier />
           <ToastProvider>{children}</ToastProvider>
         </LanguageProvider>
       </body>

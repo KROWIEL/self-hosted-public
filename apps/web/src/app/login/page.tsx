@@ -76,15 +76,11 @@ export default function LoginPage() {
             />
           ) : (
             <span
-              className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-500 shadow-glow"
-              style={
-                brand.accentColor
-                  ? {
-                      backgroundImage: 'none',
-                      backgroundColor: brand.accentColor,
-                    }
-                  : undefined
-              }
+              className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl shadow-glow"
+              style={{
+                backgroundImage:
+                  'linear-gradient(to bottom right, var(--accent), var(--accent-2))',
+              }}
             >
               <span className="h-4 w-4 rounded-md bg-white/90" />
             </span>

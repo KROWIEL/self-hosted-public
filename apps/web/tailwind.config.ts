@@ -49,7 +49,9 @@ const config: Config = {
         '3xl': '1.5rem',
       },
       boxShadow: {
-        glow: '0 0 0 1px rgba(99,102,241,0.25), 0 8px 40px -8px rgba(99,102,241,0.45)',
+        // Accent-driven; the CSS vars fall back to the indigo brand and are
+        // overridden at runtime by white-label branding.
+        glow: '0 0 0 1px var(--accent-ring), 0 8px 40px -8px var(--accent-glow)',
         soft: '0 10px 40px -12px rgba(0,0,0,0.6)',
       },
       backdropBlur: {

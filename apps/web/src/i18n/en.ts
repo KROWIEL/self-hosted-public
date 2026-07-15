@@ -1024,8 +1024,9 @@ export const en = {
   'whiteLabel.preview': 'Preview',
   'whiteLabel.save': 'Save branding',
   'whiteLabel.saving': 'Saving…',
-  'whiteLabel.saved': 'Branding saved. Reload to see it everywhere.',
-  'whiteLabel.reloadHint': 'Changes apply after a page reload.',
+  'whiteLabel.saved': 'Branding saved and applied.',
+  'whiteLabel.reloadHint':
+    'Name, logo, favicon and accent colour apply across the app right away.',
 
   // Metrics history (Pro: metrics-history)
   'metricsHistory.title': 'Metrics',

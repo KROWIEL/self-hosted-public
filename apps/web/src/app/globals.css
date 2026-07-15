@@ -5,6 +5,13 @@
 @layer base {
   :root {
     color-scheme: dark;
+    /* Accent theme — overridden at runtime by white-label branding
+       (see components/branding.tsx). Defaults match the indigo/violet brand. */
+    --accent: #6366f1;
+    --accent-2: #8b5cf6;
+    --accent-strong: #4f46e5;
+    --accent-glow: rgba(99, 102, 241, 0.45);
+    --accent-ring: rgba(99, 102, 241, 0.25);
   }
 
   html {
@@ -64,9 +71,19 @@
     @apply bg-gradient-to-r from-indigo-300 via-violet-300 to-cyan-300 bg-clip-text text-transparent;
   }
 
-  /* Primary gradient button */
+  /* Primary gradient button — accent-driven (white-label aware) */
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-500 px-4 py-2 text-sm font-medium text-white shadow-glow transition-all duration-200 hover:from-indigo-400 hover:to-violet-400 hover:shadow-[0_0_0_1px_rgba(99,102,241,0.4),0_12px_44px_-8px_rgba(99,102,241,0.6)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-medium text-white transition-all duration-200 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50;
+    background-image: linear-gradient(to right, var(--accent), var(--accent-2));
+    box-shadow:
+      0 0 0 1px var(--accent-ring),
+      0 8px 40px -8px var(--accent-glow);
+  }
+  .btn-primary:not(:disabled):hover {
+    filter: brightness(1.08);
+    box-shadow:
+      0 0 0 1px var(--accent-ring),
+      0 12px 44px -8px var(--accent-glow);
   }
 
   .btn-ghost {
@@ -90,7 +107,11 @@
   }
 
   .field {
-    @apply w-full rounded-xl border border-white/10 bg-ink-900/60 px-3.5 py-2.5 text-sm text-neutral-100 placeholder-neutral-500 outline-none transition-all duration-200 focus:border-indigo-400/60 focus:bg-ink-900 focus:ring-2 focus:ring-indigo-500/20;
+    @apply w-full rounded-xl border border-white/10 bg-ink-900/60 px-3.5 py-2.5 text-sm text-neutral-100 placeholder-neutral-500 outline-none transition-all duration-200 focus:bg-ink-900;
+  }
+  .field:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent-ring);
   }
 
   .field-mono {

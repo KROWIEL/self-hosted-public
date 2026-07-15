@@ -246,12 +246,11 @@ function Brand() {
         />
       ) : (
         <span
-          className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-500 shadow-glow"
-          style={
-            brand.accentColor
-              ? { backgroundImage: 'none', backgroundColor: brand.accentColor }
-              : undefined
-          }
+          className="flex h-8 w-8 items-center justify-center rounded-xl shadow-glow"
+          style={{
+            backgroundImage:
+              'linear-gradient(to bottom right, var(--accent), var(--accent-2))',
+          }}
         >
           <span className="h-3 w-3 rounded-[5px] bg-white/90" />
         </span>

@@ -9,6 +9,7 @@ import {
   setBranding,
 } from '@/lib/api';
 import { AppShell } from '@/components/shell';
+import { refreshBranding } from '@/components/branding';
 import { useEntitlements } from '@/components/entitlements';
 import { UpgradeNotice } from '@/components/upgrade-notice';
 import {
@@ -79,6 +80,9 @@ function WhiteLabelContent() {
         accentColor: form.accentColor.trim(),
         hidePoweredBy: form.hidePoweredBy,
       });
+      // Re-fetch effective branding so the header, favicon, tab title and accent
+      // update immediately across the app — no manual reload needed.
+      await refreshBranding();
       setNotice(t('whiteLabel.saved'));
     } catch (e) {
       setError(errorText(e));

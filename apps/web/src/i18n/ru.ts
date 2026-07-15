@@ -1030,8 +1030,9 @@ export const ru: Dict = {
   'whiteLabel.preview': 'Предпросмотр',
   'whiteLabel.save': 'Сохранить брендинг',
   'whiteLabel.saving': 'Сохранение…',
-  'whiteLabel.saved': 'Брендинг сохранён. Перезагрузите страницу, чтобы увидеть везде.',
-  'whiteLabel.reloadHint': 'Изменения применяются после перезагрузки страницы.',
+  'whiteLabel.saved': 'Брендинг сохранён и применён.',
+  'whiteLabel.reloadHint':
+    'Название, логотип, фавикон и акцентный цвет применяются во всём приложении сразу.',
 
   // История метрик (Pro: metrics-history)
   'metricsHistory.title': 'Метрики',
