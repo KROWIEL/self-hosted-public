@@ -86,17 +86,41 @@ npm run dev:web                        # web UI            -> :3000
 
 Open **http://localhost:3000** and sign in with the seeded admin.
 
-### 🧩 Tiers
+### 🧩 Tiers & pricing
 
-Open-core: the free tier is unlimited. Paid tiers unlock add-on modules via a signed license key (activate under **Billing → License key**).
+Open-core: the **core is free forever and unlimited**. Paid tiers unlock add-on
+modules via a single signed license key — activate it under **Billing → License
+key** (admin) or set `LICENSE_KEY`. One key upgrades the whole instance; the
+core has no per-seat metering.
 
-| Tier | Price* | Unlocks |
-|------|--------|---------|
-| **Free** | $0 | Full core: deploys, templates, HTTPS, managed DBs, projects, RBAC, 2FA, unlimited nodes |
-| **Home-Lab** | ~$3/mo | Everything in Free **+ Reverse-tunnels** (NAT / home-lab) |
-| **Pro** | ~$15/mo | Everything + all modules (preview-envs, off-site backups, alerts, metrics history, SSO, API/CLI, white-label) |
+| Tier | Price* | What you get |
+|------|--------|--------------|
+| **Free** | $0 forever | The complete core (see below) |
+| **Home-Lab** | ~$3 / mo | Core **+ Reverse tunnels** module |
+| **Pro** | ~$15 / mo | Core **+ every module** (all 9 below) |
 
-<sub>*Suggested pricing. See [`docs/LICENSING.md`](docs/LICENSING.md).</sub>
+<sub>*Suggested pricing — you set the final numbers in your own store. Details in [`docs/LICENSING.md`](docs/LICENSING.md).</sub>
+
+**The free core includes:** git-to-Docker deploys, stack templates, automatic
+HTTPS, managed Postgres/MySQL with backups, multi-tenant projects & quotas,
+RBAC, 2FA, live logs / metrics / web-exec, unlimited nodes, and a localized
+(EN/RU) UI.
+
+#### Add-on modules
+
+| Module | From tier | What it does |
+|--------|-----------|--------------|
+| **Reverse tunnels** (`reverse-tunnels`) | Home-Lab | Expose services on NAT / home-lab nodes to the internet through a lightweight public relay. |
+| **Preview environments** (`preview-envs`) | Pro | Deploy any branch as a disposable, isolated copy with its own optional subdomain; auto-torn down by TTL. Ideal for PR review. |
+| **Off-site backups** (`offsite-backups`) | Pro | Mirror managed-database backups to any S3-compatible bucket, with encrypted credentials. |
+| **Alerts** (`alerts`) | Pro | Webhook alerts for node-offline, deploy-failed, backup-failed and resource thresholds, via configurable channels & rules. |
+| **Metrics history** (`metrics-history`) | Pro | Collect and chart historical CPU / RAM / disk usage per node. |
+| **SSO / OIDC** (`sso`) | Pro | OpenID Connect single sign-on (Google, Entra, Okta, Keycloak…) with a domain allow-list and just-in-time user provisioning. |
+| **Audit export** (`audit-export`) | Pro | Organization-wide audit log with filters and CSV / JSON export. |
+| **API & CLI tokens** (`api-cli`) | Pro | Personal access tokens (PATs) for programmatic access to the API / CLI. |
+| **White-label** (`white-label`) | Pro | Customize the app name, logo, accent color and attribution. |
+
+<sub>All modules are implemented and shipping. Home-Lab unlocks Reverse tunnels; Pro unlocks everything.</sub>
 
 ### 🏗️ Architecture
 
@@ -190,17 +214,41 @@ npm run dev:web                        # веб-интерфейс       -> :300
 
 Откройте **http://localhost:3000** и войдите под созданным админом.
 
-### 🧩 Тарифы
+### 🧩 Тарифы и цены
 
-Open-core: бесплатный тариф без ограничений. Платные тарифы открывают модули по подписанному ключу лицензии (активация в **Тарифы → Ключ лицензии**).
+Open-core: **ядро бесплатно навсегда и без ограничений**. Платные тарифы
+открывают дополнительные модули по одному подписанному ключу лицензии —
+активируйте его в **Тарифы → Ключ лицензии** (админ) или задайте `LICENSE_KEY`.
+Один ключ повышает тариф всего инстанса; в ядре нет поштучного учёта мест.
 
-| Тариф | Цена* | Что открывает |
-|-------|-------|---------------|
-| **Free** | $0 | Полное ядро: деплой, шаблоны, HTTPS, managed-БД, проекты, RBAC, 2FA, неограниченные ноды |
-| **Home-Lab** | ~$3/мес | Всё из Free **+ Reverse-tunnels** (NAT / home-lab) |
-| **Pro** | ~$15/мес | Всё + все модули (preview-env, офсайт-бэкапы, алерты, история метрик, SSO, API/CLI, white-label) |
+| Тариф | Цена* | Что вы получаете |
+|-------|-------|------------------|
+| **Free** | $0 навсегда | Полное ядро (см. ниже) |
+| **Home-Lab** | ~$3 / мес | Ядро **+ модуль Reverse tunnels** |
+| **Pro** | ~$15 / мес | Ядро **+ все модули** (все 9 ниже) |
 
-<sub>*Рекомендованные цены. См. [`docs/LICENSING.md`](docs/LICENSING.md).</sub>
+<sub>*Рекомендованные цены — финальные вы задаёте в своём магазине. Подробнее в [`docs/LICENSING.md`](docs/LICENSING.md).</sub>
+
+**Бесплатное ядро включает:** деплой Git → Docker, шаблоны стеков,
+автоматический HTTPS, managed Postgres/MySQL с бэкапами, мульти-тенант проекты и
+квоты, RBAC, 2FA, live-логи / метрики / web-exec, неограниченные ноды и
+локализованный (EN/RU) интерфейс.
+
+#### Дополнительные модули
+
+| Модуль | С тарифа | Что делает |
+|--------|----------|------------|
+| **Обратные туннели** (`reverse-tunnels`) | Home-Lab | Публикация сервисов на NAT / home-lab нодах в интернет через лёгкий публичный релей. |
+| **Превью-среды** (`preview-envs`) | Pro | Деплой любой ветки как одноразовой изолированной копии с отдельным опциональным поддоменом; автоудаление по TTL. Идеально для ревью PR. |
+| **Офсайт-бэкапы** (`offsite-backups`) | Pro | Зеркалирование бэкапов managed-БД в любой S3-совместимый бакет с шифрованными доступами. |
+| **Алерты** (`alerts`) | Pro | Webhook-уведомления о падении ноды, неудачном деплое/бэкапе и порогах ресурсов; настраиваемые каналы и правила. |
+| **История метрик** (`metrics-history`) | Pro | Сбор и графики истории CPU / RAM / диска по каждой ноде. |
+| **SSO / OIDC** (`sso`) | Pro | Единый вход через OpenID Connect (Google, Entra, Okta, Keycloak…) с allow-list доменов и автосозданием пользователей. |
+| **Экспорт аудита** (`audit-export`) | Pro | Общеорганизационный аудит-лог с фильтрами и экспортом в CSV / JSON. |
+| **API и CLI токены** (`api-cli`) | Pro | Персональные токены доступа (PAT) для программного доступа к API / CLI. |
+| **White-label** (`white-label`) | Pro | Настройка названия приложения, логотипа, акцентного цвета и атрибуции. |
+
+<sub>Все модули реализованы и доступны. Home-Lab открывает Reverse tunnels; Pro открывает всё.</sub>
 
 ### 🏗️ Архитектура
 
