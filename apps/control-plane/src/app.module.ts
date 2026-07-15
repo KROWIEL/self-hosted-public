@@ -15,6 +15,7 @@ import { BackupsModule } from './modules/backups/backups.module';
 import { TunnelsModule } from './modules/tunnels/tunnels.module';
 import { TemplatesModule } from './modules/templates/templates.module';
 import { GitModule } from './modules/git/git.module';
+import { AlertsModule } from './modules/alerts/alerts.module';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { GitModule } from './modules/git/git.module';
     TunnelsModule,
     TemplatesModule,
     GitModule,
+    AlertsModule,
   ],
 })
 export class AppModule {}

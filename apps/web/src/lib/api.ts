@@ -156,6 +156,83 @@ export async function exportAudit(
   URL.revokeObjectURL(url);
 }
 
+// ---- Alerts (Pro: alerts) ----
+
+export interface AlertChannel {
+  id: string;
+  name: string;
+  type: string;
+  enabled: boolean;
+  /** Redacted target (host only); the full URL is never returned. */
+  target: string;
+  createdAt: string;
+}
+
+export interface AlertRule {
+  id: string;
+  name: string;
+  event: string;
+  channelId: string;
+  enabled: boolean;
+  createdAt: string;
+}
+
+export interface AlertEvent {
+  id: string;
+  event: string;
+  dedupeKey: string;
+  title: string;
+  body: string;
+  status: string;
+  error: string | null;
+  createdAt: string;
+}
+
+export const listAlertMeta = () => api<{ events: string[] }>('/alerts/meta');
+
+export const listAlertChannels = () =>
+  api<AlertChannel[]>('/alerts/channels');
+export const createAlertChannel = (body: { name: string; url: string }) =>
+  api<AlertChannel>('/alerts/channels', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+export const updateAlertChannel = (
+  id: string,
+  body: { name?: string; url?: string; enabled?: boolean },
+) =>
+  api<AlertChannel>(`/alerts/channels/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(body),
+  });
+export const deleteAlertChannel = (id: string) =>
+  api<{ ok: true }>(`/alerts/channels/${id}`, { method: 'DELETE' });
+export const testAlertChannel = (id: string) =>
+  api<{ ok: true }>(`/alerts/channels/${id}/test`, { method: 'POST' });
+
+export const listAlertRules = () => api<AlertRule[]>('/alerts/rules');
+export const createAlertRule = (body: {
+  name: string;
+  event: string;
+  channelId: string;
+}) =>
+  api<AlertRule>('/alerts/rules', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+export const updateAlertRule = (
+  id: string,
+  body: { name?: string; enabled?: boolean },
+) =>
+  api<AlertRule>(`/alerts/rules/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(body),
+  });
+export const deleteAlertRule = (id: string) =>
+  api<{ ok: true }>(`/alerts/rules/${id}`, { method: 'DELETE' });
+
+export const listAlertEvents = () => api<AlertEvent[]>('/alerts/events');
+
 export interface Node {
   id: string;
   name: string;

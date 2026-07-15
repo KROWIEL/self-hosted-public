@@ -402,6 +402,43 @@ export const installation = pgTable('installation', {
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });
 
+/// Alerting (Pro: alerts). A destination for notifications (webhook, …).
+export const alertChannels = pgTable('alert_channels', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  name: text('name').notNull(),
+  type: text('type').notNull().default('webhook'), // 'webhook'
+  // Encrypted JSON config, e.g. {"url":"https://…"} — may embed secrets.
+  configEnc: text('config_enc').notNull(),
+  enabled: boolean('enabled').notNull().default(true),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+
+/// A rule wiring a monitored event to a channel.
+export const alertRules = pgTable('alert_rules', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  name: text('name').notNull(),
+  // 'node.offline' | 'deploy.failed' | 'backup.failed'
+  event: text('event').notNull(),
+  channelId: uuid('channel_id')
+    .notNull()
+    .references(() => alertChannels.id, { onDelete: 'cascade' }),
+  enabled: boolean('enabled').notNull().default(true),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+
+/// A fired alert. Also the dedupe ledger: `dedupeKey` is unique so each incident
+/// notifies exactly once.
+export const alertEvents = pgTable('alert_events', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  event: text('event').notNull(),
+  dedupeKey: text('dedupe_key').notNull().unique(),
+  title: text('title').notNull(),
+  body: text('body').notNull(),
+  status: text('status').notNull().default('sent'), // 'sent' | 'failed'
+  error: text('error'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+
 export type DbSchema = {
   users: typeof users;
   nodes: typeof nodes;
@@ -422,4 +459,7 @@ export type DbSchema = {
   tunnels: typeof tunnels;
   licenses: typeof licenses;
   installation: typeof installation;
+  alertChannels: typeof alertChannels;
+  alertRules: typeof alertRules;
+  alertEvents: typeof alertEvents;
 };

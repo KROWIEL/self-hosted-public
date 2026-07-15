@@ -89,6 +89,12 @@ const Icon = {
       <path d="M9 8h6M9 12h5" />
     </Svg>
   ),
+  alerts: (p: IconProps) => (
+    <Svg {...p}>
+      <path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
+      <path d="M13.7 21a2 2 0 0 1-3.4 0" />
+    </Svg>
+  ),
   lock: (p: IconProps) => (
     <Svg {...p}>
       <rect x="5" y="11" width="14" height="9" rx="2" />
@@ -139,6 +145,12 @@ const NAV: NavItem[] = [
     label: 'nav.audit',
     icon: Icon.audit,
     module: 'audit-export',
+  },
+  {
+    href: '/alerts',
+    label: 'nav.alerts',
+    icon: Icon.alerts,
+    module: 'alerts',
   },
 ];
 
