@@ -825,7 +825,7 @@ export const en = {
   'billing.feat.tunnels': '+ Reverse-tunnels module (NAT / home-lab)',
   'billing.feat.allHomelab': 'Everything in Home-Lab',
   'billing.feat.proAll':
-    'Upcoming modules (roadmap): preview-envs, S3 backups, alerts, metrics history, SSO, API/CLI, white-label',
+    'All modules: preview environments, S3 backups, alerts, metrics history, SSO, audit export, API/CLI, white-label',
   'billing.module.reverse-tunnels': 'Reverse-tunnels',
   'billing.module.preview-envs': 'Preview environments',
   'billing.module.offsite-backups': 'Off-site backups',

@@ -827,7 +827,7 @@ export const ru: Dict = {
   'billing.feat.tunnels': '+ модуль Reverse-tunnels (NAT / home-lab)',
   'billing.feat.allHomelab': 'Всё из Home-Lab',
   'billing.feat.proAll':
-    'Модули в разработке (roadmap): preview-env, S3-бэкапы, алерты, история метрик, SSO, API/CLI, white-label',
+    'Все модули: превью-среды, S3-бэкапы, алерты, история метрик, SSO, экспорт аудита, API/CLI, white-label',
   'billing.module.reverse-tunnels': 'Reverse-tunnels',
   'billing.module.preview-envs': 'Preview-окружения',
   'billing.module.offsite-backups': 'Офсайт-бэкапы',
