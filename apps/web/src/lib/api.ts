@@ -403,6 +403,47 @@ export function setSession(accessToken: string, refreshToken: string) {
   window.localStorage.setItem('refreshToken', refreshToken);
 }
 
+// ---- Preview environments (Pro: preview-envs) ----
+
+export interface PreviewEnv {
+  id: string;
+  parentServiceId: string;
+  parentName: string | null;
+  serviceId: string;
+  serviceName: string | null;
+  branch: string;
+  host: string | null;
+  https: boolean;
+  serviceStatus: ServiceStatus | null;
+  latestDeployStatus: DeployStatus | null;
+  latestDeployPhase: DeployPhase | null;
+  expiresAt: string | null;
+  createdAt: string;
+}
+
+export interface CreatePreviewInput {
+  branch: string;
+  host?: string;
+  ttlHours?: number;
+}
+
+export const listPreviews = () => api<PreviewEnv[]>('/previews');
+
+export const listServicePreviews = (serviceId: string) =>
+  api<PreviewEnv[]>(`/services/${serviceId}/previews`);
+
+export const createPreview = (serviceId: string, body: CreatePreviewInput) =>
+  api<PreviewEnv>(`/services/${serviceId}/previews`, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+
+export const redeployPreview = (id: string) =>
+  api<PreviewEnv>(`/previews/${id}/redeploy`, { method: 'POST' });
+
+export const deletePreview = (id: string) =>
+  api<{ ok: boolean }>(`/previews/${id}`, { method: 'DELETE' });
+
 export interface Node {
   id: string;
   name: string;

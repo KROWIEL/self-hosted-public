@@ -89,6 +89,7 @@ export const en = {
   'nav.metrics': 'Metrics',
   'nav.whiteLabel': 'White-label',
   'nav.sso': 'Single sign-on',
+  'nav.previews': 'Preview envs',
   'nav.settings': 'Settings',
   'nav.billing': 'Billing',
   'nav.locked': 'Requires an upgrade',
@@ -1043,4 +1044,32 @@ export const en = {
     'No account exists for your email, and automatic account creation is off.',
   'sso.error.access_denied': 'Access was denied by the identity provider.',
   'sso.error.sso_failed': 'Single sign-on failed. Please try again.',
+
+  // Preview environments (Pro: preview-envs)
+  'previews.title': 'Preview environments',
+  'previews.subtitle':
+    'Spin up a disposable copy of a service from any branch, with its own URL.',
+  'previews.lockedTitle': 'Preview environments are a Pro feature',
+  'previews.lockedBody':
+    'Deploy any branch as an isolated, auto-expiring environment with its own subdomain — perfect for reviewing pull requests.',
+  'previews.newTitle': 'New preview',
+  'previews.service': 'Service',
+  'previews.servicePlaceholder': 'Select a service…',
+  'previews.branch': 'Branch',
+  'previews.host': 'Public host (optional)',
+  'previews.hostHint':
+    'A subdomain to route to this preview. Leave blank for internal-only.',
+  'previews.ttl': 'Auto-expire (hours)',
+  'previews.ttlHint': 'Torn down automatically after this many hours. 0 = never.',
+  'previews.create': 'Create preview',
+  'previews.creating': 'Creating…',
+  'previews.empty': 'No preview environments yet.',
+  'previews.confirmDelete':
+    'Delete this preview environment? Its container and image will be removed.',
+  'previews.internalOnly': 'Internal only',
+  'previews.expires': 'Expires',
+  'previews.never': 'Never',
+  'previews.open': 'Open',
+  'previews.redeploy': 'Redeploy',
+  'previews.delete': 'Delete',
 };

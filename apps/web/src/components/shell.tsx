@@ -128,6 +128,14 @@ const Icon = {
       <path d="m21 3-5 5" />
     </Svg>
   ),
+  preview: (p: IconProps) => (
+    <Svg {...p}>
+      <circle cx="6" cy="6" r="2.5" />
+      <circle cx="6" cy="18" r="2.5" />
+      <circle cx="18" cy="9" r="2.5" />
+      <path d="M6 8.5v7M8.5 6H14a3 3 0 0 1 3 3v0" />
+    </Svg>
+  ),
   lock: (p: IconProps) => (
     <Svg {...p}>
       <rect x="5" y="11" width="14" height="9" rx="2" />
@@ -214,6 +222,12 @@ const NAV: NavItem[] = [
     label: 'nav.sso',
     icon: Icon.sso,
     module: 'sso',
+  },
+  {
+    href: '/previews',
+    label: 'nav.previews',
+    icon: Icon.preview,
+    module: 'preview-envs',
   },
 ];
 

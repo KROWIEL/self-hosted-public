@@ -10,6 +10,7 @@ import {
   timestamp,
   unique,
   uuid,
+  type AnyPgColumn,
 } from 'drizzle-orm/pg-core';
 
 // Enums (mirror @selfhosted/shared).
@@ -228,6 +229,13 @@ export const services = pgTable('services', {
   healthcheckPath: text('healthcheck_path'),
   // How long (seconds) to wait for the new color to become healthy before abort.
   healthTimeoutS: integer('health_timeout_s').notNull().default(60),
+  // When set, this row is an ephemeral preview environment cloned from the
+  // referenced parent service (Pro: preview-envs). Preview services are hidden
+  // from normal service listings and managed via the previews API; deleting the
+  // parent cascades to its previews.
+  previewOf: uuid('preview_of').references((): AnyPgColumn => services.id, {
+    onDelete: 'cascade',
+  }),
   status: serviceStatusEnum('status').notNull().default('CREATED'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
@@ -499,6 +507,29 @@ export const offsiteConfig = pgTable('offsite_config', {
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });
 
+/// Ephemeral preview environments (Pro: preview-envs). Each row links a cloned,
+/// disposable child service to the parent it was branched from, with an optional
+/// TTL after which a background worker tears it down.
+export const previewEnvironments = pgTable('preview_environments', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  parentServiceId: uuid('parent_service_id')
+    .notNull()
+    .references(() => services.id, { onDelete: 'cascade' }),
+  // The disposable child service that actually builds/runs this preview.
+  serviceId: uuid('service_id')
+    .notNull()
+    .references(() => services.id, { onDelete: 'cascade' })
+    .unique(),
+  branch: text('branch').notNull(),
+  // Public host routed to this preview (null = internal-only).
+  host: text('host'),
+  status: text('status').notNull().default('CREATING'),
+  // When the preview auto-expires; null = keep until deleted manually.
+  expiresAt: timestamp('expires_at'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+});
+
 /// Single sign-on (Pro: sso). Singleton OIDC identity-provider configuration.
 /// The client secret is encrypted at rest (AES-256-GCM).
 export const ssoConfig = pgTable('sso_config', {
@@ -560,4 +591,5 @@ export type DbSchema = {
   brandingConfig: typeof brandingConfig;
   metricSamples: typeof metricSamples;
   ssoConfig: typeof ssoConfig;
+  previewEnvironments: typeof previewEnvironments;
 };

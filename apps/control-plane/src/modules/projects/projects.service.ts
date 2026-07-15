@@ -284,9 +284,12 @@ export class ProjectsService {
       .select()
       .from(services)
       .where(inArray(services.projectId, ids));
+    // Hide ephemeral preview services (previewOf set) — they're managed on the
+    // Previews page, not shown as first-class services in the project view.
+    const visible = svc.filter((s) => s.previewOf === null);
     return rows.map((p) => ({
       ...p,
-      services: svc.filter((s) => s.projectId === p.id),
+      services: visible.filter((s) => s.projectId === p.id),
     }));
   }
 }

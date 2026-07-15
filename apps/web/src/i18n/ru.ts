@@ -90,6 +90,7 @@ export const ru: Dict = {
   'nav.metrics': 'Метрики',
   'nav.whiteLabel': 'White-label',
   'nav.sso': 'Единый вход (SSO)',
+  'nav.previews': 'Превью-среды',
   'nav.settings': 'Настройки',
   'nav.billing': 'Тарифы',
   'nav.locked': 'Требуется апгрейд',
@@ -1053,4 +1054,33 @@ export const ru: Dict = {
     'Для вашей почты нет аккаунта, а автосоздание отключено.',
   'sso.error.access_denied': 'Провайдер отклонил вход.',
   'sso.error.sso_failed': 'Единый вход не удался. Попробуйте ещё раз.',
+
+  // Превью-среды (Pro: preview-envs)
+  'previews.title': 'Превью-среды',
+  'previews.subtitle':
+    'Разверните одноразовую копию сервиса из любой ветки с отдельным URL.',
+  'previews.lockedTitle': 'Превью-среды — функция Pro',
+  'previews.lockedBody':
+    'Разворачивайте любую ветку как изолированную самоудаляющуюся среду с собственным поддоменом — удобно для ревью пул-реквестов.',
+  'previews.newTitle': 'Новая превью-среда',
+  'previews.service': 'Сервис',
+  'previews.servicePlaceholder': 'Выберите сервис…',
+  'previews.branch': 'Ветка',
+  'previews.host': 'Публичный хост (необязательно)',
+  'previews.hostHint':
+    'Поддомен для этой превью-среды. Пусто — только внутренний доступ.',
+  'previews.ttl': 'Автоудаление (часы)',
+  'previews.ttlHint':
+    'Автоматически удаляется через столько часов. 0 — никогда.',
+  'previews.create': 'Создать превью',
+  'previews.creating': 'Создание…',
+  'previews.empty': 'Превью-сред пока нет.',
+  'previews.confirmDelete':
+    'Удалить эту превью-среду? Её контейнер и образ будут удалены.',
+  'previews.internalOnly': 'Только внутренний доступ',
+  'previews.expires': 'Истекает',
+  'previews.never': 'Никогда',
+  'previews.open': 'Открыть',
+  'previews.redeploy': 'Передеплой',
+  'previews.delete': 'Удалить',
 };

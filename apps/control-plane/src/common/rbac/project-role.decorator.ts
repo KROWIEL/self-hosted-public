@@ -19,6 +19,7 @@ const DEFAULT_PARAM: Record<ResolveKind, string> = {
   volume: 'volumeId',
   backup: 'id',
   schedule: 'id',
+  preview: 'id',
 };
 
 /**

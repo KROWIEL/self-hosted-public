@@ -6,6 +6,7 @@ import {
   backups,
   deployments,
   managedDatabases,
+  previewEnvironments,
   services,
   volumes,
 } from '../../db/schema';
@@ -18,7 +19,8 @@ export type ResolveKind =
   | 'database'
   | 'volume'
   | 'backup'
-  | 'schedule';
+  | 'schedule'
+  | 'preview';
 
 /**
  * Maps an entity id to the project it belongs to, so a single guard can enforce
@@ -88,6 +90,17 @@ export class ProjectResolver {
         )[0];
         if (!sc) throw new NotFoundException('Schedule not found');
         return this.fromRef(sc.kind, sc.refId);
+      }
+      case 'preview': {
+        const pe = (
+          await this.db
+            .select({ serviceId: previewEnvironments.serviceId })
+            .from(previewEnvironments)
+            .where(eq(previewEnvironments.id, id))
+            .limit(1)
+        )[0];
+        if (!pe) throw new NotFoundException('Preview environment not found');
+        return this.fromService(pe.serviceId);
       }
     }
   }

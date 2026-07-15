@@ -21,6 +21,7 @@ import { ApiTokensModule } from './modules/api-tokens/api-tokens.module';
 import { BrandingModule } from './modules/branding/branding.module';
 import { MetricsModule } from './modules/metrics/metrics.module';
 import { SsoModule } from './modules/sso/sso.module';
+import { PreviewModule } from './modules/preview/preview.module';
 
 @Module({
   imports: [
@@ -49,6 +50,7 @@ import { SsoModule } from './modules/sso/sso.module';
     BrandingModule,
     MetricsModule,
     SsoModule,
+    PreviewModule,
   ],
 })
 export class AppModule {}
