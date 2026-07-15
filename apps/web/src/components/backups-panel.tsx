@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { useI18n } from '@/i18n';
+import { useErrorText, useI18n } from '@/i18n';
 import { useConfirmDialog } from '@/components/ui';
 import {
   Backup,
@@ -37,6 +37,7 @@ export function BackupsPanel({
   refId: string;
 }) {
   const { t } = useI18n();
+  const errorText = useErrorText();
   const { confirm, dialog } = useConfirmDialog();
   const [items, setItems] = useState<Backup[]>([]);
   const [schedules, setSchedules] = useState<BackupSchedule[]>([]);
@@ -64,7 +65,7 @@ export function BackupsPanel({
       await createBackup(kind, refId);
       await refresh();
     } catch (e) {
-      alert(e instanceof Error ? e.message : String(e));
+      alert(errorText(e));
     } finally {
       setBusy(false);
     }
@@ -86,7 +87,7 @@ export function BackupsPanel({
       await restoreBackup(b.id);
       alert(t('backup.restoreDone'));
     } catch (e) {
-      alert(e instanceof Error ? e.message : String(e));
+      alert(errorText(e));
     } finally {
       setBusyId(null);
     }
@@ -119,7 +120,7 @@ export function BackupsPanel({
       await createBackupSchedule({ kind, refId, cron: cron.trim(), keepLast });
       await refresh();
     } catch (e) {
-      alert(e instanceof Error ? e.message : String(e));
+      alert(errorText(e));
     } finally {
       setBusy(false);
     }

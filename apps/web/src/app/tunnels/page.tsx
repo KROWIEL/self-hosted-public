@@ -43,6 +43,7 @@ export default function TunnelsPage() {
 
 function TunnelsContent() {
   const { t } = useI18n();
+  const errorText = useErrorText();
   const { has, entitlements } = useEntitlements();
   const { confirm, dialog } = useConfirmDialog();
   const [tunnels, setTunnels] = useState<Tunnel[]>([]);
@@ -56,7 +57,7 @@ function TunnelsContent() {
     setLoading(true);
     listTunnels()
       .then(setTunnels)
-      .catch((e) => setError(e instanceof Error ? e.message : t('common.failed')))
+      .catch((e) => setError(errorText(e)))
       .finally(() => setLoading(false));
   }
 
@@ -81,7 +82,7 @@ function TunnelsContent() {
       await deleteTunnel(id);
       load();
     } catch (e) {
-      setError(e instanceof Error ? e.message : t('common.failed'));
+      setError(errorText(e));
     }
   }
 
@@ -292,6 +293,7 @@ function TunnelItem({
   onDelete: () => void;
 }) {
   const { t } = useI18n();
+  const errorText = useErrorText();
   const { confirm, dialog } = useConfirmDialog();
   const [status, setStatus] = useState<TunnelStatus | null>(null);
   const [busy, setBusy] = useState(false);
@@ -332,7 +334,7 @@ function TunnelItem({
       else await startTunnel(tunnel.id);
       await refresh();
     } catch (e) {
-      setErr(e instanceof Error ? e.message : t('common.failed'));
+      setErr(errorText(e));
     } finally {
       setBusy(false);
     }
@@ -343,7 +345,7 @@ function TunnelItem({
     try {
       setInstall(await tunnelInstall(tunnel.id));
     } catch (e) {
-      setErr(e instanceof Error ? e.message : t('common.failed'));
+      setErr(errorText(e));
     }
   }
 

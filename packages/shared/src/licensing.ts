@@ -25,7 +25,8 @@ export type LicenseModule =
   | 'sso'
   | 'audit-export'
   | 'api-cli'
-  | 'white-label';
+  | 'white-label'
+  | 'email';
 
 /** Every known module, ordered for display. */
 export const ALL_MODULES: LicenseModule[] = [
@@ -38,6 +39,7 @@ export const ALL_MODULES: LicenseModule[] = [
   'audit-export',
   'api-cli',
   'white-label',
+  'email',
 ];
 
 /** Modules automatically granted by each tier. */

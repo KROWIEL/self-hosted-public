@@ -78,6 +78,26 @@ export const SsoErrors = {
     }),
 };
 
+export const EmailErrors = {
+  notConfigured: () =>
+    new BadRequestException({
+      code: 'email.notConfigured',
+      message:
+        'Email is not configured. Set the SMTP host, credentials and sender address first.',
+    }),
+  noRecipients: () =>
+    new BadRequestException({
+      code: 'email.noRecipients',
+      message: 'No valid recipients — add at least one address or pick "all users".',
+    }),
+  sendFailed: (reason: string) =>
+    new BadGatewayException({
+      code: 'email.sendFailed',
+      message: `The SMTP server rejected the message: ${reason}`,
+      meta: { reason },
+    }),
+};
+
 export const CommonErrors = {
   adminOnly: () =>
     new ForbiddenException({

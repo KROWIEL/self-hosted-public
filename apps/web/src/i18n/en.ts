@@ -90,6 +90,7 @@ export const en = {
   'nav.whiteLabel': 'White-label',
   'nav.sso': 'Single sign-on',
   'nav.previews': 'Preview envs',
+  'nav.email': 'Email',
   'nav.settings': 'Settings',
   'nav.billing': 'Billing',
   'nav.locked': 'Requires an upgrade',
@@ -236,6 +237,14 @@ export const en = {
   'error.sso.notLicensed': 'Single sign-on requires the Pro plan.',
   'error.sso.notConfigured':
     'Single sign-on is not configured. Ask an administrator to set it up.',
+  'error.email.notConfigured':
+    'Email is not configured. Set the SMTP host, credentials and sender address first.',
+  'error.email.noRecipients':
+    'No valid recipients — add at least one address or pick “all users”.',
+  'error.email.sendFailed': 'The SMTP server rejected the message: {reason}',
+  'error.network.unreachable':
+    'Cannot reach the server. Check your connection.',
+  'error.http.requestFailed': 'Request failed ({status}).',
 
   // Projects (dashboard)
   'projects.title': 'Projects',
@@ -1113,6 +1122,55 @@ export const en = {
   'previews.aboutTitle': 'What are preview environments?',
   'previews.aboutBody':
     'Spin up a temporary, isolated deployment of a service from any git branch — ideal for reviewing a pull request on its own URL. Each preview auto-expires after its TTL and can be redeployed or removed anytime.',
+  'email.aboutTitle': 'What is the email service?',
+  'email.aboutBody':
+    'Send and broadcast messages to your users through your own SMTP provider (Mailgun, SendGrid, Amazon SES, Postmark, or any SMTP relay). This is outbound only — it relays mail through a provider you configure; it is not an inbound mail server. Enter your SMTP settings, send a test, then compose a message to all users or a specific list.',
+
+  // Email service (Pro: email)
+  'email.title': 'Email',
+  'email.subtitle': 'Send and broadcast messages to your users over SMTP.',
+  'email.lockedTitle': 'Email is a Pro feature',
+  'email.lockedBody':
+    'Connect an SMTP provider to send transactional mail and broadcast announcements to your users and team.',
+  'email.adminOnly': 'Only administrators can configure and send email.',
+  'email.smtpTitle': 'SMTP settings',
+  'email.smtpHint':
+    'Use credentials from your email provider (Mailgun, SendGrid, Amazon SES, Postmark, or any SMTP relay).',
+  'email.enabled': 'Enabled',
+  'email.host': 'SMTP host',
+  'email.port': 'Port',
+  'email.secure': 'Use implicit TLS (port 465). Leave off for STARTTLS (587).',
+  'email.username': 'Username',
+  'email.password': 'Password',
+  'email.fromName': 'From name',
+  'email.fromEmail': 'From address',
+  'email.save': 'Save',
+  'email.saving': 'Saving…',
+  'email.saved': 'Email settings saved.',
+  'email.testTo': 'Test recipient (optional)',
+  'email.test': 'Send test',
+  'email.testing': 'Sending…',
+  'email.testOk': 'Test email sent to {to}.',
+  'email.composeTitle': 'Compose message',
+  'email.composeHint':
+    'Recipients are hidden from one another (sent via BCC).',
+  'email.subject': 'Subject',
+  'email.body': 'Message',
+  'email.recipients': 'Recipients',
+  'email.recipientsAll': 'All users',
+  'email.recipientsCustom': 'Specific addresses',
+  'email.recipientsList': 'Addresses (comma or newline separated)',
+  'email.send': 'Send message',
+  'email.sending': 'Sending…',
+  'email.sendOk': 'Message sent to {count} recipient(s).',
+  'email.historyTitle': 'Delivery history',
+  'email.noHistory': 'No messages sent yet.',
+  'email.colTime': 'Time',
+  'email.colSubject': 'Subject',
+  'email.colRecipients': 'Recipients',
+  'email.colStatus': 'Status',
+  'email.statusSent': 'Sent',
+  'email.statusFailed': 'Failed',
 
   // Single sign-on (Pro: sso)
   'sso.title': 'Single sign-on',

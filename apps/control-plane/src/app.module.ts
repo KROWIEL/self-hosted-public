@@ -22,6 +22,7 @@ import { BrandingModule } from './modules/branding/branding.module';
 import { MetricsModule } from './modules/metrics/metrics.module';
 import { SsoModule } from './modules/sso/sso.module';
 import { PreviewModule } from './modules/preview/preview.module';
+import { EmailModule } from './modules/email/email.module';
 
 @Module({
   imports: [
@@ -51,6 +52,7 @@ import { PreviewModule } from './modules/preview/preview.module';
     MetricsModule,
     SsoModule,
     PreviewModule,
+    EmailModule,
   ],
 })
 export class AppModule {}

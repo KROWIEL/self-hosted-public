@@ -61,6 +61,7 @@ export default function ProjectPage() {
   const params = useParams<{ id: string }>();
   const id = params.id;
   const { t } = useI18n();
+  const errorText = useErrorText();
   const typeLabel = useTypeLabel();
 
   const [project, setProject] = useState<Project | null>(null);
@@ -89,7 +90,7 @@ export default function ProjectPage() {
         setCreds(c);
         setResources(r);
       })
-      .catch((e) => setError(e instanceof Error ? e.message : t('common.failed')))
+      .catch((e) => setError(errorText(e)))
       .finally(() => setLoading(false));
   }
 
@@ -260,6 +261,7 @@ function CreateServiceModal({
   onCreated: () => void;
 }) {
   const { t } = useI18n();
+  const errorText = useErrorText();
   const firstTemplate = templates[0];
   const maxCpu = Math.max(10, resources?.availableCpu ?? 100);
   const maxMem = Math.max(128, resources?.availableMemMb ?? 512);
@@ -302,7 +304,7 @@ function CreateServiceModal({
       });
       onCreated();
     } catch (e) {
-      setErr(e instanceof Error ? e.message : t('common.failed'));
+      setErr(errorText(e));
     } finally {
       setCreating(false);
     }
@@ -466,6 +468,7 @@ function ProjectLimitsModal({
   onSaved: () => void;
 }) {
   const { t } = useI18n();
+  const errorText = useErrorText();
   const maxCpu = Math.max(
     project.cpuLimit,
     project.cpuLimit + (resources?.availableCpu ?? 0),
@@ -501,7 +504,7 @@ function ProjectLimitsModal({
       await updateProjectLimits(project.id, { cpuLimit, memLimit });
       onSaved();
     } catch (e) {
-      setErr(e instanceof Error ? e.message : t('common.failed'));
+      setErr(errorText(e));
     } finally {
       setSaving(false);
     }
@@ -618,6 +621,7 @@ function DatabasesSection({
   services: Service[];
 }) {
   const { t } = useI18n();
+  const errorText = useErrorText();
   const [dbs, setDbs] = useState<ManagedDatabase[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
@@ -625,7 +629,7 @@ function DatabasesSection({
   const refresh = () =>
     listDatabases(projectId)
       .then(setDbs)
-      .catch((e) => setError(e instanceof Error ? e.message : t('common.failed')));
+      .catch((e) => setError(errorText(e)));
 
   useEffect(() => {
     refresh();
@@ -699,6 +703,7 @@ function CreateDatabaseModal({
   onCreated: () => void;
 }) {
   const { t } = useI18n();
+  const errorText = useErrorText();
   const [creating, setCreating] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [form, setForm] = useState<CreateDatabaseBody>({
@@ -717,7 +722,7 @@ function CreateDatabaseModal({
       await createDatabase(projectId, { ...form, name: form.name.trim() });
       onCreated();
     } catch (e) {
-      setErr(e instanceof Error ? e.message : t('common.failed'));
+      setErr(errorText(e));
     } finally {
       setCreating(false);
     }

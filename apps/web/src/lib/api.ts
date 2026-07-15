@@ -142,7 +142,11 @@ export async function exportAudit(
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     });
   } catch {
-    throw new ApiError(0, 'Cannot reach the server. Check your connection.');
+    throw new ApiError(
+      0,
+      'Cannot reach the server. Check your connection.',
+      'network.unreachable',
+    );
   }
   if (!res.ok) throw parseApiError(res.status, await res.text());
   const blob = await res.blob();
@@ -295,6 +299,67 @@ export const uploadBackupOffsite = (id: string) =>
   api<{ ok: boolean; key?: string; error?: string }>(`/offsite/backups/${id}`, {
     method: 'POST',
   });
+
+// ---- Email (Pro: email) ----
+
+export interface EmailConfig {
+  enabled: boolean;
+  host: string;
+  port: number;
+  /** true = implicit TLS (:465); false = STARTTLS (:587). */
+  secure: boolean;
+  username: string;
+  fromName: string;
+  fromEmail: string;
+  /** Whether an SMTP password is stored; the value itself is never returned. */
+  passwordSet: boolean;
+  updatedAt: string | null;
+}
+
+export interface EmailConfigInput {
+  enabled?: boolean;
+  host?: string;
+  port?: number;
+  secure?: boolean;
+  username?: string;
+  /** Omit to keep the stored password; send a value to rotate it. */
+  password?: string;
+  fromName?: string;
+  fromEmail?: string;
+}
+
+export interface EmailMessage {
+  id: string;
+  subject: string;
+  recipientKind: string;
+  recipientCount: number;
+  status: string;
+  error: string | null;
+  createdAt: string;
+}
+
+export const getEmailConfig = () => api<EmailConfig>('/email/config');
+export const setEmailConfig = (body: EmailConfigInput) =>
+  api<EmailConfig>('/email/config', {
+    method: 'PUT',
+    body: JSON.stringify(body),
+  });
+export const sendTestEmail = (to?: string) =>
+  api<{ ok: true; to: string }>('/email/test', {
+    method: 'POST',
+    body: JSON.stringify(to ? { to } : {}),
+  });
+export const sendEmailMessage = (body: {
+  subject: string;
+  body: string;
+  recipientKind: 'all' | 'custom';
+  recipients?: string;
+}) =>
+  api<{ ok: true; recipientCount: number; id: string }>('/email/send', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+export const listEmailMessages = () => api<EmailMessage[]>('/email/messages');
 
 // ---- Personal API tokens (Pro: api-cli) ----
 
@@ -614,7 +679,10 @@ function parseApiError(status: number, raw: string): ApiError {
   } catch {
     /* not JSON — fall through */
   }
-  return new ApiError(status, raw || `Request failed (${status})`);
+  if (raw) return new ApiError(status, raw);
+  return new ApiError(status, `Request failed (${status})`, 'http.requestFailed', {
+    status,
+  });
 }
 
 export async function api<T>(
@@ -634,7 +702,11 @@ export async function api<T>(
     });
   } catch {
     // Network/connection failure (server down, offline, CORS).
-    throw new ApiError(0, 'Cannot reach the server. Check your connection.');
+    throw new ApiError(
+      0,
+      'Cannot reach the server. Check your connection.',
+      'network.unreachable',
+    );
   }
   if (!res.ok) {
     throw parseApiError(res.status, await res.text());
@@ -669,7 +741,8 @@ export type LicenseModule =
   | 'sso'
   | 'audit-export'
   | 'api-cli'
-  | 'white-label';
+  | 'white-label'
+  | 'email';
 
 export interface ActivationStatus {
   required: boolean;

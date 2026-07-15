@@ -21,10 +21,11 @@ import {
   Spinner,
   useConfirmDialog,
 } from '@/components/ui';
-import { useI18n } from '@/i18n';
+import { useErrorText, useI18n } from '@/i18n';
 
 export default function GitCredentialsPage() {
   const { t } = useI18n();
+  const errorText = useErrorText();
   const { confirm, dialog } = useConfirmDialog();
   const [creds, setCreds] = useState<GitCredential[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -35,7 +36,7 @@ export default function GitCredentialsPage() {
     setLoading(true);
     listGitCredentials()
       .then(setCreds)
-      .catch((e) => setError(e instanceof Error ? e.message : t('common.failed')))
+      .catch((e) => setError(errorText(e)))
       .finally(() => setLoading(false));
   }
 
@@ -56,7 +57,7 @@ export default function GitCredentialsPage() {
       await deleteGitCredential(id);
       load();
     } catch (e) {
-      setError(e instanceof Error ? e.message : t('common.failed'));
+      setError(errorText(e));
     }
   }
 
@@ -115,6 +116,7 @@ function CreateGitCredentialModal({
   onCreated: () => void;
 }) {
   const { t } = useI18n();
+  const errorText = useErrorText();
   const [creating, setCreating] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [form, setForm] = useState<{
@@ -137,7 +139,7 @@ function CreateGitCredentialModal({
       });
       onCreated();
     } catch (e) {
-      setErr(e instanceof Error ? e.message : t('common.failed'));
+      setErr(errorText(e));
     } finally {
       setCreating(false);
     }
@@ -208,6 +210,7 @@ function CredItem({
   onDelete: () => void;
 }) {
   const { t } = useI18n();
+  const errorText = useErrorText();
   const [repoUrl, setRepoUrl] = useState('');
   const [verifyOpen, setVerifyOpen] = useState(false);
   const [verifying, setVerifying] = useState(false);
@@ -224,7 +227,7 @@ function CredItem({
     } catch (e) {
       setResult({
         ok: false,
-        message: e instanceof Error ? e.message : t('common.failed'),
+        message: errorText(e),
       });
     } finally {
       setVerifying(false);

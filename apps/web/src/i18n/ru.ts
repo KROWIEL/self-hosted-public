@@ -91,6 +91,7 @@ export const ru: Dict = {
   'nav.whiteLabel': 'White-label',
   'nav.sso': 'Единый вход (SSO)',
   'nav.previews': 'Превью-среды',
+  'nav.email': 'Почта',
   'nav.settings': 'Настройки',
   'nav.billing': 'Тарифы',
   'nav.locked': 'Требуется апгрейд',
@@ -236,6 +237,14 @@ export const ru: Dict = {
   'error.sso.notLicensed': 'Единый вход доступен в тарифе Pro.',
   'error.sso.notConfigured':
     'Единый вход не настроен. Обратитесь к администратору.',
+  'error.email.notConfigured':
+    'Почта не настроена. Сначала укажите SMTP-хост, учётные данные и адрес отправителя.',
+  'error.email.noRecipients':
+    'Нет подходящих получателей — добавьте хотя бы один адрес или выберите «Все пользователи».',
+  'error.email.sendFailed': 'SMTP-сервер отклонил сообщение: {reason}',
+  'error.network.unreachable':
+    'Не удаётся подключиться к серверу. Проверьте соединение.',
+  'error.http.requestFailed': 'Запрос не выполнен ({status}).',
 
   // Projects (dashboard)
   'projects.title': 'Проекты',
@@ -1120,6 +1129,55 @@ export const ru: Dict = {
   'previews.aboutTitle': 'Что такое preview-окружения?',
   'previews.aboutBody':
     'Временный изолированный деплой сервиса из любой git-ветки — удобно для ревью pull request на отдельном URL. Каждое окружение автоматически удаляется по истечении TTL, его можно передеплоить или удалить в любой момент.',
+  'email.aboutTitle': 'Что такое почтовый сервис?',
+  'email.aboutBody':
+    'Отправляйте и рассылайте сообщения пользователям через ваш SMTP-провайдер (Mailgun, SendGrid, Amazon SES, Postmark или любой SMTP-релей). Это только исходящая почта — сообщения передаются через настроенного вами провайдера; это не входящий почтовый сервер. Укажите настройки SMTP, отправьте тест и составьте письмо для всех пользователей или выбранного списка.',
+
+  // Почтовый сервис (Pro: email)
+  'email.title': 'Почта',
+  'email.subtitle': 'Отправка и рассылка сообщений пользователям через SMTP.',
+  'email.lockedTitle': 'Почта — функция Pro',
+  'email.lockedBody':
+    'Подключите SMTP-провайдера, чтобы отправлять транзакционные письма и рассылать объявления пользователям и команде.',
+  'email.adminOnly': 'Настраивать и отправлять почту могут только администраторы.',
+  'email.smtpTitle': 'Настройки SMTP',
+  'email.smtpHint':
+    'Используйте данные вашего почтового провайдера (Mailgun, SendGrid, Amazon SES, Postmark или любой SMTP-релей).',
+  'email.enabled': 'Включено',
+  'email.host': 'SMTP-хост',
+  'email.port': 'Порт',
+  'email.secure': 'Неявный TLS (порт 465). Отключите для STARTTLS (587).',
+  'email.username': 'Имя пользователя',
+  'email.password': 'Пароль',
+  'email.fromName': 'Имя отправителя',
+  'email.fromEmail': 'Адрес отправителя',
+  'email.save': 'Сохранить',
+  'email.saving': 'Сохранение…',
+  'email.saved': 'Настройки почты сохранены.',
+  'email.testTo': 'Тестовый получатель (необязательно)',
+  'email.test': 'Отправить тест',
+  'email.testing': 'Отправка…',
+  'email.testOk': 'Тестовое письмо отправлено на {to}.',
+  'email.composeTitle': 'Новое сообщение',
+  'email.composeHint':
+    'Получатели скрыты друг от друга (отправка через BCC).',
+  'email.subject': 'Тема',
+  'email.body': 'Сообщение',
+  'email.recipients': 'Получатели',
+  'email.recipientsAll': 'Все пользователи',
+  'email.recipientsCustom': 'Указанные адреса',
+  'email.recipientsList': 'Адреса (через запятую или с новой строки)',
+  'email.send': 'Отправить сообщение',
+  'email.sending': 'Отправка…',
+  'email.sendOk': 'Сообщение отправлено {count} получателю(ям).',
+  'email.historyTitle': 'История отправок',
+  'email.noHistory': 'Сообщений пока нет.',
+  'email.colTime': 'Время',
+  'email.colSubject': 'Тема',
+  'email.colRecipients': 'Получатели',
+  'email.colStatus': 'Статус',
+  'email.statusSent': 'Отправлено',
+  'email.statusFailed': 'Ошибка',
 
   // Единый вход (Pro: sso)
   'sso.title': 'Единый вход (SSO)',

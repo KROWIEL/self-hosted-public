@@ -59,11 +59,12 @@ import {
   formatCpu,
   useConfirmDialog,
 } from '@/components/ui';
-import { useI18n, useTypeLabel } from '@/i18n';
+import { useErrorText, useI18n, useTypeLabel } from '@/i18n';
 export default function ServicePage() {
   const params = useParams<{ id: string }>();
   const id = params.id;
   const { t } = useI18n();
+  const errorText = useErrorText();
   const typeLabel = useTypeLabel();
   const { confirm, dialog } = useConfirmDialog();
 
@@ -93,7 +94,7 @@ export default function ServicePage() {
 
   useEffect(() => {
     refresh()
-      .catch((e) => setError(e instanceof Error ? e.message : t('common.failed')))
+      .catch((e) => setError(errorText(e)))
       .finally(() => setLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [refresh]);
@@ -128,7 +129,7 @@ export default function ServicePage() {
       await fn();
       await refresh();
     } catch (e) {
-      const msg = e instanceof Error ? e.message : t('common.failed');
+      const msg = errorText(e);
       // setError routes through <ErrorBox>, which surfaces the toast.
       setError(msg);
     } finally {
@@ -375,6 +376,7 @@ function ServiceActionBar({
 
 function ServiceResourceSummary({ service, id }: { service: Service; id: string }) {
   const { t } = useI18n();
+  const errorText = useErrorText();
   const [stats, setStats] = useState<ServiceStats | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
@@ -388,7 +390,7 @@ function ServiceResourceSummary({ service, id }: { service: Service; id: string 
           setErr(null);
         })
         .catch((e) => {
-          if (alive) setErr(e instanceof Error ? e.message : t('common.failed'));
+          if (alive) setErr(errorText(e));
         });
     tick();
     const timer = setInterval(tick, 3000);
@@ -551,6 +553,7 @@ function ScanSetupModal({
   onApplied: () => void;
 }) {
   const { t } = useI18n();
+  const errorText = useErrorText();
   const { confirm, dialog } = useConfirmDialog();
   const [loading, setLoading] = useState(true);
   const [applying, setApplying] = useState(false);
@@ -575,7 +578,7 @@ function ScanSetupModal({
           ),
         );
       })
-      .catch((e) => alive && setErr(e instanceof Error ? e.message : String(e)))
+      .catch((e) => alive && setErr(errorText(e)))
       .finally(() => alive && setLoading(false));
     return () => {
       alive = false;
@@ -610,7 +613,7 @@ function ScanSetupModal({
       });
       onApplied();
     } catch (e) {
-      setErr(e instanceof Error ? e.message : String(e));
+      setErr(errorText(e));
     } finally {
       setApplying(false);
     }
@@ -1178,6 +1181,7 @@ function SettingsBox({
   onSaved: () => Promise<unknown>;
 }) {
   const { t } = useI18n();
+  const errorText = useErrorText();
   const { confirm, dialog } = useConfirmDialog();
   const [editing, setEditing] = useState(false);
   const [creds, setCreds] = useState<GitCredential[]>([]);
@@ -1273,7 +1277,7 @@ function SettingsBox({
       setEditing(false);
       await onSaved();
     } catch (e) {
-      setErr(e instanceof Error ? e.message : t('common.failed'));
+      setErr(errorText(e));
     } finally {
       setBusy(false);
     }
@@ -1516,6 +1520,7 @@ function parseMemMb(value?: string): number {
 
 function VolumesBox({ id }: { id: string }) {
   const { t } = useI18n();
+  const errorText = useErrorText();
   const { confirm, dialog } = useConfirmDialog();
   const [vols, setVols] = useState<Volume[]>([]);
   const [mountPath, setMountPath] = useState('');
@@ -1552,7 +1557,7 @@ function VolumesBox({ id }: { id: string }) {
       setMountPath('');
       await refresh();
     } catch (e) {
-      setErr(e instanceof Error ? e.message : t('common.failed'));
+      setErr(errorText(e));
     } finally {
       setBusy(false);
     }
@@ -1923,6 +1928,7 @@ function EnvEditor({
   onSaved: () => Promise<unknown>;
 }) {
   const { t } = useI18n();
+  const errorText = useErrorText();
   const { confirm, dialog } = useConfirmDialog();
   const [key, setKey] = useState('');
   const [value, setValue] = useState('');
@@ -1956,7 +1962,7 @@ function EnvEditor({
       setShowImport(false);
       await onSaved();
     } catch (e) {
-      setErr(e instanceof Error ? e.message : t('common.failed'));
+      setErr(errorText(e));
     } finally {
       setBusy(false);
     }
@@ -1984,7 +1990,7 @@ function EnvEditor({
       setSecret(false);
       await onSaved();
     } catch (e) {
-      setErr(e instanceof Error ? e.message : t('common.failed'));
+      setErr(errorText(e));
     } finally {
       setBusy(false);
     }
@@ -2007,7 +2013,7 @@ function EnvEditor({
       await deleteEnv(id, k);
       await onSaved();
     } catch (e) {
-      setErr(e instanceof Error ? e.message : t('common.failed'));
+      setErr(errorText(e));
     } finally {
       setBusy(false);
     }
@@ -2125,6 +2131,7 @@ function DomainBox({
   onSaved: () => Promise<unknown>;
 }) {
   const { t } = useI18n();
+  const errorText = useErrorText();
   const { confirm, dialog } = useConfirmDialog();
   const [host, setHost] = useState('');
   const [https, setHttps] = useState(true);
@@ -2150,7 +2157,7 @@ function DomainBox({
       await setDomain(id, host.trim(), https);
       await onSaved();
     } catch (e) {
-      setErr(e instanceof Error ? e.message : t('common.failed'));
+      setErr(errorText(e));
     } finally {
       setBusy(false);
     }

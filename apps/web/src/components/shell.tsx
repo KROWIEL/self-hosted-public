@@ -136,6 +136,12 @@ const Icon = {
       <path d="M6 8.5v7M8.5 6H14a3 3 0 0 1 3 3v0" />
     </Svg>
   ),
+  mail: (p: IconProps) => (
+    <Svg {...p}>
+      <rect x="3" y="5" width="18" height="14" rx="2" />
+      <path d="m3 7 9 6 9-6" />
+    </Svg>
+  ),
   lock: (p: IconProps) => (
     <Svg {...p}>
       <rect x="5" y="11" width="14" height="9" rx="2" />
@@ -228,6 +234,12 @@ const NAV: NavItem[] = [
     label: 'nav.previews',
     icon: Icon.preview,
     module: 'preview-envs',
+  },
+  {
+    href: '/email',
+    label: 'nav.email',
+    icon: Icon.mail,
+    module: 'email',
   },
 ];
 

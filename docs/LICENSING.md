@@ -28,7 +28,7 @@ The panel supports two modes, chosen by the operator via `.env`:
 |------|-------------------|-----------------|
 | **Free** | $0 forever | Full core: deploy from git, templates, HTTPS, managed DBs, logs & live metrics, projects, RBAC, 2FA (limited to **1 node**) |
 | **Home-Lab** | ~$3 / mo | Everything in Free **+ Reverse-tunnels module**, up to **3 nodes** and **3 tunnels** |
-| **Pro** | ~$15 / mo | Everything + **all 9 modules** below, **unlimited** nodes & tunnels |
+| **Pro** | ~$15 / mo | Everything + **all 10 modules** below, **unlimited** nodes & tunnels |
 
 ### Quantitative limits
 
@@ -58,6 +58,7 @@ the key payload).
 | `audit-export` | Pro | Organization-wide audit log with server-side filters and CSV / JSON export. |
 | `api-cli` | Pro | Personal API tokens (PATs) for programmatic access to the API / CLI, integrated into the JWT auth guard. |
 | `white-label` | Pro | Customize the app name, logo, accent color and attribution across the UI and login page. |
+| `email` | Pro | Outbound email over your own SMTP provider: send test messages and broadcast announcements to all users or a specific list, with encrypted credentials and a delivery log. |
 
 Tier → modules mapping lives in `packages/shared/src/licensing.ts`
 (`TIER_MODULES`); `Home-Lab = [reverse-tunnels]`, `Pro = all modules`. Adding a

@@ -28,10 +28,11 @@ import {
   formatCpu,
   useConfirmDialog,
 } from '@/components/ui';
-import { useI18n, useTypeLabel } from '@/i18n';
+import { useErrorText, useI18n, useTypeLabel } from '@/i18n';
 
 export default function DashboardPage() {
   const { t } = useI18n();
+  const errorText = useErrorText();
   const typeLabel = useTypeLabel();
   const { confirm, dialog } = useConfirmDialog();
   const [projects, setProjects] = useState<Project[]>([]);
@@ -53,7 +54,7 @@ export default function DashboardPage() {
         setNodes(n);
         setPlatform(summary);
       })
-      .catch((e) => setError(e instanceof Error ? e.message : t('common.failed')))
+      .catch((e) => setError(errorText(e)))
       .finally(() => setLoading(false));
   }
 
@@ -86,7 +87,7 @@ export default function DashboardPage() {
       await deleteProject(id);
       load();
     } catch (e) {
-      setError(e instanceof Error ? e.message : t('common.failed'));
+      setError(errorText(e));
     }
   }
 
@@ -185,6 +186,7 @@ function CreateProjectModal({
   onCreated: () => void;
 }) {
   const { t } = useI18n();
+  const errorText = useErrorText();
   const [name, setName] = useState('');
   const maxCpu = Math.max(100, summary?.availableProjectCpu ?? 100);
   const maxMem = Math.max(512, summary?.availableProjectMemMb ?? 512);
@@ -204,7 +206,7 @@ function CreateProjectModal({
       await createProject({ name: name.trim(), cpuLimit, memLimit });
       onCreated();
     } catch (e) {
-      setErr(e instanceof Error ? e.message : t('common.failed'));
+      setErr(errorText(e));
     } finally {
       setCreating(false);
     }

@@ -51,7 +51,16 @@ import {
 import { useErrorText, useI18n, useTypeLabel } from '@/i18n';
 
 export default function NodesPage() {
+  return (
+    <AppShell>
+      <NodesContent />
+    </AppShell>
+  );
+}
+
+function NodesContent() {
   const { t } = useI18n();
+  const errorText = useErrorText();
   const { entitlements } = useEntitlements();
   const { confirm, dialog } = useConfirmDialog();
   const [nodes, setNodes] = useState<Node[]>([]);
@@ -69,7 +78,7 @@ export default function NodesPage() {
         setNodes(rows);
         setPlatform(summary);
       })
-      .catch((e) => setError(e instanceof Error ? e.message : t('common.failed')))
+      .catch((e) => setError(errorText(e)))
       .finally(() => setLoading(false));
   }
 
@@ -102,7 +111,7 @@ export default function NodesPage() {
       await deleteNode(id);
       load();
     } catch (e) {
-      setError(e instanceof Error ? e.message : t('common.failed'));
+      setError(errorText(e));
     }
   }
 
@@ -111,7 +120,7 @@ export default function NodesPage() {
   const limitTitle = atLimit ? t('nodes.limitReached', { max: maxNodes ?? 0 }) : undefined;
 
   return (
-    <AppShell>
+    <>
       <PageHeader
         title={t('nodes.title')}
         subtitle={t('nodes.subtitle')}
@@ -220,7 +229,7 @@ AGENT_PORT=${newToken.agentPort} go run ./cmd/agent`}
         />
       )}
       {dialog}
-    </AppShell>
+    </>
   );
 }
 
@@ -518,13 +527,14 @@ function NodeInstallModal({
   onClose: () => void;
 }) {
   const { t } = useI18n();
+  const errorText = useErrorText();
   const [install, setInstall] = useState<NodeInstall | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
   useEffect(() => {
     getNodeInstall(node.id)
       .then(setInstall)
-      .catch((e) => setErr(e instanceof Error ? e.message : t('common.failed')));
+      .catch((e) => setErr(errorText(e)));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [node.id]);
 
@@ -565,6 +575,7 @@ function NodeItem({
   onChanged: () => void;
 }) {
   const { t } = useI18n();
+  const errorText = useErrorText();
   const typeLabel = useTypeLabel();
   const { confirm, dialog } = useConfirmDialog();
   const [agent, setAgent] = useState<AgentStatus | null>(null);
@@ -650,7 +661,7 @@ function NodeItem({
       else await startNodeAgent(node.id);
       await refresh();
     } catch (e) {
-      setErr(e instanceof Error ? e.message : t('common.failed'));
+      setErr(errorText(e));
     } finally {
       setBusy(false);
     }
@@ -957,6 +968,7 @@ function NodeCleanupModal({
   onDone: () => void;
 }) {
   const { t } = useI18n();
+  const errorText = useErrorText();
   const { confirm, dialog } = useConfirmDialog();
   const [all, setAll] = useState(false);
   const [volumes, setVolumes] = useState(false);
@@ -982,7 +994,7 @@ function NodeCleanupModal({
       setResult(res);
       onDone();
     } catch (e) {
-      setErr(e instanceof Error ? e.message : t('common.failed'));
+      setErr(errorText(e));
     } finally {
       setBusy(false);
     }
@@ -1099,6 +1111,7 @@ function NodeCapacityModal({
   onSaved: () => void;
 }) {
   const { t } = useI18n();
+  const errorText = useErrorText();
   const maxCpu = Math.max(
     node.cpuTotal ?? 100,
     platform?.hostCpuCores ? platform.hostCpuCores * 100 : 100,
@@ -1119,7 +1132,7 @@ function NodeCapacityModal({
       await updateNodeCapacity(node.id, { cpuTotal, memTotal });
       onSaved();
     } catch (e) {
-      setErr(e instanceof Error ? e.message : t('common.failed'));
+      setErr(errorText(e));
     } finally {
       setSaving(false);
     }

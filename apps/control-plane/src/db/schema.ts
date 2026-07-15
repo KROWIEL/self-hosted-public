@@ -562,6 +562,34 @@ export const offsiteUploads = pgTable('offsite_uploads', {
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });
 
+/// Outbound email (Pro: email). Singleton SMTP relay configuration used to send
+/// and broadcast messages. The SMTP password is encrypted at rest (AES-256-GCM).
+export const emailConfig = pgTable('email_config', {
+  id: text('id').primaryKey().default('default'),
+  enabled: boolean('enabled').notNull().default(false),
+  host: text('host').notNull().default(''),
+  port: integer('port').notNull().default(587),
+  // STARTTLS (false) vs implicit TLS on connect (true, typically port 465).
+  secure: boolean('secure').notNull().default(false),
+  username: text('username').notNull().default(''),
+  passwordEnc: text('password_enc').notNull().default(''),
+  fromName: text('from_name').notNull().default('Self-Hosted'),
+  fromEmail: text('from_email').notNull().default(''),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+});
+
+/// Delivery log of outbound broadcasts (one row per send operation).
+export const emailMessages = pgTable('email_messages', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  subject: text('subject').notNull(),
+  // 'all' = every user; 'custom' = an explicit address list.
+  recipientKind: text('recipient_kind').notNull().default('custom'),
+  recipientCount: integer('recipient_count').notNull().default(0),
+  status: text('status').notNull().default('sent'), // 'sent' | 'failed'
+  error: text('error'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+
 export type DbSchema = {
   users: typeof users;
   nodes: typeof nodes;
@@ -592,4 +620,6 @@ export type DbSchema = {
   metricSamples: typeof metricSamples;
   ssoConfig: typeof ssoConfig;
   previewEnvironments: typeof previewEnvironments;
+  emailConfig: typeof emailConfig;
+  emailMessages: typeof emailMessages;
 };

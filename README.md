@@ -97,7 +97,7 @@ core has no per-seat metering.
 |------|--------|--------------|
 | **Free** | $0 forever | The complete core (see below) |
 | **Home-Lab** | ~$3 / mo | Core **+ Reverse tunnels** module |
-| **Pro** | ~$15 / mo | Core **+ every module** (all 9 below) |
+| **Pro** | ~$15 / mo | Core **+ every module** (all 10 below) |
 
 <sub>*Suggested pricing — you set the final numbers in your own store. Details in [`docs/LICENSING.md`](docs/LICENSING.md).</sub>
 
@@ -121,6 +121,7 @@ Pro = **unlimited** nodes & tunnels.
 | **Audit export** (`audit-export`) | Pro | Organization-wide audit log with filters and CSV / JSON export. |
 | **API & CLI tokens** (`api-cli`) | Pro | Personal access tokens (PATs) for programmatic access to the API / CLI. |
 | **White-label** (`white-label`) | Pro | Customize the app name, logo, accent color and attribution. |
+| **Email** (`email`) | Pro | Send and broadcast messages to your users over your own SMTP provider — outbound relay, not an inbound mail server. |
 
 <sub>All modules are implemented and shipping. Home-Lab unlocks Reverse tunnels; Pro unlocks everything.</sub>
 
@@ -227,7 +228,7 @@ Open-core: **ядро бесплатно навсегда и без ограни
 |-------|-------|------------------|
 | **Free** | $0 навсегда | Полное ядро (см. ниже) |
 | **Home-Lab** | ~$3 / мес | Ядро **+ модуль Reverse tunnels** |
-| **Pro** | ~$15 / мес | Ядро **+ все модули** (все 9 ниже) |
+| **Pro** | ~$15 / мес | Ядро **+ все модули** (все 10 ниже) |
 
 <sub>*Рекомендованные цены — финальные вы задаёте в своём магазине. Подробнее в [`docs/LICENSING.md`](docs/LICENSING.md).</sub>
 
@@ -252,6 +253,7 @@ Open-core: **ядро бесплатно навсегда и без ограни
 | **Экспорт аудита** (`audit-export`) | Pro | Общеорганизационный аудит-лог с фильтрами и экспортом в CSV / JSON. |
 | **API и CLI токены** (`api-cli`) | Pro | Персональные токены доступа (PAT) для программного доступа к API / CLI. |
 | **White-label** (`white-label`) | Pro | Настройка названия приложения, логотипа, акцентного цвета и атрибуции. |
+| **Почта** (`email`) | Pro | Отправка и рассылка сообщений пользователям через ваш SMTP-провайдер — исходящий релей, а не входящий почтовый сервер. |
 
 <sub>Все модули реализованы и доступны. Home-Lab открывает Reverse tunnels; Pro открывает всё.</sub>
 
