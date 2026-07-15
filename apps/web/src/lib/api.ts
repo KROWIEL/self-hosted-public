@@ -188,7 +188,13 @@ export interface AlertEvent {
   createdAt: string;
 }
 
-export const listAlertMeta = () => api<{ events: string[] }>('/alerts/meta');
+export interface AlertEventGroup {
+  group: string;
+  events: string[];
+}
+
+export const listAlertMeta = () =>
+  api<{ events: string[]; groups: AlertEventGroup[] }>('/alerts/meta');
 
 export const listAlertChannels = () =>
   api<AlertChannel[]>('/alerts/channels');

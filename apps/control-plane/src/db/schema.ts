@@ -426,7 +426,7 @@ export const alertChannels = pgTable('alert_channels', {
 export const alertRules = pgTable('alert_rules', {
   id: uuid('id').primaryKey().defaultRandom(),
   name: text('name').notNull(),
-  // 'node.offline' | 'deploy.failed' | 'backup.failed'
+  // One of ALERT_EVENTS (see modules/alerts/alerts.constants.ts).
   event: text('event').notNull(),
   channelId: uuid('channel_id')
     .notNull()

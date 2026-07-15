@@ -14,7 +14,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ModuleGuard } from '../../common/licensing/module.guard';
 import { RequiresModule } from '../../common/licensing/require-module.decorator';
 import { AlertsService } from './alerts.service';
-import { ALERT_EVENTS } from './alerts.constants';
+import { ALERT_EVENTS, ALERT_EVENT_GROUPS } from './alerts.constants';
 import {
   CreateChannelDto,
   CreateRuleDto,
@@ -39,7 +39,7 @@ export class AlertsController {
   @Get('meta')
   meta(@Request() req: { user?: { role?: string } }) {
     this.assertAdmin(req);
-    return { events: ALERT_EVENTS };
+    return { events: ALERT_EVENTS, groups: ALERT_EVENT_GROUPS };
   }
 
   @Get('events')

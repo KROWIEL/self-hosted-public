@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import {
   AlertChannel,
   AlertEvent,
+  AlertEventGroup,
   AlertRule,
   AuthMe,
   createAlertChannel,
@@ -13,6 +14,7 @@ import {
   getMe,
   listAlertChannels,
   listAlertEvents,
+  listAlertMeta,
   listAlertRules,
   testAlertChannel,
   updateAlertChannel,
@@ -31,7 +33,38 @@ import {
 } from '@/components/ui';
 import { TKey, useErrorText, useI18n } from '@/i18n';
 
-const EVENTS = ['node.offline', 'deploy.failed', 'backup.failed'] as const;
+const EVENT_LABELS: Record<string, TKey> = {
+  'node.offline': 'alerts.ev.nodeOffline',
+  'node.online': 'alerts.ev.nodeOnline',
+  'node.cpu.high': 'alerts.ev.nodeCpuHigh',
+  'node.mem.high': 'alerts.ev.nodeMemHigh',
+  'node.disk.high': 'alerts.ev.nodeDiskHigh',
+  'deploy.failed': 'alerts.ev.deployFailed',
+  'deploy.succeeded': 'alerts.ev.deploySucceeded',
+  'deploy.stuck': 'alerts.ev.deployStuck',
+  'service.error': 'alerts.ev.serviceError',
+  'service.stopped': 'alerts.ev.serviceStopped',
+  'database.error': 'alerts.ev.databaseError',
+  'database.stopped': 'alerts.ev.databaseStopped',
+  'backup.failed': 'alerts.ev.backupFailed',
+  'backup.succeeded': 'alerts.ev.backupSucceeded',
+  'offsite.failed': 'alerts.ev.offsiteFailed',
+  'tunnel.offline': 'alerts.ev.tunnelOffline',
+  'tunnel.online': 'alerts.ev.tunnelOnline',
+  'license.expiring': 'alerts.ev.licenseExpiring',
+};
+
+const GROUP_LABELS: Record<string, TKey> = {
+  nodes: 'alerts.grp.nodes',
+  deployments: 'alerts.grp.deployments',
+  services: 'alerts.grp.services',
+  databases: 'alerts.grp.databases',
+  backups: 'alerts.grp.backups',
+  networking: 'alerts.grp.networking',
+  licensing: 'alerts.grp.licensing',
+};
+
+const DEFAULT_EVENT = 'node.offline';
 
 export default function AlertsPage() {
   return (
@@ -51,6 +84,7 @@ function AlertsContent() {
   const [channels, setChannels] = useState<AlertChannel[]>([]);
   const [rules, setRules] = useState<AlertRule[]>([]);
   const [events, setEvents] = useState<AlertEvent[]>([]);
+  const [eventGroups, setEventGroups] = useState<AlertEventGroup[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [testedId, setTestedId] = useState<string | null>(null);
@@ -58,7 +92,7 @@ function AlertsContent() {
   const [chForm, setChForm] = useState({ name: '', url: '' });
   const [ruleForm, setRuleForm] = useState({
     name: '',
-    event: EVENTS[0] as string,
+    event: DEFAULT_EVENT,
     channelId: '',
   });
   const [busy, setBusy] = useState(false);
@@ -74,14 +108,16 @@ function AlertsContent() {
   async function reload() {
     setLoading(true);
     try {
-      const [c, r, e] = await Promise.all([
+      const [c, r, e, meta] = await Promise.all([
         listAlertChannels(),
         listAlertRules(),
         listAlertEvents(),
+        listAlertMeta(),
       ]);
       setChannels(c);
       setRules(r);
       setEvents(e);
+      setEventGroups(meta.groups ?? []);
       setError(null);
     } catch (e) {
       setError(errorText(e));
@@ -100,12 +136,11 @@ function AlertsContent() {
   }, [unlocked, isAdmin]);
 
   function eventLabel(ev: string): string {
-    const map: Record<string, TKey> = {
-      'node.offline': 'alerts.eventNodeOffline',
-      'deploy.failed': 'alerts.eventDeployFailed',
-      'backup.failed': 'alerts.eventBackupFailed',
-    };
-    return map[ev] ? t(map[ev]) : ev;
+    return EVENT_LABELS[ev] ? t(EVENT_LABELS[ev]) : ev;
+  }
+
+  function groupLabel(g: string): string {
+    return GROUP_LABELS[g] ? t(GROUP_LABELS[g]) : g;
   }
 
   async function onAddChannel() {
@@ -167,7 +202,7 @@ function AlertsContent() {
         event: ruleForm.event,
         channelId: ruleForm.channelId,
       });
-      setRuleForm({ name: '', event: EVENTS[0], channelId: '' });
+      setRuleForm({ name: '', event: DEFAULT_EVENT, channelId: '' });
       await reload();
     } catch (e) {
       setError(errorText(e));
@@ -344,10 +379,14 @@ function AlertsContent() {
                 }
                 className="field w-full"
               >
-                {EVENTS.map((ev) => (
-                  <option key={ev} value={ev}>
-                    {eventLabel(ev)}
-                  </option>
+                {eventGroups.map((g) => (
+                  <optgroup key={g.group} label={groupLabel(g.group)}>
+                    {g.events.map((ev) => (
+                      <option key={ev} value={ev}>
+                        {eventLabel(ev)}
+                      </option>
+                    ))}
+                  </optgroup>
                 ))}
               </select>
             </Field>
