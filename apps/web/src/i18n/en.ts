@@ -1042,6 +1042,32 @@ export const en = {
   'metricsHistory.mem': 'Memory',
   'metricsHistory.disk': 'Disk',
 
+  // Section explainers (GuideCard) shown at the top of feature pages
+  'alerts.aboutTitle': 'What are alerts?',
+  'alerts.aboutBody':
+    'Get notified when something needs attention — a node goes offline, a deploy fails, a backup breaks and more. Create a channel (a webhook URL for Slack, Telegram, Discord, etc.), then add rules that route specific events to it.',
+  'audit.aboutTitle': 'What is the audit log?',
+  'audit.aboutBody':
+    'A record of who did what across your organization — logins, deploys, config changes and more. Filter by action or date range and export the full history as CSV or JSON for compliance or investigations.',
+  'metricsHistory.aboutTitle': 'What is metrics history?',
+  'metricsHistory.aboutBody':
+    'Historical CPU, memory and disk usage per node, sampled continuously so you can spot trends, capacity limits and regressions over time. Pick a node and a time range to inspect its charts.',
+  'offsite.aboutTitle': 'What are offsite backups?',
+  'offsite.aboutBody':
+    'Mirror local backups to S3-compatible storage (AWS S3, Backblaze B2, Wasabi, MinIO…) so a copy survives even if the server is lost. Enter your bucket and credentials, test the connection, then sync on demand.',
+  'apiTokens.aboutTitle': 'What are API tokens?',
+  'apiTokens.aboutBody':
+    'Long-lived tokens for scripting the panel from the CLI or CI/CD without your password or 2FA. Create a token, copy it once (it is shown only at creation) and send it as a Bearer header. Revoke any token anytime.',
+  'whiteLabel.aboutTitle': 'What is white-labeling?',
+  'whiteLabel.aboutBody':
+    'Make the panel your own: set the app name, logo and accent color, and optionally hide the “powered by” note. Changes apply instantly to the header, browser tab and favicon across the app.',
+  'sso.aboutTitle': 'What is single sign-on?',
+  'sso.aboutBody':
+    'Let your team sign in with an existing identity provider (Google, Microsoft Entra, Okta, Keycloak — any OpenID Connect). Register the redirect URI at your provider, paste the issuer and client credentials, then enable SSO.',
+  'previews.aboutTitle': 'What are preview environments?',
+  'previews.aboutBody':
+    'Spin up a temporary, isolated deployment of a service from any git branch — ideal for reviewing a pull request on its own URL. Each preview auto-expires after its TTL and can be redeployed or removed anytime.',
+
   // Single sign-on (Pro: sso)
   'sso.title': 'Single sign-on',
   'sso.subtitle': 'Let users sign in with your OpenID Connect identity provider.',

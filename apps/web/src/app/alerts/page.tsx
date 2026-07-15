@@ -28,6 +28,7 @@ import {
   EmptyState,
   ErrorBox,
   Field,
+  GuideCard,
   PageHeader,
   Spinner,
 } from '@/components/ui';
@@ -258,6 +259,12 @@ function AlertsContent() {
   return (
     <>
       <PageHeader title={t('alerts.title')} subtitle={t('alerts.subtitle')} />
+
+      <GuideCard
+        storageKey="alerts"
+        title={t('alerts.aboutTitle')}
+        body={t('alerts.aboutBody')}
+      />
 
       {error && <ErrorBox message={error} />}
 

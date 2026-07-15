@@ -20,6 +20,7 @@ import {
   EmptyState,
   ErrorBox,
   Field,
+  GuideCard,
   PageHeader,
   Spinner,
 } from '@/components/ui';
@@ -207,6 +208,12 @@ function OffsiteContent() {
   return (
     <>
       <PageHeader title={t('offsite.title')} subtitle={t('offsite.subtitle')} />
+
+      <GuideCard
+        storageKey="offsite"
+        title={t('offsite.aboutTitle')}
+        body={t('offsite.aboutBody')}
+      />
 
       {error && <ErrorBox message={error} />}
       {notice && (

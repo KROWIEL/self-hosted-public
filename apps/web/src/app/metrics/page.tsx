@@ -9,6 +9,7 @@ import {
   Card,
   EmptyState,
   ErrorBox,
+  GuideCard,
   PageHeader,
   Spinner,
 } from '@/components/ui';
@@ -103,6 +104,12 @@ function MetricsContent() {
   return (
     <>
       <PageHeader title={t('metricsHistory.title')} subtitle={t('metricsHistory.subtitle')} />
+
+      <GuideCard
+        storageKey="metrics"
+        title={t('metricsHistory.aboutTitle')}
+        body={t('metricsHistory.aboutBody')}
+      />
 
       {error && <ErrorBox message={error} />}
 

@@ -17,6 +17,7 @@ import {
   EmptyState,
   ErrorBox,
   Field,
+  GuideCard,
   PageHeader,
 } from '@/components/ui';
 import { useErrorText, useI18n } from '@/i18n';
@@ -124,6 +125,12 @@ function WhiteLabelContent() {
       <PageHeader
         title={t('whiteLabel.title')}
         subtitle={t('whiteLabel.subtitle')}
+      />
+
+      <GuideCard
+        storageKey="white-label"
+        title={t('whiteLabel.aboutTitle')}
+        body={t('whiteLabel.aboutBody')}
       />
 
       {error && <ErrorBox message={error} />}

@@ -16,6 +16,7 @@ import {
   EmptyState,
   ErrorBox,
   Field,
+  GuideCard,
   PageHeader,
 } from '@/components/ui';
 import { useErrorText, useI18n } from '@/i18n';
@@ -116,6 +117,12 @@ function SsoContent() {
   return (
     <>
       <PageHeader title={t('sso.title')} subtitle={t('sso.subtitle')} />
+
+      <GuideCard
+        storageKey="sso"
+        title={t('sso.aboutTitle')}
+        body={t('sso.aboutBody')}
+      />
 
       {error && <ErrorBox message={error} />}
       {notice && (

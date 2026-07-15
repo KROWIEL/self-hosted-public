@@ -16,6 +16,7 @@ import {
   EmptyState,
   ErrorBox,
   Field,
+  GuideCard,
   PageHeader,
   Spinner,
 } from '@/components/ui';
@@ -108,6 +109,12 @@ function AuditContent() {
   return (
     <>
       <PageHeader title={t('audit.title')} subtitle={t('audit.subtitle')} />
+
+      <GuideCard
+        storageKey="audit"
+        title={t('audit.aboutTitle')}
+        body={t('audit.aboutBody')}
+      />
 
       <Card className="mb-6">
         <h3 className="text-sm font-semibold text-white">

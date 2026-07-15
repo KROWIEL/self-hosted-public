@@ -16,6 +16,7 @@ import {
   EmptyState,
   ErrorBox,
   Field,
+  GuideCard,
   PageHeader,
   Spinner,
 } from '@/components/ui';
@@ -129,6 +130,12 @@ function ApiTokensContent() {
       <PageHeader
         title={t('apiTokens.title')}
         subtitle={t('apiTokens.subtitle')}
+      />
+
+      <GuideCard
+        storageKey="api-tokens"
+        title={t('apiTokens.aboutTitle')}
+        body={t('apiTokens.aboutBody')}
       />
 
       {error && <ErrorBox message={error} />}

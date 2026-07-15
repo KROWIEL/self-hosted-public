@@ -21,6 +21,7 @@ import {
   EmptyState,
   ErrorBox,
   Field,
+  GuideCard,
   PageHeader,
   Spinner,
 } from '@/components/ui';
@@ -171,6 +172,12 @@ function PreviewsContent() {
       <PageHeader
         title={t('previews.title')}
         subtitle={t('previews.subtitle')}
+      />
+
+      <GuideCard
+        storageKey="previews"
+        title={t('previews.aboutTitle')}
+        body={t('previews.aboutBody')}
       />
 
       {error && <ErrorBox message={error} />}
