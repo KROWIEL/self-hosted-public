@@ -82,6 +82,7 @@ export const en = {
   'nav.tunnels': 'Exposure',
   'nav.templates': 'Templates',
   'nav.git': 'Git access',
+  'nav.audit': 'Audit log',
   'nav.settings': 'Settings',
   'nav.billing': 'Billing',
   'nav.locked': 'Requires an upgrade',
@@ -821,6 +822,30 @@ export const en = {
   'billing.module.metrics-history': 'Metrics history',
   'billing.module.sso': 'SSO / OIDC',
   'billing.module.audit-export': 'Audit export',
+
+  // Audit log page (Pro: audit-export)
+  'audit.subtitle': 'Organization-wide activity trail with CSV/JSON export.',
+  'audit.lockedTitle': 'Audit export is a Pro module',
+  'audit.lockedBody':
+    'View the organization-wide activity trail and export it as CSV or JSON for compliance and incident review. Upgrade to Pro to unlock it.',
+  'audit.adminOnly': 'The audit log is available to administrators only.',
+  'audit.exportTitle': 'Export',
+  'audit.exportHint':
+    'Download the audit trail. Optionally narrow it by action prefix and date range.',
+  'audit.filterAction': 'Action prefix',
+  'audit.filterActionPlaceholder': 'e.g. services. or auth.',
+  'audit.filterFrom': 'From',
+  'audit.filterTo': 'To',
+  'audit.exportCsv': 'Export CSV',
+  'audit.exportJson': 'Export JSON',
+  'audit.exporting': 'Exporting…',
+  'audit.recentTitle': 'Recent activity',
+  'audit.colTime': 'Time',
+  'audit.colUser': 'User',
+  'audit.colAction': 'Action',
+  'audit.colTarget': 'Target',
+  'audit.colIp': 'IP',
+  'audit.colStatus': 'Status',
   'billing.module.api-cli': 'API & CLI',
   'billing.module.white-label': 'White-label',
 };

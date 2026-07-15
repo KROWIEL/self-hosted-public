@@ -125,6 +125,37 @@ export const listProjectAudit = (projectId: string) =>
 
 export const listAudit = () => api<AuditLog[]>('/audit');
 
+/** Downloads the platform-wide audit trail as CSV/JSON (Pro: audit-export). */
+export async function exportAudit(
+  format: 'csv' | 'json',
+  opts: { action?: string; from?: string; to?: string; limit?: number } = {},
+) {
+  const token = getToken();
+  const qs = new URLSearchParams({ format });
+  if (opts.action) qs.set('action', opts.action);
+  if (opts.from) qs.set('from', opts.from);
+  if (opts.to) qs.set('to', opts.to);
+  if (opts.limit) qs.set('limit', String(opts.limit));
+  let res: Response;
+  try {
+    res = await fetch(`${API_URL}/audit/export?${qs.toString()}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+  } catch {
+    throw new ApiError(0, 'Cannot reach the server. Check your connection.');
+  }
+  if (!res.ok) throw parseApiError(res.status, await res.text());
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `audit-${new Date().toISOString().slice(0, 10)}.${format}`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
 export interface Node {
   id: string;
   name: string;

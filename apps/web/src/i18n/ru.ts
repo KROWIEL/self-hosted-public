@@ -83,6 +83,7 @@ export const ru: Dict = {
   'nav.tunnels': 'Публикация',
   'nav.templates': 'Шаблоны',
   'nav.git': 'Git-доступы',
+  'nav.audit': 'Журнал аудита',
   'nav.settings': 'Настройки',
   'nav.billing': 'Тарифы',
   'nav.locked': 'Требуется апгрейд',
@@ -823,6 +824,31 @@ export const ru: Dict = {
   'billing.module.metrics-history': 'История метрик',
   'billing.module.sso': 'SSO / OIDC',
   'billing.module.audit-export': 'Экспорт аудита',
+
+  // Страница журнала аудита (Pro: audit-export)
+  'audit.subtitle':
+    'Журнал действий по всей организации с экспортом в CSV/JSON.',
+  'audit.lockedTitle': 'Экспорт аудита — модуль Pro',
+  'audit.lockedBody':
+    'Просматривайте журнал действий по всей организации и выгружайте его в CSV или JSON для комплаенса и разбора инцидентов. Оформите Pro, чтобы разблокировать.',
+  'audit.adminOnly': 'Журнал аудита доступен только администраторам.',
+  'audit.exportTitle': 'Экспорт',
+  'audit.exportHint':
+    'Скачайте журнал аудита. При необходимости ограничьте префиксом действия и диапазоном дат.',
+  'audit.filterAction': 'Префикс действия',
+  'audit.filterActionPlaceholder': 'напр. services. или auth.',
+  'audit.filterFrom': 'С',
+  'audit.filterTo': 'По',
+  'audit.exportCsv': 'Экспорт CSV',
+  'audit.exportJson': 'Экспорт JSON',
+  'audit.exporting': 'Экспорт…',
+  'audit.recentTitle': 'Недавняя активность',
+  'audit.colTime': 'Время',
+  'audit.colUser': 'Пользователь',
+  'audit.colAction': 'Действие',
+  'audit.colTarget': 'Объект',
+  'audit.colIp': 'IP',
+  'audit.colStatus': 'Статус',
   'billing.module.api-cli': 'API и CLI',
   'billing.module.white-label': 'White-label',
 };

@@ -83,6 +83,12 @@ const Icon = {
       <path d="M2.5 9.5h19M6 15h4" />
     </Svg>
   ),
+  audit: (p: IconProps) => (
+    <Svg {...p}>
+      <path d="M8 3h8a2 2 0 0 1 2 2v15l-3-2-3 2-3-2-3 2V5a2 2 0 0 1 2-2Z" />
+      <path d="M9 8h6M9 12h5" />
+    </Svg>
+  ),
   lock: (p: IconProps) => (
     <Svg {...p}>
       <rect x="5" y="11" width="14" height="9" rx="2" />
@@ -128,6 +134,12 @@ const NAV: NavItem[] = [
   },
   { href: '/templates', label: 'nav.templates', icon: Icon.templates },
   { href: '/git-credentials', label: 'nav.git', icon: Icon.git },
+  {
+    href: '/audit',
+    label: 'nav.audit',
+    icon: Icon.audit,
+    module: 'audit-export',
+  },
 ];
 
 const COLLAPSE_KEY = 'sidebarCollapsed';
