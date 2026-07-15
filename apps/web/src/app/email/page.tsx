@@ -301,7 +301,7 @@ function EmailContent() {
           {t('email.secure')}
         </label>
 
-        <div className="mt-4 flex flex-wrap items-end gap-2">
+        <div className="mt-5">
           <button
             onClick={onSave}
             disabled={busy !== null}
@@ -309,24 +309,25 @@ function EmailContent() {
           >
             {busy === 'save' ? t('email.saving') : t('email.save')}
           </button>
-          <div className="flex items-end gap-2">
-            <Field label={t('email.testTo')}>
-              <input
-                value={testTo}
-                onChange={(e) => setTestTo(e.target.value)}
-                placeholder={form.fromEmail || 'you@example.com'}
-                className="field w-56"
-                autoComplete="off"
-              />
-            </Field>
-            <button
-              onClick={onTest}
-              disabled={busy !== null}
-              className="btn-ghost"
-            >
-              {busy === 'test' ? t('email.testing') : t('email.test')}
-            </button>
-          </div>
+        </div>
+
+        <div className="mt-5 flex flex-wrap items-end gap-3 border-t border-white/5 pt-4">
+          <Field label={t('email.testTo')} className="w-full sm:w-72">
+            <input
+              value={testTo}
+              onChange={(e) => setTestTo(e.target.value)}
+              placeholder={form.fromEmail || 'you@example.com'}
+              className="field w-full"
+              autoComplete="off"
+            />
+          </Field>
+          <button
+            onClick={onTest}
+            disabled={busy !== null}
+            className="btn-ghost"
+          >
+            {busy === 'test' ? t('email.testing') : t('email.test')}
+          </button>
         </div>
       </Card>
 
