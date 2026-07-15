@@ -30,7 +30,8 @@ import {
   statusTone,
   useConfirmDialog,
 } from '@/components/ui';
-import { useI18n } from '@/i18n';
+import { useErrorText, useI18n } from '@/i18n';
+import Link from 'next/link';
 
 export default function TunnelsPage() {
   return (
@@ -42,7 +43,7 @@ export default function TunnelsPage() {
 
 function TunnelsContent() {
   const { t } = useI18n();
-  const { has } = useEntitlements();
+  const { has, entitlements } = useEntitlements();
   const { confirm, dialog } = useConfirmDialog();
   const [tunnels, setTunnels] = useState<Tunnel[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -97,17 +98,39 @@ function TunnelsContent() {
     );
   }
 
+  const maxTunnels = entitlements.limits.maxTunnels;
+  const atLimit = maxTunnels != null && tunnels.length >= maxTunnels;
+
   return (
     <>
       <PageHeader
         title={t('tunnel.title')}
         subtitle={t('tunnel.subtitle')}
         action={
-          <button onClick={() => setCreateOpen(true)} className="btn-primary">
+          <button
+            onClick={() => setCreateOpen(true)}
+            disabled={atLimit}
+            title={atLimit ? t('tunnel.limitReached', { max: maxTunnels ?? 0 }) : undefined}
+            className="btn-primary disabled:cursor-not-allowed disabled:opacity-50"
+          >
             {t('tunnel.add')}
           </button>
         }
       />
+
+      {maxTunnels != null && (
+        <p className="mb-4 text-xs text-neutral-500">
+          {t('tunnel.limitHint', { count: tunnels.length, max: maxTunnels })}
+          {atLimit && (
+            <>
+              {' '}
+              <Link href="/billing" className="text-indigo-300 hover:text-indigo-200">
+                {t('tunnel.limitUpgrade')}
+              </Link>
+            </>
+          )}
+        </p>
+      )}
 
       <GuideCard
         storageKey="tunnels"
@@ -154,6 +177,7 @@ function CreateTunnelModal({
   onCreated: () => void;
 }) {
   const { t } = useI18n();
+  const errorText = useErrorText();
   const { confirm, dialog } = useConfirmDialog();
   const [creating, setCreating] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -181,7 +205,7 @@ function CreateTunnelModal({
       });
       onCreated();
     } catch (e) {
-      setErr(e instanceof Error ? e.message : t('common.failed'));
+      setErr(errorText(e, 'common.failed'));
     } finally {
       setCreating(false);
     }

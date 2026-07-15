@@ -47,6 +47,30 @@ export const TIER_MODULES: Record<LicenseTier, LicenseModule[]> = {
   pro: [...ALL_MODULES],
 };
 
+/**
+ * Per-tier quantitative caps. `null` means unlimited. Enforced server-side on
+ * resource creation; surfaced in {@link Entitlements.limits} so the UI can warn
+ * and disable "add" actions before the request is rejected.
+ */
+export interface TierLimits {
+  /** Max number of nodes that can exist. `null` = unlimited. */
+  maxNodes: number | null;
+  /** Max number of reverse tunnels that can exist. `null` = unlimited. */
+  maxTunnels: number | null;
+}
+
+/** Quantitative caps per tier. Free is single-node; Home-Lab is capped; Pro is open. */
+export const TIER_LIMITS: Record<LicenseTier, TierLimits> = {
+  free: { maxNodes: 1, maxTunnels: 0 },
+  homelab: { maxNodes: 3, maxTunnels: 3 },
+  pro: { maxNodes: null, maxTunnels: null },
+};
+
+/** The caps for a given tier (falls back to the Free caps for unknown tiers). */
+export function limitsForTier(tier: LicenseTier): TierLimits {
+  return TIER_LIMITS[tier] ?? TIER_LIMITS.free;
+}
+
 /** Human-friendly tier order (low → high) for comparisons and upgrade hints. */
 export const TIER_RANK: Record<LicenseTier, number> = {
   free: 0,
@@ -108,6 +132,8 @@ export interface Entitlements {
   tier: LicenseTier;
   /** All modules currently unlocked (tier modules ∪ extra modules). */
   modules: LicenseModule[];
+  /** Quantitative caps for the active tier (nodes, tunnels, …). */
+  limits: TierLimits;
   /** Expiry as unix seconds, or `null` for perpetual / Free. */
   expiresAt: number | null;
   /** Whether a valid, non-expired paid license is active. */
@@ -124,6 +150,7 @@ export interface Entitlements {
 export const FREE_ENTITLEMENTS: Entitlements = {
   tier: 'free',
   modules: [],
+  limits: TIER_LIMITS.free,
   expiresAt: null,
   licensed: false,
 };

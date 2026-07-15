@@ -26,9 +26,20 @@ The panel supports two modes, chosen by the operator via `.env`:
 
 | Tier | Price (suggested) | What it unlocks |
 |------|-------------------|-----------------|
-| **Free** | $0 forever | Full core: deploy from git, templates, HTTPS, managed DBs, logs & live metrics, projects, RBAC, 2FA, unlimited nodes |
-| **Home-Lab** | ~$3 / mo | Everything in Free **+ Reverse-tunnels module** (expose NAT / home-lab nodes) |
-| **Pro** | ~$15 / mo | Everything + **all 9 modules** below |
+| **Free** | $0 forever | Full core: deploy from git, templates, HTTPS, managed DBs, logs & live metrics, projects, RBAC, 2FA (limited to **1 node**) |
+| **Home-Lab** | ~$3 / mo | Everything in Free **+ Reverse-tunnels module**, up to **3 nodes** and **3 tunnels** |
+| **Pro** | ~$15 / mo | Everything + **all 9 modules** below, **unlimited** nodes & tunnels |
+
+### Quantitative limits
+
+Beyond module gating, each tier caps a few resources (enforced server-side on
+creation; mirror of `TIER_LIMITS` in `packages/shared/src/licensing.ts`):
+
+| Tier | Max nodes | Max reverse tunnels |
+|------|-----------|---------------------|
+| **Free** | 1 | 0 (module locked) |
+| **Home-Lab** | 3 | 3 |
+| **Pro** | unlimited | unlimited |
 
 ### Gated modules
 

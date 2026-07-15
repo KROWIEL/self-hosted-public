@@ -229,6 +229,10 @@ export const en = {
   'error.license.expiredKey': 'The license key has expired.',
   'error.license.moduleLocked':
     'This feature requires the {tier} plan. Upgrade in Billing to unlock it.',
+  'error.license.nodeLimit':
+    'Your plan allows at most {max} node(s). Upgrade in Billing to add more.',
+  'error.license.tunnelLimit':
+    'Your plan allows at most {max} reverse tunnel(s). Upgrade in Billing to add more.',
   'error.sso.notLicensed': 'Single sign-on requires the Pro plan.',
   'error.sso.notConfigured':
     'Single sign-on is not configured. Ask an administrator to set it up.',
@@ -308,6 +312,9 @@ export const en = {
   'nodes.notEnrolled': 'awaiting enrollment',
   'nodes.adding': 'Adding…',
   'nodes.empty': 'No nodes registered yet.',
+  'nodes.limitHint': '{count} of {max} nodes used on your plan.',
+  'nodes.limitReached': 'Your plan allows at most {max} node(s).',
+  'nodes.limitUpgrade': 'Upgrade for more.',
   'nodes.start': 'Start agent',
   'nodes.stop': 'Stop agent',
   'nodes.startConfirm': 'Start this node agent?',
@@ -720,6 +727,9 @@ export const en = {
   'tunnel.add': 'Add tunnel',
   'tunnel.adding': 'Adding…',
   'tunnel.empty': 'No tunnels yet. Add one to expose this panel via a public VDS.',
+  'tunnel.limitHint': '{count} of {max} tunnels used on your plan.',
+  'tunnel.limitReached': 'Your plan allows at most {max} tunnel(s).',
+  'tunnel.limitUpgrade': 'Upgrade for more.',
   'tunnel.namePlaceholder': 'Name (e.g. home → vds)',
   'tunnel.serverHostPlaceholder': 'Public VDS host or IP',
   'tunnel.controlPortPlaceholder': 'Control port',

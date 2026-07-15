@@ -3,6 +3,7 @@ import {
   Entitlements,
   FREE_ENTITLEMENTS,
   LicensePayload,
+  TIER_LIMITS,
   TIER_MODULES,
 } from '@selfhosted/shared';
 
@@ -98,6 +99,7 @@ export function entitlementsFromKey(
   return {
     tier: payload.tier,
     modules,
+    limits: TIER_LIMITS[payload.tier] ?? TIER_LIMITS.free,
     expiresAt: payload.exp && payload.exp > 0 ? payload.exp : null,
     licensed: payload.tier !== 'free',
     subject: payload.sub,

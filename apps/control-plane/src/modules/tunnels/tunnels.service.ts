@@ -16,6 +16,8 @@ import { execFile as cpExecFile } from 'node:child_process';
 import { DRIZZLE, Database } from '../../db/database.module';
 import { tunnels } from '../../db/schema';
 import { CryptoService } from '../../common/crypto/crypto.service';
+import { EntitlementsService } from '../../common/licensing/entitlements.service';
+import { LicenseErrors } from '../../common/errors/app-errors';
 import { TunnelRunnerService } from './tunnel-runner.service';
 import { CreateTunnelDto, UpdateTunnelDto } from './dto/tunnel.dto';
 
@@ -41,6 +43,7 @@ export class TunnelsService implements OnApplicationBootstrap {
     @Inject(DRIZZLE) private readonly db: Database,
     private readonly crypto: CryptoService,
     private readonly runner: TunnelRunnerService,
+    private readonly entitlements: EntitlementsService,
   ) {}
 
   /** Restart tunnels that were enabled before the panel shut down. */
@@ -79,7 +82,20 @@ export class TunnelsService implements OnApplicationBootstrap {
     return rows.map((r) => this.view(r));
   }
 
+  /**
+   * Enforce the tier's reverse-tunnel cap before creating another one. `null` =
+   * unlimited (Pro). The controller already gates the module (Home-Lab / Pro);
+   * this additionally caps Home-Lab to a fixed number of tunnels.
+   */
+  private async assertTunnelQuota(): Promise<void> {
+    const { maxTunnels } = await this.entitlements.limits();
+    if (maxTunnels == null) return;
+    const existing = await this.db.select({ id: tunnels.id }).from(tunnels);
+    if (existing.length >= maxTunnels) throw LicenseErrors.tunnelLimit(maxTunnels);
+  }
+
   async create(dto: CreateTunnelDto) {
+    await this.assertTunnelQuota();
     const token = randomBytes(24).toString('hex');
     const [row] = await this.db
       .insert(tunnels)

@@ -229,6 +229,10 @@ export const ru: Dict = {
   'error.license.expiredKey': 'Срок действия ключа лицензии истёк.',
   'error.license.moduleLocked':
     'Эта функция доступна в тарифе {tier}. Откройте её в разделе «Тарифы».',
+  'error.license.nodeLimit':
+    'Ваш тариф допускает не более {max} нод(ы). Повысьте тариф в разделе «Тарифы».',
+  'error.license.tunnelLimit':
+    'Ваш тариф допускает не более {max} туннел(я/ей). Повысьте тариф в разделе «Тарифы».',
   'error.sso.notLicensed': 'Единый вход доступен в тарифе Pro.',
   'error.sso.notConfigured':
     'Единый вход не настроен. Обратитесь к администратору.',
@@ -308,6 +312,9 @@ export const ru: Dict = {
   'nodes.notEnrolled': 'ожидает подключения',
   'nodes.adding': 'Добавление…',
   'nodes.empty': 'Ноды ещё не зарегистрированы.',
+  'nodes.limitHint': 'Использовано {count} из {max} нод по вашему тарифу.',
+  'nodes.limitReached': 'Ваш тариф допускает не более {max} нод(ы).',
+  'nodes.limitUpgrade': 'Повысить тариф.',
   'nodes.start': 'Запустить агент',
   'nodes.stop': 'Остановить агент',
   'nodes.startConfirm': 'Запустить агент этой ноды?',
@@ -722,6 +729,9 @@ export const ru: Dict = {
   'tunnel.adding': 'Добавление…',
   'tunnel.empty':
     'Туннелей пока нет. Добавьте, чтобы опубликовать панель через публичный VDS.',
+  'tunnel.limitHint': 'Использовано {count} из {max} туннелей по вашему тарифу.',
+  'tunnel.limitReached': 'Ваш тариф допускает не более {max} туннел(я/ей).',
+  'tunnel.limitUpgrade': 'Повысить тариф.',
   'tunnel.namePlaceholder': 'Название (напр. дом → vds)',
   'tunnel.serverHostPlaceholder': 'Хост или IP публичного VDS',
   'tunnel.controlPortPlaceholder': 'Порт управления',

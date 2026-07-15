@@ -30,6 +30,7 @@ import {
   updateNodeCapacity,
 } from '@/lib/api';
 import { AppShell } from '@/components/shell';
+import { useEntitlements } from '@/components/entitlements';
 import {
   Card,
   EmptyState,
@@ -47,10 +48,11 @@ import {
   formatCpu,
   useConfirmDialog,
 } from '@/components/ui';
-import { useI18n, useTypeLabel } from '@/i18n';
+import { useErrorText, useI18n, useTypeLabel } from '@/i18n';
 
 export default function NodesPage() {
   const { t } = useI18n();
+  const { entitlements } = useEntitlements();
   const { confirm, dialog } = useConfirmDialog();
   const [nodes, setNodes] = useState<Node[]>([]);
   const [platform, setPlatform] = useState<PlatformResourceSummary | null>(null);
@@ -104,6 +106,10 @@ export default function NodesPage() {
     }
   }
 
+  const maxNodes = entitlements.limits.maxNodes;
+  const atLimit = maxNodes != null && nodes.length >= maxNodes;
+  const limitTitle = atLimit ? t('nodes.limitReached', { max: maxNodes ?? 0 }) : undefined;
+
   return (
     <AppShell>
       <PageHeader
@@ -113,19 +119,37 @@ export default function NodesPage() {
           <div className="flex items-center gap-2">
             <button
               onClick={() => setCreateOpen(true)}
-              className="btn-ghost whitespace-nowrap"
+              disabled={atLimit}
+              title={limitTitle}
+              className="btn-ghost whitespace-nowrap disabled:cursor-not-allowed disabled:opacity-50"
             >
               {t('nodes.addLocal')}
             </button>
             <button
               onClick={() => setRemoteOpen(true)}
-              className="btn-primary whitespace-nowrap"
+              disabled={atLimit}
+              title={limitTitle}
+              className="btn-primary whitespace-nowrap disabled:cursor-not-allowed disabled:opacity-50"
             >
               {t('nodes.addRemote')}
             </button>
           </div>
         }
       />
+
+      {maxNodes != null && (
+        <p className="mb-4 text-xs text-neutral-500">
+          {t('nodes.limitHint', { count: nodes.length, max: maxNodes })}
+          {atLimit && (
+            <>
+              {' '}
+              <Link href="/billing" className="text-indigo-300 hover:text-indigo-200">
+                {t('nodes.limitUpgrade')}
+              </Link>
+            </>
+          )}
+        </p>
+      )}
 
       <GuideCard
         storageKey="nodes"
@@ -213,6 +237,7 @@ function CreateNodeModal({
   onCreated: (node: NodeWithToken) => void;
 }) {
   const { t } = useI18n();
+  const errorText = useErrorText();
   const maxCpu = Math.max(
     100,
     platform?.hostCpuCores ? platform.hostCpuCores * 100 : 100,
@@ -244,7 +269,7 @@ function CreateNodeModal({
       });
       onCreated(node);
     } catch (e) {
-      setErr(e instanceof Error ? e.message : t('common.failed'));
+      setErr(errorText(e, 'common.failed'));
     } finally {
       setCreating(false);
     }
@@ -384,6 +409,7 @@ function RemoteNodeModal({
   onCreated: () => void;
 }) {
   const { t } = useI18n();
+  const errorText = useErrorText();
   const [form, setForm] = useState({ name: '', fqdn: '', agentPort: 8443 });
   const [creating, setCreating] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -402,7 +428,7 @@ function RemoteNodeModal({
       const info = await getNodeInstall(node.id);
       setInstall(info);
     } catch (e) {
-      setErr(e instanceof Error ? e.message : t('common.failed'));
+      setErr(errorText(e, 'common.failed'));
     } finally {
       setCreating(false);
     }

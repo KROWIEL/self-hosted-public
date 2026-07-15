@@ -6,10 +6,11 @@ import {
   OnModuleInit,
 } from '@nestjs/common';
 import { desc, eq } from 'drizzle-orm';
-import type {
-  ActivationStatus,
-  Entitlements,
-  LicenseModule,
+import {
+  TIER_LIMITS,
+  type ActivationStatus,
+  type Entitlements,
+  type LicenseModule,
 } from '@selfhosted/shared';
 import { DRIZZLE, Database } from '../../db/database.module';
 import { installation, licenses } from '../../db/schema';
@@ -208,10 +209,12 @@ export class EntitlementsService implements OnModuleInit, OnModuleDestroy {
       if (base.tier === 'free' || !base.licensed || ok) {
         ent = { ...base, activation: status };
       } else {
-        // Licensed but not currently activated → lock paid modules.
+        // Licensed but not currently activated → lock paid modules and drop
+        // quantitative caps back to the Free tier.
         ent = {
           tier: base.tier,
           modules: [],
+          limits: TIER_LIMITS.free,
           expiresAt: base.expiresAt,
           licensed: false,
           subject: base.subject,
@@ -229,6 +232,12 @@ export class EntitlementsService implements OnModuleInit, OnModuleDestroy {
   async hasModule(module: LicenseModule): Promise<boolean> {
     const ent = await this.get();
     return ent.modules.includes(module);
+  }
+
+  /** Current tier's quantitative caps (nodes, tunnels, …). */
+  async limits(): Promise<Entitlements['limits']> {
+    const ent = await this.get();
+    return ent.limits;
   }
 
   /** Validate and persist a new license key, replacing any existing one. */

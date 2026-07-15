@@ -103,8 +103,10 @@ core has no per-seat metering.
 
 **The free core includes:** git-to-Docker deploys, stack templates, automatic
 HTTPS, managed Postgres/MySQL with backups, multi-tenant projects & quotas,
-RBAC, 2FA, live logs / metrics / web-exec, unlimited nodes, and a localized
-(EN/RU) UI.
+RBAC, 2FA, live logs / metrics / web-exec, and a localized (EN/RU) UI.
+
+**Plan limits:** Free = **1 node**; Home-Lab = **3 nodes + 3 reverse tunnels**;
+Pro = **unlimited** nodes & tunnels.
 
 #### Add-on modules
 
@@ -231,8 +233,11 @@ Open-core: **ядро бесплатно навсегда и без ограни
 
 **Бесплатное ядро включает:** деплой Git → Docker, шаблоны стеков,
 автоматический HTTPS, managed Postgres/MySQL с бэкапами, мульти-тенант проекты и
-квоты, RBAC, 2FA, live-логи / метрики / web-exec, неограниченные ноды и
-локализованный (EN/RU) интерфейс.
+квоты, RBAC, 2FA, live-логи / метрики / web-exec и локализованный (EN/RU)
+интерфейс.
+
+**Лимиты тарифов:** Free — **1 нода**; Home-Lab — **3 ноды + 3 обратных
+туннеля**; Pro — **без ограничений** по нодам и туннелям.
 
 #### Дополнительные модули
 

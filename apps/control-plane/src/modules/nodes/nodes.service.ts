@@ -25,6 +25,8 @@ import {
   services,
 } from '../../db/schema';
 import { CryptoService } from '../../common/crypto/crypto.service';
+import { EntitlementsService } from '../../common/licensing/entitlements.service';
+import { LicenseErrors } from '../../common/errors/app-errors';
 import { AgentClient } from './agent.client';
 
 interface CreateNodeInput {
@@ -59,6 +61,7 @@ export class NodesService implements OnModuleInit, OnModuleDestroy {
     @Inject(DRIZZLE) private readonly db: Database,
     private readonly crypto: CryptoService,
     private readonly agent: AgentClient,
+    private readonly entitlements: EntitlementsService,
   ) {}
 
   onModuleInit() {
@@ -80,7 +83,19 @@ export class NodesService implements OnModuleInit, OnModuleDestroy {
     return this.db.select().from(nodes).orderBy(nodes.createdAt);
   }
 
+  /**
+   * Enforce the tier's node cap before creating another node. `null` = unlimited
+   * (Pro). Counts every node (local + remote) since the cap is per installation.
+   */
+  private async assertNodeQuota(): Promise<void> {
+    const { maxNodes } = await this.entitlements.limits();
+    if (maxNodes == null) return;
+    const existing = await this.db.select({ id: nodes.id }).from(nodes);
+    if (existing.length >= maxNodes) throw LicenseErrors.nodeLimit(maxNodes);
+  }
+
   async create(input: CreateNodeInput) {
+    await this.assertNodeQuota();
     const daemonToken = randomBytes(32).toString('hex');
     const hostCpu = os.cpus().length * 100;
     const hostMemMb = Math.floor(os.totalmem() / 1024 / 1024);
@@ -105,6 +120,7 @@ export class NodesService implements OnModuleInit, OnModuleDestroy {
    * one-time join token the operator passes to the install command.
    */
   async createRemote(input: { name: string; fqdn: string; agentPort?: number }) {
+    await this.assertNodeQuota();
     // Placeholder token; replaced by a real one when the agent enrolls.
     const placeholder = randomBytes(32).toString('hex');
     const [node] = await this.db

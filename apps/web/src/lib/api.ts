@@ -672,9 +672,17 @@ export interface ActivationStatus {
   reason?: string;
 }
 
+export interface TierLimits {
+  /** Max nodes; `null` = unlimited. */
+  maxNodes: number | null;
+  /** Max reverse tunnels; `null` = unlimited. */
+  maxTunnels: number | null;
+}
+
 export interface Entitlements {
   tier: LicenseTier;
   modules: LicenseModule[];
+  limits: TierLimits;
   expiresAt: number | null;
   licensed: boolean;
   subject?: string;
@@ -685,6 +693,7 @@ export interface Entitlements {
 export const FREE_ENTITLEMENTS: Entitlements = {
   tier: 'free',
   modules: [],
+  limits: { maxNodes: 1, maxTunnels: 0 },
   expiresAt: null,
   licensed: false,
 };

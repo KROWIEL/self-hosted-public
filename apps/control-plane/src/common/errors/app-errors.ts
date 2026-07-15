@@ -103,6 +103,18 @@ export const LicenseErrors = {
       message: `This feature requires the ${tier} plan. Upgrade in Billing to unlock it.`,
       meta: { module, tier },
     }),
+  nodeLimit: (max: number) =>
+    new ForbiddenException({
+      code: 'license.nodeLimit',
+      message: `Your plan allows at most ${max} node(s). Upgrade in Billing to add more.`,
+      meta: { max },
+    }),
+  tunnelLimit: (max: number) =>
+    new ForbiddenException({
+      code: 'license.tunnelLimit',
+      message: `Your plan allows at most ${max} reverse tunnel(s). Upgrade in Billing to add more.`,
+      meta: { max },
+    }),
 };
 
 export const TemplateErrors = {
