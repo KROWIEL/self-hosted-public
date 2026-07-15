@@ -1042,8 +1042,10 @@ export const ru: Dict = {
   'metricsHistory.lockedBody':
     'Собирайте и стройте графики загрузки CPU, памяти и диска по каждой ноде во времени.',
   'metricsHistory.empty':
-    'Данных пока нет — замеры собираются каждые несколько минут.',
-  'metricsHistory.cpu': 'Загрузка CPU',
+    'Данных пока нет — первый замер собирается примерно за минуту.',
+  'metricsHistory.collecting':
+    'Собираем данные… график появится, когда наберётся пара замеров.',
+  'metricsHistory.cpu': 'CPU',
   'metricsHistory.mem': 'Память',
   'metricsHistory.disk': 'Диск',
 

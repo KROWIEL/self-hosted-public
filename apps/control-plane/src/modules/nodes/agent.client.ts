@@ -69,6 +69,8 @@ export interface AgentHost {
   load1?: number;
   load5?: number;
   load15?: number;
+  /** Direct CPU utilisation 0-100 (portable; set on platforms without load avg). */
+  cpuUsedPerc?: number;
   memTotalMb?: number;
   memUsedMb?: number;
   memUsedPerc?: number;

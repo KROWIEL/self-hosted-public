@@ -1035,8 +1035,10 @@ export const en = {
   'metricsHistory.lockedBody':
     'Collect and chart CPU, memory and disk usage over time for every node.',
   'metricsHistory.empty':
-    'No data yet — samples are collected every few minutes.',
-  'metricsHistory.cpu': 'CPU load',
+    'No data yet — the first sample is collected within about a minute.',
+  'metricsHistory.collecting':
+    'Collecting… the chart appears once there are a couple of samples.',
+  'metricsHistory.cpu': 'CPU',
   'metricsHistory.mem': 'Memory',
   'metricsHistory.disk': 'Disk',
 

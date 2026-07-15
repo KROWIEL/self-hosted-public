@@ -26,7 +26,8 @@ import {
 export class MetricsCollector implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(MetricsCollector.name);
   private worker?: Worker<MetricsJobData>;
-  private readonly intervalMs = numFromEnv('METRICS_SAMPLE_INTERVAL_MS', 5 * 60_000);
+  // Sample cadence (default 60s). Tune via METRICS_SAMPLE_INTERVAL_MS.
+  private readonly intervalMs = numFromEnv('METRICS_SAMPLE_INTERVAL_MS', 60_000);
   private readonly retentionMs = numFromEnv(
     'METRICS_RETENTION_MS',
     30 * 24 * 60 * 60_000,
@@ -64,6 +65,13 @@ export class MetricsCollector implements OnModuleInit, OnModuleDestroy {
       'sample',
       {},
       { repeat: { every: this.intervalMs }, jobId: 'metrics-sample' },
+    );
+    // Kick an immediate one-off sample so the first data point appears within
+    // seconds instead of only after the first interval elapses.
+    await this.queue.add(
+      'sample',
+      {},
+      { removeOnComplete: true, removeOnFail: true },
     );
   }
 

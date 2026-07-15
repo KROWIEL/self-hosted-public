@@ -60,11 +60,27 @@ function MetricsContent() {
       setLoading(false);
       return;
     }
-    setLoading(true);
-    getNodeMetrics(nodeId, hours)
-      .then(setPoints)
-      .catch((e) => setError(errorText(e)))
-      .finally(() => setLoading(false));
+    let alive = true;
+    const load = (spinner: boolean) => {
+      if (spinner) setLoading(true);
+      getNodeMetrics(nodeId, hours)
+        .then((p) => {
+          if (alive) setPoints(p);
+        })
+        .catch((e) => {
+          if (alive) setError(errorText(e));
+        })
+        .finally(() => {
+          if (alive && spinner) setLoading(false);
+        });
+    };
+    load(true);
+    // Poll so freshly collected samples show up without a manual reload.
+    const timer = setInterval(() => load(false), 30_000);
+    return () => {
+      alive = false;
+      clearInterval(timer);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [unlocked, nodeId, hours]);
 
@@ -124,7 +140,10 @@ function MetricsContent() {
       {!loading && points.length === 0 && (
         <EmptyState>{t('metricsHistory.empty')}</EmptyState>
       )}
-      {!loading && points.length > 0 && (
+      {!loading && points.length === 1 && (
+        <EmptyState>{t('metricsHistory.collecting')}</EmptyState>
+      )}
+      {!loading && points.length > 1 && (
         <div className="grid gap-6 lg:grid-cols-1">
           <MetricChart
             title={t('metricsHistory.cpu')}
@@ -221,6 +240,18 @@ function MetricChart({
             />
           )}
         </svg>
+        {/* Dot markers (HTML overlay avoids aspect-ratio distortion) so a
+            handful of early samples are clearly visible before the line fills in. */}
+        {n <= 12 &&
+          coords.map((c, i) =>
+            c.y == null ? null : (
+              <span
+                key={i}
+                className="absolute h-1.5 w-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full"
+                style={{ left: `${c.x}%`, top: `${c.y}%`, background: color }}
+              />
+            ),
+          )}
       </div>
     </Card>
   );

@@ -17,10 +17,14 @@ export class MetricsService {
   /** Polls a node's agent and records one host-metrics sample. */
   async sample(node: NodeRow): Promise<boolean> {
     const host = await this.agent.getHost(node);
+    // Prefer a direct CPU utilisation reading (portable, incl. Windows); fall
+    // back to deriving it from the Unix load average when that's all we have.
     const cpuPct =
-      host.cpuCores && host.load1 != null
-        ? Math.round(Math.min(100, (host.load1 / host.cpuCores) * 100))
-        : null;
+      host.cpuUsedPerc != null
+        ? Math.round(Math.min(100, Math.max(0, host.cpuUsedPerc)))
+        : host.cpuCores && host.load1 != null
+          ? Math.round(Math.min(100, (host.load1 / host.cpuCores) * 100))
+          : null;
     const memPct = host.memUsedPerc != null ? Math.round(host.memUsedPerc) : null;
     const diskPct =
       host.diskUsedPerc != null ? Math.round(host.diskUsedPerc) : null;
