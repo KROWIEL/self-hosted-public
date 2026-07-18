@@ -8,6 +8,10 @@ import { Readable } from 'node:stream';
 import { and, desc, eq, gt, isNull, or } from 'drizzle-orm';
 import { DRIZZLE, Database } from '../../db/database.module';
 import { CryptoService } from '../../common/crypto/crypto.service';
+import {
+  assertLanSafeHost,
+  SsrfBlockedError,
+} from '../../common/net/ssrf-guard';
 import { backups, offsiteConfig, offsiteUploads } from '../../db/schema';
 import { BackupsService } from '../backups/backups.service';
 import { SetOffsiteConfigDto } from './dto/offsite.dto';
@@ -132,11 +136,65 @@ export class OffsiteService {
       );
     }
 
+    if (values.enabled) {
+      await this.assertDestinationSafe(provider, values.endpoint, nextCfg, secretKeyEnc
+        ? this.crypto.decrypt(secretKeyEnc)
+        : '');
+    }
+
     await this.db
       .insert(offsiteConfig)
       .values(values)
       .onConflictDoUpdate({ target: offsiteConfig.id, set: values });
     return this.getConfig();
+  }
+
+  /**
+   * Blocks loopback / link-local / cloud-metadata destinations while still
+   * allowing RFC-1918 MinIO and LAN SFTP (common self-hosted setups).
+   */
+  private async assertDestinationSafe(
+    provider: OffsiteProvider,
+    endpoint: string,
+    cfg: ProviderConfig,
+    secret: string,
+  ): Promise<void> {
+    try {
+      if (provider === 's3' || provider === 'gcs') {
+        const raw = (endpoint || (provider === 'gcs' ? GCS_S3_ENDPOINT : '')).trim();
+        if (!raw) return;
+        let host: string;
+        try {
+          host = new URL(raw).hostname;
+        } catch {
+          throw new BadRequestException('endpoint must be a valid URL');
+        }
+        await assertLanSafeHost(host);
+        return;
+      }
+      if (provider === 'sftp') {
+        const host = (cfg.host || '').trim();
+        if (host) await assertLanSafeHost(host);
+        return;
+      }
+      if (provider === 'azure') {
+        if (cfg.useConnectionString) {
+          const host = assertAzureConnectionStringSafe(secret);
+          if (host) await assertLanSafeHost(host);
+        } else {
+          const account = (cfg.accountName || '').trim();
+          if (account) {
+            await assertLanSafeHost(`${account}.blob.core.windows.net`);
+          }
+        }
+      }
+    } catch (e) {
+      if (e instanceof BadRequestException) throw e;
+      if (e instanceof SsrfBlockedError) {
+        throw new BadRequestException(e.message);
+      }
+      throw e;
+    }
   }
 
   private async uploader() {
@@ -163,6 +221,12 @@ export class OffsiteService {
         `Offsite destination is not fully configured: ${errs.join('; ')}`,
       );
     }
+    await this.assertDestinationSafe(
+      provider,
+      row.endpoint,
+      providerConfig,
+      secretKey,
+    );
     return {
       row,
       uploader: buildUploader({
@@ -274,5 +338,29 @@ export class OffsiteService {
       else failed++;
     }
     return { uploaded, failed };
+  }
+}
+
+/** Reject Azure connection strings that clearly target metadata/loopback. */
+function assertAzureConnectionStringSafe(cs: string): string | null {
+  const lower = cs.toLowerCase();
+  if (
+    /169\.254\.|127\.0\.0\.|0\.0\.0\.0|localhost|\[::1\]/.test(lower)
+  ) {
+    throw new BadRequestException(
+      'Azure connection string must not target loopback or link-local addresses',
+    );
+  }
+  const m = cs.match(/BlobEndpoint=([^;]+)/i);
+  if (!m?.[1]) return null;
+  try {
+    const u = new URL(m[1].trim());
+    if (u.protocol !== 'https:' && u.protocol !== 'http:') {
+      throw new BadRequestException('Azure BlobEndpoint must be http(s)');
+    }
+    return u.hostname;
+  } catch (e) {
+    if (e instanceof BadRequestException) throw e;
+    throw new BadRequestException('Azure BlobEndpoint is not a valid URL');
   }
 }

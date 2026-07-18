@@ -1,4 +1,13 @@
-import { IsBoolean, IsIn, IsInt, IsOptional, IsString, Min } from 'class-validator';
+import {
+  IsBoolean,
+  IsIn,
+  IsInt,
+  IsOptional,
+  IsString,
+  Matches,
+  MaxLength,
+  Min,
+} from 'class-validator';
 
 /** All fields optional — only the provided ones are updated. */
 export class UpdateServiceDto {
@@ -32,10 +41,15 @@ export class UpdateServiceDto {
 
   @IsOptional()
   @IsString()
+  @Matches(/^(?!\/)(?!.*\.\.)(?![A-Za-z]:)[^\\]*$/, {
+    message:
+      'composeFile must be a relative path without ".." or absolute prefixes',
+  })
   composeFile?: string;
 
   @IsOptional()
   @IsString()
+  @MaxLength(512_000)
   composeYaml?: string;
 
   @IsOptional()

@@ -3,10 +3,12 @@ import { eq } from 'drizzle-orm';
 import { DRIZZLE, Database } from '../../db/database.module';
 import { gitAppInstallations, services } from '../../db/schema';
 import { CryptoService } from '../../common/crypto/crypto.service';
+import { GitAppsErrors } from '../../common/errors/app-errors';
 import {
   GitAppProvider,
   SetGitAppConfigDto,
 } from './dto/git-apps.dto';
+import { parseRepoAllowlist } from './repo-normalize';
 
 export interface ReqLike {
   headers?: Record<string, string | string[] | undefined>;
@@ -135,9 +137,19 @@ export class GitAppsService {
       if (!svc) throw new NotFoundException('Parent service not found');
     }
 
+    const enabled = dto.enabled ?? existing.enabled;
+    const repoAllowlist =
+      dto.repoAllowlist !== undefined
+        ? dto.repoAllowlist.trim()
+        : existing.repoAllowlist;
+    // Enabled installs must pin at least one repo key (empty = allow-all was unsafe).
+    if (enabled && parseRepoAllowlist(repoAllowlist).length === 0) {
+      throw GitAppsErrors.repoAllowlistRequired();
+    }
+
     const values = {
       id: provider,
-      enabled: dto.enabled ?? existing.enabled,
+      enabled,
       webhookSecretEnc,
       accessTokenEnc,
       githubAppId:
@@ -146,10 +158,7 @@ export class GitAppsService {
           : existing.githubAppId,
       githubPrivateKeyEnc,
       parentServiceId: parentServiceId ?? null,
-      repoAllowlist:
-        dto.repoAllowlist !== undefined
-          ? dto.repoAllowlist.trim()
-          : existing.repoAllowlist,
+      repoAllowlist,
       defaultTtlHours:
         dto.defaultTtlHours !== undefined
           ? dto.defaultTtlHours

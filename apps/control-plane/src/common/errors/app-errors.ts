@@ -260,3 +260,12 @@ export const MemberErrors = {
       message: 'The project owner cannot be removed.',
     }),
 };
+
+export const GitAppsErrors = {
+  repoAllowlistRequired: () =>
+    new BadRequestException({
+      code: 'gitApps.repoAllowlistRequired',
+      message:
+        'A non-empty repo allowlist (comma-separated owner/repo keys) is required when the Git App install is enabled.',
+    }),
+};

@@ -233,13 +233,26 @@ export class GitWebhookService {
     install: typeof gitAppInstallations.$inferSelect,
     repo: string,
   ): Promise<string | null> {
+    const key = normalizeRepoKey(repo);
+    if (!key) return null;
+
+    // Pinned parent: only accept events whose repo matches that service's
+    // repoUrl. Never fall through to another service on mismatch — otherwise a
+    // signed webhook from any allowlisted (or all) repo could spawn previews
+    // of an unrelated parent.
     if (install.parentServiceId) {
       const [svc] = await this.db
-        .select({ id: services.id, previewOf: services.previewOf })
+        .select({
+          id: services.id,
+          previewOf: services.previewOf,
+          repoUrl: services.repoUrl,
+        })
         .from(services)
         .where(eq(services.id, install.parentServiceId))
         .limit(1);
-      if (svc && !svc.previewOf) return svc.id;
+      if (!svc || svc.previewOf) return null;
+      if (!svc.repoUrl) return null;
+      return normalizeRepoKey(svc.repoUrl) === key ? svc.id : null;
     }
 
     const rows = await this.db
@@ -247,8 +260,6 @@ export class GitWebhookService {
       .from(services)
       .where(isNull(services.previewOf));
 
-    const key = normalizeRepoKey(repo);
-    if (!key) return null;
     for (const row of rows) {
       if (!row.repoUrl) continue;
       if (normalizeRepoKey(row.repoUrl) === key) return row.id;

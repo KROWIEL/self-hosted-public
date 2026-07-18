@@ -39,7 +39,9 @@ func New(certsDir, dynamicDir string) *Manager {
 func sanitizeHost(host string) string {
 	h := strings.ToLower(strings.TrimSpace(host))
 	h = safeHost.ReplaceAllString(h, "_")
-	if h == "" {
+	h = strings.Trim(h, ".-_")
+	// Reject path-traversal residue (dots are otherwise allowed in DNS labels).
+	if h == "" || h == "." || h == ".." || strings.Contains(h, "..") {
 		return "unknown"
 	}
 	return h

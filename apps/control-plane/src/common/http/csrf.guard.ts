@@ -23,6 +23,9 @@ const MUTATING = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
  */
 const EXEMPT_SUFFIXES = ['/auth/login', '/auth/register', '/auth/refresh'];
 
+/** Prefixes for unauthenticated provider webhooks (HMAC/token auth, no CSRF). */
+const EXEMPT_INCLUDES = ['/webhooks/'];
+
 /**
  * Double-submit CSRF protection (H-1) for cookie-authenticated browser
  * requests. Rationale: an HttpOnly session cookie is sent automatically by the
@@ -57,6 +60,7 @@ export class CsrfGuard implements CanActivate {
 
     const path = (req.originalUrl || req.url || '').split('?')[0];
     if (EXEMPT_SUFFIXES.some((p) => path.endsWith(p))) return true;
+    if (EXEMPT_INCLUDES.some((p) => path.includes(p))) return true;
 
     const cookie = readCookie(req.headers.cookie, CSRF_COOKIE);
     const raw = req.headers[CSRF_HEADER];

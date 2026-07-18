@@ -7,6 +7,7 @@ import {
   Max,
   MaxLength,
   Min,
+  MinLength,
 } from 'class-validator';
 
 export const GIT_APP_PROVIDERS = ['github', 'gitlab'] as const;
@@ -23,6 +24,7 @@ export class SetGitAppConfigDto {
 
   @IsOptional()
   @IsString()
+  @MinLength(16)
   @MaxLength(500)
   webhookSecret?: string;
 

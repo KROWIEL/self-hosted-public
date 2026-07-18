@@ -1,6 +1,7 @@
 import {
   branchSlug,
   normalizeRepoKey,
+  parseRepoAllowlist,
   repoAllowed,
 } from './repo-normalize';
 
@@ -31,9 +32,23 @@ describe('repo-normalize', () => {
     });
   });
 
+  describe('parseRepoAllowlist', () => {
+    it('returns empty for blank input', () => {
+      expect(parseRepoAllowlist('')).toEqual([]);
+      expect(parseRepoAllowlist('  , , ')).toEqual([]);
+    });
+
+    it('parses and normalizes keys', () => {
+      expect(parseRepoAllowlist('other/x, Acme/App')).toEqual([
+        'other/x',
+        'acme/app',
+      ]);
+    });
+  });
+
   describe('repoAllowed', () => {
-    it('allows all when allowlist empty', () => {
-      expect(repoAllowed('acme/app', '')).toBe(true);
+    it('denies all when allowlist empty', () => {
+      expect(repoAllowed('acme/app', '')).toBe(false);
     });
 
     it('matches allowlist entries', () => {

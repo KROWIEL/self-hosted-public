@@ -48,6 +48,9 @@ func (r *Runner) Up(ctx context.Context, req UpRequest, w io.Writer) error {
 	if _, err := os.Stat(composePath); err != nil {
 		return fmt.Errorf("compose file not found: %w", err)
 	}
+	if err := CheckComposeFile(composePath); err != nil {
+		return err
+	}
 
 	relFile, err := filepath.Rel(req.WorkDir, composePath)
 	if err != nil {

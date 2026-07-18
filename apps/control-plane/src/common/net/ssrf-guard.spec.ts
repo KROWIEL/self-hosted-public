@@ -1,6 +1,7 @@
 import {
   assertRequestUrlAllowed,
   isDisallowedAddress,
+  isLoopbackOrLinkLocalAddress,
   SsrfBlockedError,
 } from './ssrf-guard';
 
@@ -48,6 +49,17 @@ describe('isDisallowedAddress', () => {
 
   it('treats non-IP strings as not-an-IP (defers to DNS)', () => {
     expect(isDisallowedAddress('github.com')).toBe(false);
+  });
+});
+
+describe('isLoopbackOrLinkLocalAddress', () => {
+  it('blocks loopback and metadata but allows RFC-1918', () => {
+    expect(isLoopbackOrLinkLocalAddress('127.0.0.1')).toBe(true);
+    expect(isLoopbackOrLinkLocalAddress('169.254.169.254')).toBe(true);
+    expect(isLoopbackOrLinkLocalAddress('0.0.0.0')).toBe(true);
+    expect(isLoopbackOrLinkLocalAddress('10.0.0.5')).toBe(false);
+    expect(isLoopbackOrLinkLocalAddress('192.168.1.1')).toBe(false);
+    expect(isLoopbackOrLinkLocalAddress('172.16.0.1')).toBe(false);
   });
 });
 

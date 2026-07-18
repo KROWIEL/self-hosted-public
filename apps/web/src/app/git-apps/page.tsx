@@ -98,6 +98,14 @@ function GitAppsContent() {
     setError(null);
     setNotice(null);
     try {
+      const allowlistEntries = cfg.repoAllowlist
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
+      if (cfg.enabled && allowlistEntries.length === 0) {
+        setError(t('gitApps.repoAllowlistRequired'));
+        return;
+      }
       const sec = secrets[provider];
       const saved = await setGitApp(provider, {
         enabled: cfg.enabled,

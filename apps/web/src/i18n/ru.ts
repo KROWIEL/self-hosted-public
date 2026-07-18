@@ -257,6 +257,8 @@ export const ru: Dict = {
   'error.email.noRecipients':
     'Нет подходящих получателей — добавьте хотя бы один адрес или выберите «Все пользователи».',
   'error.email.sendFailed': 'SMTP-сервер отклонил сообщение: {reason}',
+  'error.gitApps.repoAllowlistRequired':
+    'Добавьте хотя бы один owner/repo в allowlist, прежде чем включать этот Git App.',
   'error.network.unreachable':
     'Не удаётся подключиться к серверу. Проверьте соединение.',
   'error.http.requestFailed': 'Запрос не выполнен ({status}).',
@@ -1496,9 +1498,11 @@ export const ru: Dict = {
   'gitApps.parentServiceAuto': 'Автоподбор по URL репозитория…',
   'gitApps.parentServiceHint':
     'Клонировать этот сервис для PR-превью. Пусто — искать сервисы, у которых repoUrl совпадает с репозиторием PR.',
-  'gitApps.repoAllowlist': 'Allowlist репозиториев (необязательно)',
+  'gitApps.repoAllowlist': 'Allowlist репозиториев',
   'gitApps.repoAllowlistHint':
-    'Через запятую: owner/repo. Пусто — любой репозиторий, для которого найден родительский сервис.',
+    'Обязательно при включении. Через запятую: owner/repo (напр. acme/app, group/project).',
+  'gitApps.repoAllowlistRequired':
+    'Добавьте хотя бы один owner/repo в allowlist перед сохранением включённой установки.',
   'gitApps.ttl': 'TTL по умолчанию (часы)',
   'gitApps.ttlHint':
     'Для превью, созданных из PR. 0 — не удалять автоматически.',

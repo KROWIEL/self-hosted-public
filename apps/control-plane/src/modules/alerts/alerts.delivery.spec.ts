@@ -49,7 +49,7 @@ describe('alerts.delivery', () => {
     });
 
     it('shapes telegram sendMessage request without exposing token in body keys', () => {
-      const token = '123456:AA-secret-token';
+      const token = '123456789:AAHdqTcvCH1vGWJxfSeofSAs0K5PALDsaw';
       const d = buildAlertDelivery(
         'telegram',
         { botToken: token, chatId: '-100123' },
@@ -63,6 +63,26 @@ describe('alerts.delivery', () => {
         text: 'Node down\nworker-1 is offline',
       });
       expect(JSON.stringify(d.body)).not.toContain(token);
+    });
+
+    it('rejects telegram botToken with path separators', () => {
+      expect(() =>
+        buildAlertDelivery(
+          'telegram',
+          { botToken: '123/../evil', chatId: '1' },
+          payload,
+        ),
+      ).toThrow(/botToken/i);
+    });
+
+    it('rejects discord URL on a non-Discord host', () => {
+      expect(() =>
+        buildAlertDelivery(
+          'discord',
+          { url: 'https://evil.example.com/hooks/1' },
+          payload,
+        ),
+      ).toThrow(/discord\.com/i);
     });
 
     it('shapes hybrid webhook payload', () => {

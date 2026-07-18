@@ -31,14 +31,22 @@ export function normalizeRepoKey(input: string): string | null {
   }
 }
 
-/** True when `repo` is allowed by a comma-separated allowlist (empty = allow all). */
-export function repoAllowed(repo: string, allowlist: string): boolean {
-  const entries = allowlist
+/** Parse a comma-separated owner/repo allowlist into normalized keys. */
+export function parseRepoAllowlist(allowlist: string): string[] {
+  return (allowlist ?? '')
     .split(',')
     .map((s) => s.trim().toLowerCase())
     .filter(Boolean)
     .map((s) => normalizeRepoKey(s) ?? s);
-  if (entries.length === 0) return true;
+}
+
+/**
+ * True when `repo` matches a non-empty comma-separated allowlist.
+ * An empty allowlist denies every repo (callers must require entries when enabling).
+ */
+export function repoAllowed(repo: string, allowlist: string): boolean {
+  const entries = parseRepoAllowlist(allowlist);
+  if (entries.length === 0) return false;
   const key = (normalizeRepoKey(repo) ?? repo).toLowerCase();
   return entries.includes(key);
 }

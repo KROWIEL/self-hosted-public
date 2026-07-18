@@ -51,6 +51,40 @@ export function assertHttpsUrl(raw: string): URL {
   return url;
 }
 
+/** Hosts accepted for first-class Discord incoming webhooks. */
+export const DISCORD_WEBHOOK_HOSTS = [
+  'discord.com',
+  'discordapp.com',
+] as const;
+
+/** Hosts accepted for first-class Slack incoming webhooks. */
+export const SLACK_WEBHOOK_HOSTS = ['hooks.slack.com'] as const;
+
+/**
+ * Ensures Discord/Slack channel URLs target the vendor webhook hosts (not an
+ * arbitrary https URL labeled as discord/slack).
+ */
+export function assertVendorWebhookHost(
+  type: 'discord' | 'slack',
+  url: URL,
+): void {
+  const host = url.hostname.toLowerCase();
+  const allowed =
+    type === 'discord' ? DISCORD_WEBHOOK_HOSTS : SLACK_WEBHOOK_HOSTS;
+  if (!(allowed as readonly string[]).includes(host)) {
+    throw new Error(
+      `${type} webhook URL must use host ${allowed.join(' or ')}`,
+    );
+  }
+}
+
+/** Telegram bot tokens are `digits:secret` — reject path/SSRFable junk. */
+export function assertTelegramBotToken(token: string): void {
+  if (!/^\d{5,20}:[A-Za-z0-9_-]{20,200}$/.test(token)) {
+    throw new Error('invalid telegram botToken format');
+  }
+}
+
 /**
  * Builds the outbound URL + JSON body for a channel type. Does not perform
  * network I/O. Never includes the bot token in thrown messages.
@@ -68,6 +102,7 @@ export function buildAlertDelivery(
     if (!tg.botToken || !tg.chatId) {
       throw new Error('telegram channel missing botToken or chatId');
     }
+    assertTelegramBotToken(tg.botToken);
     return {
       url: `https://api.telegram.org/bot${tg.botToken}/sendMessage`,
       body: { chat_id: tg.chatId, text },
@@ -76,12 +111,14 @@ export function buildAlertDelivery(
 
   const urlCfg = cfg as { url?: string };
   if (!urlCfg.url) throw new Error('channel has no url configured');
-  assertHttpsUrl(urlCfg.url);
+  const parsed = assertHttpsUrl(urlCfg.url);
 
   if (channelType === 'discord') {
+    assertVendorWebhookHost('discord', parsed);
     return { url: urlCfg.url, body: { content: text } };
   }
   if (channelType === 'slack') {
+    assertVendorWebhookHost('slack', parsed);
     return { url: urlCfg.url, body: { text } };
   }
 

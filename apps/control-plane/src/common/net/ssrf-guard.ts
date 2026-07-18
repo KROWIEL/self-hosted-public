@@ -128,27 +128,64 @@ export function isDisallowedAddress(ip: string): boolean {
 }
 
 /**
- * Resolves `hostname` and throws SsrfBlockedError if the host (or any resolved
- * address) is non-public. IP literals are checked directly without DNS.
+ * True for loopback, link-local (incl. cloud metadata 169.254.169.254), and
+ * unspecified — but NOT RFC-1918 / ULA. Used when LAN destinations (MinIO,
+ * SFTP NAS) are intentional.
  */
-export async function assertPublicHost(hostname: string): Promise<void> {
+export function isLoopbackOrLinkLocalAddress(ip: string): boolean {
+  const kind = isIP(ip);
+  if (kind === 4) {
+    const b = parseIpv4(ip);
+    if (!b) return true;
+    const [a, second] = b;
+    if (a === 0) return true;
+    if (a === 127) return true;
+    if (a === 169 && second === 254) return true;
+    return false;
+  }
+  if (kind === 6) {
+    const b = expandIpv6(ip);
+    if (!b) return true;
+    if (b.every((x) => x === 0)) return true; // ::
+    if (b.slice(0, 15).every((x) => x === 0) && b[15] === 1) return true; // ::1
+    if (b.slice(0, 10).every((x) => x === 0) && b[10] === 0xff && b[11] === 0xff) {
+      return isLoopbackOrLinkLocalAddress(
+        `${b[12]}.${b[13]}.${b[14]}.${b[15]}`,
+      );
+    }
+    if (b[0] === 0xfe && (b[1] & 0xc0) === 0x80) return true; // fe80::/10
+    return false;
+  }
+  return false;
+}
+
+type HostPolicy = 'public' | 'lan-ok';
+
+async function assertHostPolicy(
+  hostname: string,
+  policy: HostPolicy,
+): Promise<void> {
   const host = hostname.trim().toLowerCase();
   if (!host) {
     throw new SsrfBlockedError('Empty host', 'net.ssrfBlocked');
   }
 
+  const blockedIp =
+    policy === 'public' ? isDisallowedAddress : isLoopbackOrLinkLocalAddress;
+
   if (isIP(host)) {
-    if (isDisallowedAddress(host)) {
+    if (blockedIp(host)) {
       throw new SsrfBlockedError(`Blocked non-public address: ${host}`);
     }
     return;
   }
 
   // Common local aliases that may resolve to 127.0.0.1 via /etc/hosts.
+  // `.local` / bare LAN names are allowed under lan-ok (mDNS NAS / MinIO).
   if (
     host === 'localhost' ||
     host.endsWith('.localhost') ||
-    host.endsWith('.local') ||
+    (policy === 'public' && host.endsWith('.local')) ||
     host.endsWith('.internal')
   ) {
     throw new SsrfBlockedError(`Blocked local hostname: ${host}`);
@@ -164,12 +201,30 @@ export async function assertPublicHost(hostname: string): Promise<void> {
     throw new SsrfBlockedError(`Host did not resolve: ${host}`);
   }
   for (const a of addrs) {
-    if (isDisallowedAddress(a.address)) {
+    if (blockedIp(a.address)) {
       throw new SsrfBlockedError(
-        `Host ${host} resolves to a non-public address (${a.address})`,
+        policy === 'public'
+          ? `Host ${host} resolves to a non-public address (${a.address})`
+          : `Host ${host} resolves to a loopback/link-local address (${a.address})`,
       );
     }
   }
+}
+
+/**
+ * Resolves `hostname` and throws SsrfBlockedError if the host (or any resolved
+ * address) is non-public. IP literals are checked directly without DNS.
+ */
+export async function assertPublicHost(hostname: string): Promise<void> {
+  return assertHostPolicy(hostname, 'public');
+}
+
+/**
+ * Like {@link assertPublicHost}, but allows RFC-1918 / ULA (LAN MinIO, SFTP).
+ * Still blocks loopback, link-local, and cloud-metadata ranges.
+ */
+export async function assertLanSafeHost(hostname: string): Promise<void> {
+  return assertHostPolicy(hostname, 'lan-ok');
 }
 
 /**

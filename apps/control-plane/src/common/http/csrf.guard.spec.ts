@@ -80,4 +80,14 @@ describe('CsrfGuard', () => {
       expect(guard.canActivate(httpCtx(r))).toBe(true);
     }
   });
+
+  it('exempts provider webhook paths even when cookie-authed', () => {
+    for (const url of [
+      '/api/v1/webhooks/git/github',
+      '/api/v1/webhooks/services/abc/tok',
+    ]) {
+      const r = req({ method: 'POST', cookie: 'access_token=jwt; csrf=x', url });
+      expect(guard.canActivate(httpCtx(r))).toBe(true);
+    }
+  });
 });

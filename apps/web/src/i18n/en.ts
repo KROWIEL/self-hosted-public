@@ -257,6 +257,8 @@ export const en = {
   'error.email.noRecipients':
     'No valid recipients — add at least one address or pick “all users”.',
   'error.email.sendFailed': 'The SMTP server rejected the message: {reason}',
+  'error.gitApps.repoAllowlistRequired':
+    'Add at least one owner/repo to the allowlist before enabling this Git App.',
   'error.network.unreachable':
     'Cannot reach the server. Check your connection.',
   'error.http.requestFailed': 'Request failed ({status}).',
@@ -1483,9 +1485,11 @@ export const en = {
   'gitApps.parentServiceAuto': 'Auto-match by repo URL…',
   'gitApps.parentServiceHint':
     'Clone this service for PR previews. Leave empty to match services whose repoUrl equals the PR repository.',
-  'gitApps.repoAllowlist': 'Repo allowlist (optional)',
+  'gitApps.repoAllowlist': 'Repo allowlist',
   'gitApps.repoAllowlistHint':
-    'Comma-separated owner/repo keys. Empty = any repo that matches a parent service.',
+    'Required when enabled. Comma-separated owner/repo keys (e.g. acme/app, group/project).',
+  'gitApps.repoAllowlistRequired':
+    'Add at least one owner/repo to the allowlist before saving an enabled install.',
   'gitApps.ttl': 'Default TTL (hours)',
   'gitApps.ttlHint': 'Applied to PR-created previews. 0 = never auto-expire.',
   'gitApps.commentOnPr': 'Comment preview URL on the PR when possible',

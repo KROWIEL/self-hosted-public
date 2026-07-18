@@ -7,6 +7,7 @@ import {
   IsString,
   IsUrl,
   Matches,
+  MaxLength,
   MinLength,
   ValidateIf,
 } from 'class-validator';
@@ -53,10 +54,15 @@ export class CreateServiceDto {
 
   @IsOptional()
   @IsString()
+  @Matches(/^(?!\/)(?!.*\.\.)(?![A-Za-z]:)[^\\]*$/, {
+    message:
+      'composeFile must be a relative path without ".." or absolute prefixes',
+  })
   composeFile?: string;
 
   @IsOptional()
   @IsString()
+  @MaxLength(512_000)
   composeYaml?: string;
 
   @IsOptional()

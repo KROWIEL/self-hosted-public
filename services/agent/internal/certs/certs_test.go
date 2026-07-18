@@ -61,3 +61,15 @@ func TestPutRejectsNonPEM(t *testing.T) {
 		t.Fatal("expected error for bad cert")
 	}
 }
+
+func TestSanitizeHostRejectsTraversal(t *testing.T) {
+	if got := sanitizeHost(".."); got != "unknown" {
+		t.Fatalf("sanitizeHost(..) = %q", got)
+	}
+	if got := sanitizeHost("foo..bar"); got != "unknown" {
+		t.Fatalf("sanitizeHost(foo..bar) = %q", got)
+	}
+	if got := sanitizeHost("ok.example.com"); got != "ok.example.com" {
+		t.Fatalf("sanitizeHost(ok) = %q", got)
+	}
+}

@@ -657,7 +657,7 @@ export const gitAppInstallations = pgTable('git_app_installations', {
   parentServiceId: uuid('parent_service_id').references(() => services.id, {
     onDelete: 'set null',
   }),
-  // Comma-separated owner/repo allowlist; empty = any repo that matches a service.
+  // Comma-separated owner/repo allowlist. Required (non-empty) when enabled.
   repoAllowlist: text('repo_allowlist').notNull().default(''),
   defaultTtlHours: integer('default_ttl_hours').notNull().default(72),
   commentOnPr: boolean('comment_on_pr').notNull().default(true),

@@ -15,6 +15,8 @@ import {
   AlertPayload,
   ChannelConfig,
   assertHttpsUrl,
+  assertTelegramBotToken,
+  assertVendorWebhookHost,
   buildAlertDelivery,
   isAlertChannelType,
 } from './alerts.delivery';
@@ -156,6 +158,13 @@ export class AlertsService {
           'telegram channels require botToken and chatId',
         );
       }
+      try {
+        assertTelegramBotToken(dto.botToken.trim());
+      } catch (e) {
+        throw new BadRequestException(
+          e instanceof Error ? e.message : 'invalid telegram botToken',
+        );
+      }
       return {
         botToken: dto.botToken.trim(),
         chatId: dto.chatId.trim(),
@@ -164,25 +173,38 @@ export class AlertsService {
     if (!dto.url?.trim()) {
       throw new BadRequestException(`${type} channels require a https url`);
     }
-    assertHttpsUrl(dto.url.trim());
+    const parsed = assertHttpsUrl(dto.url.trim());
+    if (type === 'discord' || type === 'slack') {
+      try {
+        assertVendorWebhookHost(type, parsed);
+      } catch (e) {
+        throw new BadRequestException(
+          e instanceof Error ? e.message : `invalid ${type} webhook URL`,
+        );
+      }
+    }
     return { url: dto.url.trim() };
   }
 
   /**
    * Discord/Slack/Telegram hit public SaaS hosts — apply the shared SSRF
-   * denylist. Generic webhooks may target LAN/n8n, so only https is enforced.
+   * denylist + vendor host allowlist. Generic webhooks may target LAN/n8n,
+   * so only https is enforced.
    */
   private async assertConfigSafe(
     type: AlertChannelType,
     config: ChannelConfig,
   ): Promise<void> {
     if (type === 'telegram') {
+      const tg = config as { botToken: string };
+      assertTelegramBotToken(tg.botToken);
       await assertPublicHost('api.telegram.org');
       return;
     }
     const { url } = config as { url: string };
     const parsed = assertHttpsUrl(url);
     if (type === 'discord' || type === 'slack') {
+      assertVendorWebhookHost(type, parsed);
       await assertPublicHost(parsed.hostname);
     }
   }
@@ -338,7 +360,9 @@ export class AlertsService {
 
     // SaaS destinations: re-check host at send time (config may predate checks).
     if (channel.type === 'discord' || channel.type === 'slack') {
-      await assertPublicHost(new URL(delivery.url).hostname);
+      const parsed = new URL(delivery.url);
+      assertVendorWebhookHost(channel.type, parsed);
+      await assertPublicHost(parsed.hostname);
     } else if (channel.type === 'telegram') {
       await assertPublicHost('api.telegram.org');
     } else {
