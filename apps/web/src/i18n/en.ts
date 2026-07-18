@@ -4,6 +4,7 @@ export const en = {
   // Common
   'common.loading': 'Loading…',
   'common.failed': 'Something went wrong',
+  'error.common.internal': 'Something went wrong. Please try again.',
   'common.delete': 'Delete',
   'common.create': 'Create',
   'common.creating': 'Creating…',

@@ -423,13 +423,14 @@ export class AuthService implements OnModuleDestroy {
       expiresIn: process.env.JWT_EXPIRES_IN ?? '15m',
     });
     // Refresh tokens carry a unique jti so rotation can detect reuse (M1).
+    // Put jti only in the payload — passing `jwtid` as a sign option as well
+    // makes jsonwebtoken throw ("payload already has an jti property").
     const jti = randomUUID();
     const refreshToken = await this.jwt.signAsync(
       { ...payload, jti },
       {
         secret: process.env.JWT_REFRESH_SECRET,
         expiresIn: process.env.JWT_REFRESH_EXPIRES_IN ?? '7d',
-        jwtid: jti,
       },
     );
     return { accessToken, refreshToken };

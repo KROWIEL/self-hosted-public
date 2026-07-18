@@ -109,7 +109,14 @@ export function useErrorText() {
         return t(key, vars);
       }
     }
-    if (err instanceof Error && err.message) return err.message;
+    if (err instanceof Error && err.message) {
+      // Nest's generic 500 English string — never show raw to the user.
+      const m = err.message.trim().toLowerCase();
+      if (m === 'internal server error' || m === 'internalservererror') {
+        return t('error.common.internal');
+      }
+      return err.message;
+    }
     return t(fallback ?? 'common.failed');
   };
 }

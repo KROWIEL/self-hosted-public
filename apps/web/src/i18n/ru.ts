@@ -5,6 +5,7 @@ export const ru: Dict = {
   // Common
   'common.loading': 'Загрузка…',
   'common.failed': 'Что-то пошло не так',
+  'error.common.internal': 'Что-то пошло не так. Попробуйте ещё раз.',
   'common.delete': 'Удалить',
   'common.create': 'Создать',
   'common.creating': 'Создание…',

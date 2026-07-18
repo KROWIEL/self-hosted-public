@@ -27,11 +27,12 @@ export class AllExceptionsFilter implements ExceptionFilter {
     let error = 'InternalServerError';
     // Stable machine-readable code the UI maps to a localized message, plus
     // optional interpolation values (e.g. required/actual role).
-    let code: string | undefined;
+    let code: string | undefined = 'common.internal';
     let meta: Record<string, unknown> | undefined;
 
     if (exception instanceof HttpException) {
       status = exception.getStatus();
+      code = undefined;
       const body = exception.getResponse();
       if (typeof body === 'string') {
         message = body;
