@@ -312,6 +312,25 @@ function PreviewRow({
             ) : (
               <span>{t('previews.internalOnly')}</span>
             )}
+            {p.pr && (
+              <span>
+                {t('previews.pr')}{' '}
+                {p.pr.url ? (
+                  <a
+                    href={p.pr.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-indigo-300 hover:text-indigo-200"
+                  >
+                    {p.pr.repo}#{p.pr.number}
+                  </a>
+                ) : (
+                  <span className="text-neutral-300">
+                    {p.pr.repo}#{p.pr.number}
+                  </span>
+                )}
+              </span>
+            )}
             <span>
               {t('previews.expires')}:{' '}
               {expires ? expires.toLocaleString() : t('previews.never')}

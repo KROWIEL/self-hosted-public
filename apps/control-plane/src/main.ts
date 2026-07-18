@@ -23,7 +23,8 @@ function corsOrigins(): string[] {
 async function bootstrap() {
   validateEnv();
 
-  const app = await NestFactory.create(AppModule);
+  // rawBody: true so GitHub webhook HMAC can verify against the exact bytes.
+  const app = await NestFactory.create(AppModule, { rawBody: true });
 
   // Baseline security headers on the API. Defaults are fine for a JSON API.
   app.use(helmet());

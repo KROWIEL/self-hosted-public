@@ -639,6 +639,67 @@ export const previewEnvironments = pgTable('preview_environments', {
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });
 
+/// GitHub / GitLab App (or webhook + token) installs for PR-triggered previews
+/// (Pro: preview-envs). One row per provider (`github` | `gitlab`). Secrets are
+/// encrypted at rest (AES-256-GCM).
+export const gitAppInstallations = pgTable('git_app_installations', {
+  // Stable primary key: 'github' | 'gitlab'.
+  id: text('id').primaryKey(),
+  enabled: boolean('enabled').notNull().default(false),
+  webhookSecretEnc: text('webhook_secret_enc').notNull().default(''),
+  // Fine-grained PAT (GitHub) or project/group access token (GitLab). Optional
+  // when only signature-verified webhooks are needed; required for PR comments.
+  accessTokenEnc: text('access_token_enc').notNull().default(''),
+  // Optional GitHub App credentials (alternative to a PAT for API calls).
+  githubAppId: text('github_app_id'),
+  githubPrivateKeyEnc: text('github_private_key_enc'),
+  // When set, PR previews always clone this parent; otherwise match by repoUrl.
+  parentServiceId: uuid('parent_service_id').references(() => services.id, {
+    onDelete: 'set null',
+  }),
+  // Comma-separated owner/repo allowlist; empty = any repo that matches a service.
+  repoAllowlist: text('repo_allowlist').notNull().default(''),
+  defaultTtlHours: integer('default_ttl_hours').notNull().default(72),
+  commentOnPr: boolean('comment_on_pr').notNull().default(true),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+});
+
+/// Maps a pull/merge request to a preview so open/sync/close is idempotent.
+export const prPreviewLinks = pgTable(
+  'pr_preview_links',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    installationId: text('installation_id')
+      .notNull()
+      .references(() => gitAppInstallations.id, { onDelete: 'cascade' }),
+    provider: text('provider').notNull(), // 'github' | 'gitlab'
+    // Canonical repo key, e.g. "owner/repo" or "group/subgroup/repo".
+    repo: text('repo').notNull(),
+    prNumber: integer('pr_number').notNull(),
+    prUrl: text('pr_url'),
+    branch: text('branch').notNull(),
+    headSha: text('head_sha'),
+    previewId: uuid('preview_id').references(() => previewEnvironments.id, {
+      onDelete: 'set null',
+    }),
+    previewServiceId: uuid('preview_service_id').references(() => services.id, {
+      onDelete: 'set null',
+    }),
+    // Provider comment id so we can update the status comment in place.
+    commentId: text('comment_id'),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  },
+  (t) => ({
+    uniqPr: unique('pr_preview_links_provider_repo_pr_uidx').on(
+      t.provider,
+      t.repo,
+      t.prNumber,
+    ),
+  }),
+);
+
 /// Single sign-on (Pro: sso). Singleton OIDC identity-provider configuration.
 /// The client secret is encrypted at rest (AES-256-GCM).
 export const ssoConfig = pgTable('sso_config', {
@@ -754,6 +815,8 @@ export type DbSchema = {
   metricSamples: typeof metricSamples;
   ssoConfig: typeof ssoConfig;
   previewEnvironments: typeof previewEnvironments;
+  gitAppInstallations: typeof gitAppInstallations;
+  prPreviewLinks: typeof prPreviewLinks;
   emailConfig: typeof emailConfig;
   emailMessages: typeof emailMessages;
   invites: typeof invites;

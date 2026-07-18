@@ -11,6 +11,7 @@ import {
   deployments,
   domains,
   envVars,
+  prPreviewLinks,
   previewEnvironments,
   services,
 } from '../../db/schema';
@@ -206,7 +207,7 @@ export class PreviewService {
     return removed;
   }
 
-  /** Attach the parent name, child service status and latest deploy state. */
+  /** Attach the parent name, child service status, latest deploy, and optional PR link. */
   private async enrich(pe: typeof previewEnvironments.$inferSelect) {
     const [child] = await this.db
       .select()
@@ -229,6 +230,11 @@ export class PreviewService {
       .where(eq(deployments.serviceId, pe.serviceId))
       .orderBy(desc(deployments.createdAt))
       .limit(1);
+    const [prLink] = await this.db
+      .select()
+      .from(prPreviewLinks)
+      .where(eq(prPreviewLinks.previewId, pe.id))
+      .limit(1);
 
     return {
       id: pe.id,
@@ -244,6 +250,14 @@ export class PreviewService {
       latestDeployPhase: lastDeploy?.phase ?? null,
       expiresAt: pe.expiresAt,
       createdAt: pe.createdAt,
+      pr: prLink
+        ? {
+            provider: prLink.provider,
+            repo: prLink.repo,
+            number: prLink.prNumber,
+            url: prLink.prUrl,
+          }
+        : null,
     };
   }
 }

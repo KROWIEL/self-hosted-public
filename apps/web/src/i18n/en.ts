@@ -92,6 +92,7 @@ export const en = {
   'nav.whiteLabel': 'White-label',
   'nav.sso': 'Single sign-on',
   'nav.previews': 'Preview envs',
+  'nav.gitApps': 'Git App / PR previews',
   'nav.email': 'Email',
   'nav.invites': 'Invites',
   'nav.settings': 'Settings',
@@ -1245,7 +1246,10 @@ export const en = {
     'Let your team sign in with an existing identity provider (Google, Microsoft Entra, Okta, Keycloak — any OpenID Connect). Register the redirect URI at your provider, paste the issuer and client credentials, then enable SSO.',
   'previews.aboutTitle': 'What are preview environments?',
   'previews.aboutBody':
-    'Spin up a temporary, isolated deployment of a service from any git branch — ideal for reviewing a pull request on its own URL. Each preview auto-expires after its TTL and can be redeployed or removed anytime.',
+    'Spin up a temporary, isolated deployment of a service from any git branch — ideal for reviewing a pull request on its own URL. Each preview auto-expires after its TTL and can be redeployed or removed anytime. Connect GitHub or GitLab under Git App / PR previews to create them automatically from pull requests.',
+  'gitApps.aboutTitle': 'What is Git App / PR preview integration?',
+  'gitApps.aboutBody':
+    'Point a GitHub or GitLab repository webhook at this panel. When a pull/merge request is opened or updated, a preview environment is created or redeployed from the head branch; closing or merging tears it down. Optionally post the preview URL as a PR comment.',
   'email.aboutTitle': 'What is the email service?',
   'email.aboutBody':
     'Send and broadcast messages to your users through your own SMTP provider (Mailgun, SendGrid, Amazon SES, Postmark, or any SMTP relay). This is outbound only — it relays mail through a provider you configure; it is not an inbound mail server. Enter your SMTP settings, send a test, then compose a message to all users or a specific list.',
@@ -1445,4 +1449,62 @@ export const en = {
   'previews.open': 'Open',
   'previews.redeploy': 'Redeploy',
   'previews.delete': 'Delete',
+  'previews.pr': 'PR',
+
+  // Git App / PR-triggered previews (Pro: preview-envs)
+  'gitApps.title': 'Git App / PR previews',
+  'gitApps.subtitle':
+    'Connect GitHub or GitLab webhooks so pull requests spin up preview environments automatically.',
+  'gitApps.lockedTitle': 'Git App previews are a Pro feature',
+  'gitApps.lockedBody':
+    'PR-triggered preview environments require the Pro plan (preview-envs module).',
+  'gitApps.adminOnly': 'Only administrators can configure Git App integrations.',
+  'gitApps.github': 'GitHub',
+  'gitApps.gitlab': 'GitLab',
+  'gitApps.enabled': 'Enable webhooks for this provider',
+  'gitApps.webhookUrl': 'Webhook URL',
+  'gitApps.webhookUrlHint':
+    'Register this URL at the provider. Requires PUBLIC_API_URL (or the request host) to be reachable from GitHub/GitLab.',
+  'gitApps.copy': 'Copy',
+  'gitApps.copied': 'Webhook URL copied.',
+  'gitApps.webhookSecret': 'Webhook secret',
+  'gitApps.webhookSecretSet': 'Webhook secret (leave blank to keep current)',
+  'gitApps.accessToken': 'Access token',
+  'gitApps.accessTokenSet': 'Access token (leave blank to keep current)',
+  'gitApps.accessTokenHint':
+    'Fine-grained PAT (GitHub) or project access token (GitLab). Needed for PR comments; optional for deploy-only.',
+  'gitApps.githubAppId': 'GitHub App ID (optional)',
+  'gitApps.githubAppIdHint':
+    'Stored for future App JWT auth. MVP uses a PAT for API calls.',
+  'gitApps.githubPrivateKey': 'GitHub App private key (optional)',
+  'gitApps.githubPrivateKeySet':
+    'GitHub App private key (leave blank to keep current)',
+  'gitApps.parentService': 'Parent service',
+  'gitApps.parentServiceAuto': 'Auto-match by repo URL…',
+  'gitApps.parentServiceHint':
+    'Clone this service for PR previews. Leave empty to match services whose repoUrl equals the PR repository.',
+  'gitApps.repoAllowlist': 'Repo allowlist (optional)',
+  'gitApps.repoAllowlistHint':
+    'Comma-separated owner/repo keys. Empty = any repo that matches a parent service.',
+  'gitApps.ttl': 'Default TTL (hours)',
+  'gitApps.ttlHint': 'Applied to PR-created previews. 0 = never auto-expire.',
+  'gitApps.commentOnPr': 'Comment preview URL on the PR when possible',
+  'gitApps.save': 'Save',
+  'gitApps.saving': 'Saving…',
+  'gitApps.saved': 'Git App settings saved.',
+  'gitApps.step1Title': 'Create the webhook',
+  'gitApps.step1Body':
+    'Copy the webhook URL and create a repository (or org) webhook at GitHub/GitLab.',
+  'gitApps.step2Title': 'Select events + secret',
+  'gitApps.step2Body':
+    'GitHub: Pull requests. GitLab: Merge request events. Paste the same secret into the field below.',
+  'gitApps.step3Title': 'Match a parent service',
+  'gitApps.step3Body':
+    'Ensure a panel service has the matching repo URL, or pick a parent service above.',
+  'gitApps.step4Title': 'Optional PR comments',
+  'gitApps.step4Body':
+    'Add an access token with contents:read + pull-requests:write (GitHub) or api scope (GitLab) to post the preview URL.',
+  'gitApps.noteTitle': 'MVP scope',
+  'gitApps.noteBody':
+    'This uses a repository webhook + token — not a published GitHub Marketplace App or GitLab system-wide app.',
 };

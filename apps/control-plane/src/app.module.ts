@@ -26,6 +26,7 @@ import { BrandingModule } from './modules/branding/branding.module';
 import { MetricsModule } from './modules/metrics/metrics.module';
 import { SsoModule } from './modules/sso/sso.module';
 import { PreviewModule } from './modules/preview/preview.module';
+import { GitAppsModule } from './modules/git-apps/git-apps.module';
 import { EmailModule } from './modules/email/email.module';
 import { CatalogModule } from './modules/catalog/catalog.module';
 import { ServiceCronModule } from './modules/service-cron/service-cron.module';
@@ -69,6 +70,7 @@ import { CertificatesModule } from './modules/certificates/certificates.module';
     MetricsModule,
     SsoModule,
     PreviewModule,
+    GitAppsModule,
     EmailModule,
     ServiceCronModule,
     CertificatesModule,

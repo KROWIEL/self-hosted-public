@@ -613,6 +613,13 @@ export interface PreviewEnv {
   latestDeployPhase: DeployPhase | null;
   expiresAt: string | null;
   createdAt: string;
+  /** Present when this preview was created from a GitHub/GitLab PR webhook. */
+  pr?: {
+    provider: string;
+    repo: string;
+    number: number;
+    url: string | null;
+  } | null;
 }
 
 export interface CreatePreviewInput {
@@ -637,6 +644,48 @@ export const redeployPreview = (id: string) =>
 
 export const deletePreview = (id: string) =>
   api<{ ok: boolean }>(`/previews/${id}`, { method: 'DELETE' });
+
+// ---- Git App / PR webhooks (Pro: preview-envs) ----
+
+export type GitAppProvider = 'github' | 'gitlab';
+
+export interface GitAppConfig {
+  provider: GitAppProvider;
+  enabled: boolean;
+  hasWebhookSecret: boolean;
+  hasAccessToken: boolean;
+  githubAppId: string;
+  hasGithubPrivateKey: boolean;
+  parentServiceId: string | null;
+  parentServiceName: string | null;
+  repoAllowlist: string;
+  defaultTtlHours: number;
+  commentOnPr: boolean;
+  webhookUrl: string;
+}
+
+export interface GitAppConfigInput {
+  enabled?: boolean;
+  webhookSecret?: string;
+  accessToken?: string;
+  githubAppId?: string;
+  githubPrivateKey?: string;
+  parentServiceId?: string | null;
+  repoAllowlist?: string;
+  defaultTtlHours?: number;
+  commentOnPr?: boolean;
+}
+
+export const listGitApps = () => api<GitAppConfig[]>('/git-apps');
+
+export const getGitApp = (provider: GitAppProvider) =>
+  api<GitAppConfig>(`/git-apps/${provider}`);
+
+export const setGitApp = (provider: GitAppProvider, body: GitAppConfigInput) =>
+  api<GitAppConfig>(`/git-apps/${provider}`, {
+    method: 'PUT',
+    body: JSON.stringify(body),
+  });
 
 export interface Node {
   id: string;

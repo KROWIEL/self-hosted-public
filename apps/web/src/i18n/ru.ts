@@ -93,6 +93,7 @@ export const ru: Dict = {
   'nav.whiteLabel': 'White-label',
   'nav.sso': 'Единый вход (SSO)',
   'nav.previews': 'Превью-среды',
+  'nav.gitApps': 'Git App / PR-превью',
   'nav.email': 'Почта',
   'nav.invites': 'Приглашения',
   'nav.settings': 'Настройки',
@@ -1251,7 +1252,10 @@ export const ru: Dict = {
     'Позвольте команде входить через существующий провайдер идентификации (Google, Microsoft Entra, Okta, Keycloak — любой OpenID Connect). Зарегистрируйте redirect URI у провайдера, укажите issuer и данные клиента и включите SSO.',
   'previews.aboutTitle': 'Что такое preview-окружения?',
   'previews.aboutBody':
-    'Временный изолированный деплой сервиса из любой git-ветки — удобно для ревью pull request на отдельном URL. Каждое окружение автоматически удаляется по истечении TTL, его можно передеплоить или удалить в любой момент.',
+    'Временный изолированный деплой сервиса из любой git-ветки — удобно для ревью pull request на отдельном URL. Каждое окружение автоматически удаляется по истечении TTL, его можно передеплоить или удалить в любой момент. Подключите GitHub или GitLab в разделе «Git App / PR-превью», чтобы создавать их автоматически из PR.',
+  'gitApps.aboutTitle': 'Что такое интеграция Git App / PR-превью?',
+  'gitApps.aboutBody':
+    'Направьте webhook репозитория GitHub или GitLab на эту панель. При открытии или обновлении pull/merge request создаётся или обновляется preview из head-ветки; закрытие или merge удаляет его. При наличии прав можно оставить комментарий с URL превью.',
   'email.aboutTitle': 'Что такое почтовый сервис?',
   'email.aboutBody':
     'Отправляйте и рассылайте сообщения пользователям через ваш SMTP-провайдер (Mailgun, SendGrid, Amazon SES, Postmark или любой SMTP-релей). Это только исходящая почта — сообщения передаются через настроенного вами провайдера; это не входящий почтовый сервер. Укажите настройки SMTP, отправьте тест и составьте письмо для всех пользователей или выбранного списка.',
@@ -1455,4 +1459,66 @@ export const ru: Dict = {
   'previews.open': 'Открыть',
   'previews.redeploy': 'Передеплой',
   'previews.delete': 'Удалить',
+  'previews.pr': 'PR',
+
+  // Git App / PR-triggered previews (Pro: preview-envs)
+  'gitApps.title': 'Git App / PR-превью',
+  'gitApps.subtitle':
+    'Подключите webhook GitHub или GitLab, чтобы pull request автоматически поднимали preview-окружения.',
+  'gitApps.lockedTitle': 'Git App превью — функция Pro',
+  'gitApps.lockedBody':
+    'Preview по PR требуют тариф Pro (модуль preview-envs).',
+  'gitApps.adminOnly':
+    'Настраивать интеграцию Git App могут только администраторы.',
+  'gitApps.github': 'GitHub',
+  'gitApps.gitlab': 'GitLab',
+  'gitApps.enabled': 'Включить webhook для этого провайдера',
+  'gitApps.webhookUrl': 'URL webhook',
+  'gitApps.webhookUrlHint':
+    'Зарегистрируйте этот URL у провайдера. Нужен доступный PUBLIC_API_URL (или хост запроса) с GitHub/GitLab.',
+  'gitApps.copy': 'Копировать',
+  'gitApps.copied': 'URL webhook скопирован.',
+  'gitApps.webhookSecret': 'Секрет webhook',
+  'gitApps.webhookSecretSet':
+    'Секрет webhook (оставьте пустым, чтобы не менять)',
+  'gitApps.accessToken': 'Токен доступа',
+  'gitApps.accessTokenSet':
+    'Токен доступа (оставьте пустым, чтобы не менять)',
+  'gitApps.accessTokenHint':
+    'Fine-grained PAT (GitHub) или project access token (GitLab). Нужен для комментариев в PR; для деплоя необязателен.',
+  'gitApps.githubAppId': 'GitHub App ID (необязательно)',
+  'gitApps.githubAppIdHint':
+    'Сохраняется для будущего App JWT. В MVP для API используется PAT.',
+  'gitApps.githubPrivateKey': 'Приватный ключ GitHub App (необязательно)',
+  'gitApps.githubPrivateKeySet':
+    'Приватный ключ GitHub App (оставьте пустым, чтобы не менять)',
+  'gitApps.parentService': 'Родительский сервис',
+  'gitApps.parentServiceAuto': 'Автоподбор по URL репозитория…',
+  'gitApps.parentServiceHint':
+    'Клонировать этот сервис для PR-превью. Пусто — искать сервисы, у которых repoUrl совпадает с репозиторием PR.',
+  'gitApps.repoAllowlist': 'Allowlist репозиториев (необязательно)',
+  'gitApps.repoAllowlistHint':
+    'Через запятую: owner/repo. Пусто — любой репозиторий, для которого найден родительский сервис.',
+  'gitApps.ttl': 'TTL по умолчанию (часы)',
+  'gitApps.ttlHint':
+    'Для превью, созданных из PR. 0 — не удалять автоматически.',
+  'gitApps.commentOnPr': 'Комментировать URL превью в PR, если возможно',
+  'gitApps.save': 'Сохранить',
+  'gitApps.saving': 'Сохранение…',
+  'gitApps.saved': 'Настройки Git App сохранены.',
+  'gitApps.step1Title': 'Создайте webhook',
+  'gitApps.step1Body':
+    'Скопируйте URL webhook и создайте webhook репозитория (или орг.) в GitHub/GitLab.',
+  'gitApps.step2Title': 'События и секрет',
+  'gitApps.step2Body':
+    'GitHub: Pull requests. GitLab: Merge request events. Вставьте тот же секрет в поле ниже.',
+  'gitApps.step3Title': 'Привяжите родительский сервис',
+  'gitApps.step3Body':
+    'У сервиса в панели должен совпадать repo URL, либо выберите родительский сервис выше.',
+  'gitApps.step4Title': 'Комментарии в PR (необязательно)',
+  'gitApps.step4Body':
+    'Добавьте токен с contents:read + pull-requests:write (GitHub) или scope api (GitLab), чтобы писать URL превью.',
+  'gitApps.noteTitle': 'Объём MVP',
+  'gitApps.noteBody':
+    'Используется webhook репозитория + токен — без публикации в GitHub Marketplace и без системного GitLab App.',
 };
