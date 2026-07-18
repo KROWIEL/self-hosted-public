@@ -16,6 +16,7 @@ import { execFile as cpExecFile } from 'node:child_process';
 import { DRIZZLE, Database } from '../../db/database.module';
 import { tunnels } from '../../db/schema';
 import { CryptoService } from '../../common/crypto/crypto.service';
+import { AssetTokenService } from '../../common/asset-token/asset-token.service';
 import { EntitlementsService } from '../../common/licensing/entitlements.service';
 import { LicenseErrors } from '../../common/errors/app-errors';
 import { TunnelRunnerService } from './tunnel-runner.service';
@@ -36,12 +37,10 @@ const PLATFORMS: Record<string, { goos: string; goarch: string; ext: string }> =
 export class TunnelsService implements OnApplicationBootstrap {
   private readonly logger = new Logger(TunnelsService.name);
 
-  /** TTL for the signed tokens that authorize relay-asset downloads. */
-  private readonly assetTokenTtlMs = assetTokenTtlMs();
-
   constructor(
     @Inject(DRIZZLE) private readonly db: Database,
     private readonly crypto: CryptoService,
+    private readonly assets: AssetTokenService,
     private readonly runner: TunnelRunnerService,
     private readonly entitlements: EntitlementsService,
   ) {}
@@ -207,7 +206,7 @@ export class TunnelsService implements OnApplicationBootstrap {
     // Assets (relay binary + install scripts) are gated behind a short-lived,
     // tamper-proof token so only a licensed operator who opened this page can
     // fetch them — without requiring a panel login on the fresh VDS.
-    const at = this.mintAssetToken();
+    const at = this.assets.mint('tunnel-asset');
     const binUrls = Object.fromEntries(
       Object.keys(PLATFORMS).map((p) => [
         p,
@@ -288,42 +287,14 @@ export class TunnelsService implements OnApplicationBootstrap {
   }
 
   /**
-   * Mint a short-lived, tamper-proof token authorizing relay-asset downloads.
-   * The token is an AES-256-GCM sealed `{exp}` blob (base64url) — no server-side
-   * state needed, and it can't be forged without ENCRYPTION_KEY. Embedded into
-   * the install command so a fresh VDS fetches assets over `curl`/`iwr` without a
-   * panel login, while anonymous access + on-demand build abuse are blocked.
+   * Consume a short-lived, single-use (per path) token authorizing one relay
+   * asset download. Delegates to {@link AssetTokenService} (L9).
    */
-  mintAssetToken(): string {
-    const payload = JSON.stringify({
-      t: 'tunnel-asset',
-      exp: Date.now() + this.assetTokenTtlMs,
-    });
-    return this.crypto
-      .encrypt(payload)
-      .replace(/\+/g, '-')
-      .replace(/\//g, '_')
-      .replace(/=+$/, '');
-  }
-
-  /** Validate an asset token minted by {@link mintAssetToken}. Never throws. */
-  verifyAssetToken(token: string | undefined | null): boolean {
-    if (!token) return false;
-    try {
-      let b64 = token.replace(/-/g, '+').replace(/_/g, '/');
-      while (b64.length % 4 !== 0) b64 += '=';
-      const data = JSON.parse(this.crypto.decrypt(b64)) as {
-        t?: string;
-        exp?: number;
-      };
-      return (
-        data?.t === 'tunnel-asset' &&
-        typeof data.exp === 'number' &&
-        data.exp > Date.now()
-      );
-    } catch {
-      return false;
-    }
+  consumeAssetToken(
+    token: string | undefined | null,
+    path: string,
+  ): Promise<boolean> {
+    return this.assets.consume(token, 'tunnel-asset', path);
   }
 
   private ports(relayPorts: string): number[] {
@@ -357,11 +328,4 @@ export class TunnelsService implements OnApplicationBootstrap {
       createdAt: row.createdAt,
     };
   }
-}
-
-/** Asset-token lifetime; override with TUNNEL_ASSET_TOKEN_TTL_MS (default 24h). */
-function assetTokenTtlMs(): number {
-  const raw = process.env.TUNNEL_ASSET_TOKEN_TTL_MS;
-  const n = raw ? Number(raw) : NaN;
-  return Number.isFinite(n) && n > 0 ? n : 24 * 60 * 60 * 1000;
 }

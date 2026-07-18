@@ -29,7 +29,7 @@ export class SetEnvDto {
 
 export class SetDomainDto {
   // Strict FQDN only. This blocks backticks/parens/pipes and other characters
-  // that would let a crafted "host" break out of the Traefik HostRegexp rule
+  // that would let a crafted "host" break out of the Traefik Host() rule
   // and hijack routing for other services.
   @IsString()
   @Matches(/^(?!-)[A-Za-z0-9-]{1,63}(\.[A-Za-z0-9-]{1,63})+$/, {

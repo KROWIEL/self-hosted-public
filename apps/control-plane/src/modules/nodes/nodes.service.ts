@@ -25,6 +25,7 @@ import {
   services,
 } from '../../db/schema';
 import { CryptoService } from '../../common/crypto/crypto.service';
+import { AssetTokenService } from '../../common/asset-token/asset-token.service';
 import { EntitlementsService } from '../../common/licensing/entitlements.service';
 import { LicenseErrors, NodeErrors } from '../../common/errors/app-errors';
 import { AgentClient } from './agent.client';
@@ -59,11 +60,11 @@ export class NodesService implements OnModuleInit, OnModuleDestroy {
   // Coalesces concurrent on-demand agent builds per platform so the public
   // binary endpoint can't be spammed into launching many parallel Go builds.
   private readonly buildLocks = new Map<string, Promise<string>>();
-  private readonly assetTokenTtlMs = agentAssetTokenTtlMs();
 
   constructor(
     @Inject(DRIZZLE) private readonly db: Database,
     private readonly crypto: CryptoService,
+    private readonly assets: AssetTokenService,
     private readonly agent: AgentClient,
     private readonly entitlements: EntitlementsService,
   ) {}
@@ -281,7 +282,7 @@ export class NodesService implements OnModuleInit, OnModuleDestroy {
     const base = origin.replace(/\/$/, '');
     // Gate the binary + install-script downloads behind a short-lived signed
     // token so they aren't anonymously reachable (L3).
-    const at = this.mintAssetToken();
+    const at = this.assets.mint('node-asset');
     const binUrls = Object.fromEntries(
       Object.keys(AGENT_PLATFORMS).map((p) => [
         p,
@@ -356,42 +357,14 @@ export class NodesService implements OnModuleInit, OnModuleDestroy {
   }
 
   /**
-   * Mints a short-lived, tamper-proof token that gates the anonymous agent
-   * binary + install-script endpoints (L3). Mirrors the tunnel-assets pattern:
-   * the panel embeds it in the copy-paste install command so a fresh node can
-   * fetch artifacts with a single curl — without a panel login — while blocking
-   * anonymous access and on-demand build abuse.
+   * Consume a short-lived, single-use (per path) token authorizing one agent
+   * binary / install-script download (L9).
    */
-  mintAssetToken(): string {
-    const payload = JSON.stringify({
-      t: 'node-asset',
-      exp: Date.now() + this.assetTokenTtlMs,
-    });
-    return this.crypto
-      .encrypt(payload)
-      .replace(/\+/g, '-')
-      .replace(/\//g, '_')
-      .replace(/=+$/, '');
-  }
-
-  /** Validate an asset token minted by {@link mintAssetToken}. Never throws. */
-  verifyAssetToken(token: string | undefined | null): boolean {
-    if (!token) return false;
-    try {
-      let b64 = token.replace(/-/g, '+').replace(/_/g, '/');
-      while (b64.length % 4 !== 0) b64 += '=';
-      const data = JSON.parse(this.crypto.decrypt(b64)) as {
-        t?: string;
-        exp?: number;
-      };
-      return (
-        data?.t === 'node-asset' &&
-        typeof data.exp === 'number' &&
-        data.exp > Date.now()
-      );
-    } catch {
-      return false;
-    }
+  consumeAssetToken(
+    token: string | undefined | null,
+    path: string,
+  ): Promise<boolean> {
+    return this.assets.consume(token, 'node-asset', path);
   }
 
   /** Flip remote nodes (those with a pinned fingerprint) to OFFLINE if stale. */
@@ -541,11 +514,4 @@ function safeStrEqual(a: string, b: string): boolean {
   const bufB = Buffer.from(b);
   if (bufA.length !== bufB.length) return false;
   return timingSafeEqual(bufA, bufB);
-}
-
-/** Agent asset-token lifetime; override with NODE_ASSET_TOKEN_TTL_MS (default 24h). */
-function agentAssetTokenTtlMs(): number {
-  const raw = process.env.NODE_ASSET_TOKEN_TTL_MS;
-  const n = raw ? Number(raw) : NaN;
-  return Number.isFinite(n) && n > 0 ? n : 24 * 60 * 60 * 1000;
 }

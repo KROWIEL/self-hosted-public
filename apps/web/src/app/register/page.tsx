@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { register } from '@/lib/api';
 import { ErrorBox } from '@/components/ui';
 import { PasswordChecklist } from '@/components/password-checklist';
@@ -11,9 +11,22 @@ import { useErrorText, useI18n } from '@/i18n';
 import { LangSwitcher } from '@/components/lang-switcher';
 
 export default function RegisterPage() {
+  return (
+    <Suspense>
+      <RegisterForm />
+    </Suspense>
+  );
+}
+
+function RegisterForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { t } = useI18n();
   const errText = useErrorText();
+  const inviteToken =
+    searchParams.get('invite')?.trim() ||
+    searchParams.get('token')?.trim() ||
+    '';
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -24,7 +37,7 @@ export default function RegisterPage() {
     setError(null);
     setLoading(true);
     try {
-      await register(email.trim(), password);
+      await register(email.trim(), password, inviteToken || undefined);
       router.push('/onboarding');
     } catch (err) {
       setError(errText(err));
@@ -47,12 +60,19 @@ export default function RegisterPage() {
             {t('register.title')}
           </h1>
           <p className="mt-1 text-sm text-neutral-400">
-            {t('register.subtitle')}
+            {inviteToken
+              ? t('register.subtitleInvite')
+              : t('register.subtitle')}
           </p>
         </div>
 
         <form onSubmit={onSubmit} className="glass space-y-4 rounded-2xl p-7">
           {error && <ErrorBox message={error} />}
+          {inviteToken && (
+            <p className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-200">
+              {t('register.inviteReady')}
+            </p>
+          )}
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-neutral-400">
               {t('login.email')}

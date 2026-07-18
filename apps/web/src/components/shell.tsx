@@ -142,6 +142,13 @@ const Icon = {
       <path d="m3 7 9 6 9-6" />
     </Svg>
   ),
+  invite: (p: IconProps) => (
+    <Svg {...p}>
+      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M19 8v6M22 11h-6" />
+    </Svg>
+  ),
   lock: (p: IconProps) => (
     <Svg {...p}>
       <rect x="5" y="11" width="14" height="9" rx="2" />
@@ -241,6 +248,7 @@ const NAV: NavItem[] = [
     icon: Icon.mail,
     module: 'email',
   },
+  { href: '/invites', label: 'nav.invites', icon: Icon.invite },
 ];
 
 const COLLAPSE_KEY = 'sidebarCollapsed';

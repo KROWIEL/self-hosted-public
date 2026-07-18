@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import {
   API_URL,
   ApiToken,
+  ApiTokenScope,
   createApiToken,
   listApiTokens,
   revokeApiToken,
@@ -20,7 +21,29 @@ import {
   PageHeader,
   Spinner,
 } from '@/components/ui';
-import { useErrorText, useI18n } from '@/i18n';
+import { useErrorText, useI18n, type TKey } from '@/i18n';
+
+const SCOPE_OPTIONS: {
+  id: ApiTokenScope;
+  label: TKey;
+  hint: TKey;
+}[] = [
+  {
+    id: 'read',
+    label: 'apiTokens.scopeRead',
+    hint: 'apiTokens.scopeReadHint',
+  },
+  {
+    id: 'full',
+    label: 'apiTokens.scopeFull',
+    hint: 'apiTokens.scopeFullHint',
+  },
+  {
+    id: 'admin',
+    label: 'apiTokens.scopeAdmin',
+    hint: 'apiTokens.scopeAdminHint',
+  },
+];
 
 export default function ApiTokensPage() {
   return (
@@ -41,6 +64,8 @@ function ApiTokensContent() {
   const [error, setError] = useState<string | null>(null);
   const [name, setName] = useState('');
   const [expiry, setExpiry] = useState('');
+  // Least privilege by default: read-only until the user opts into more.
+  const [scopes, setScopes] = useState<ApiTokenScope[]>(['read']);
   const [busy, setBusy] = useState(false);
   const [fresh, setFresh] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -66,6 +91,30 @@ function ApiTokensContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [unlocked]);
 
+  function toggleScope(scope: ApiTokenScope) {
+    setScopes((prev): ApiTokenScope[] => {
+      if (scope === 'read') {
+        // Selecting read clears write/admin — least privilege.
+        return ['read'];
+      }
+      if (scope === 'full') {
+        const next: ApiTokenScope[] = prev.includes('full')
+          ? prev.filter((s) => s !== 'full')
+          : [...prev.filter((s) => s !== 'read'), 'full'];
+        return next.length === 0 ? ['read'] : next;
+      }
+      // admin
+      if (prev.includes('admin')) {
+        const next = prev.filter((s) => s !== 'admin');
+        return next.length === 0 ? ['read'] : next;
+      }
+      // Promote from read to full when enabling admin so the token isn't
+      // admin-only without write capability.
+      const base: ApiTokenScope[] = prev.includes('full') ? prev : ['full'];
+      return [...base.filter((s) => s !== 'read'), 'admin'];
+    });
+  }
+
   async function onCreate() {
     if (!name.trim()) return;
     setBusy(true);
@@ -76,11 +125,13 @@ function ApiTokensContent() {
       const res = await createApiToken({
         name: name.trim(),
         expiresInDays: days && days > 0 ? days : undefined,
+        scopes,
       });
       setFresh(res.token);
       setCopied(false);
       setName('');
       setExpiry('');
+      setScopes(['read']);
       await reload();
     } catch (e) {
       setError(errorText(e));
@@ -190,6 +241,39 @@ function ApiTokensContent() {
             {t('apiTokens.create')}
           </button>
         </div>
+        <div className="mt-4">
+          <p className="text-xs font-medium text-neutral-400">
+            {t('apiTokens.scopes')}
+          </p>
+          <p className="mt-0.5 text-xs text-neutral-500">
+            {t('apiTokens.scopesHint')}
+          </p>
+          <ul className="mt-3 space-y-2">
+            {SCOPE_OPTIONS.map((opt) => {
+              const checked = scopes.includes(opt.id);
+              return (
+                <li key={opt.id}>
+                  <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-white/5 bg-ink-950/40 px-3 py-2.5 hover:border-white/10">
+                    <input
+                      type="checkbox"
+                      className="mt-0.5"
+                      checked={checked}
+                      onChange={() => toggleScope(opt.id)}
+                    />
+                    <span className="min-w-0">
+                      <span className="block text-sm font-medium text-white">
+                        {t(opt.label)}
+                      </span>
+                      <span className="block text-xs text-neutral-500">
+                        {t(opt.hint)}
+                      </span>
+                    </span>
+                  </label>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
       </Card>
 
       <Card className="mb-6">
@@ -221,7 +305,20 @@ function ApiTokensContent() {
               >
                 <div className="min-w-0 flex-1">
                   <div className="font-medium text-white">{tk.name}</div>
-                  <div className="font-mono text-xs text-neutral-500">
+                  <div className="mt-1 flex flex-wrap gap-1.5">
+                    {(tk.scopes?.length
+                      ? tk.scopes
+                      : (['full'] as ApiTokenScope[])
+                    ).map((s) => (
+                      <span
+                        key={s}
+                        className="rounded-md bg-white/5 px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wide text-neutral-300"
+                      >
+                        {s}
+                      </span>
+                    ))}
+                  </div>
+                  <div className="mt-1 font-mono text-xs text-neutral-500">
                     {tk.preview} · {t('apiTokens.created')}{' '}
                     {new Date(tk.createdAt).toLocaleDateString()}
                     {tk.lastUsedAt

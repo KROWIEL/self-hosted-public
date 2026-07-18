@@ -71,9 +71,9 @@ export class NodeAgentController {
     return this.nodes.heartbeat(dto.nodeId, token, dto.version);
   }
 
-  // Anonymous artifact delivery: gated by a short-lived signed token (`?t=`)
-  // the panel embeds in the install command, plus a strict rate limit as
-  // defense-in-depth against on-demand build abuse (L3).
+  // Anonymous artifact delivery: gated by a short-lived, single-use (per path)
+  // signed token (`?t=`) the panel embeds in the install command, plus a strict
+  // rate limit as defense-in-depth against on-demand build abuse (L3/L9).
   @Throttle({ default: { limit: 20, ttl: 60_000 } })
   @Get('bin/:platform')
   async bin(
@@ -81,7 +81,7 @@ export class NodeAgentController {
     @Query('t') token: string,
     @Res() res: Response,
   ) {
-    if (!this.nodes.verifyAssetToken(token)) {
+    if (!(await this.nodes.consumeAssetToken(token, `bin/${platform}`))) {
       res.status(403).send('forbidden');
       return;
     }
@@ -97,8 +97,8 @@ export class NodeAgentController {
 
   @Throttle({ default: { limit: 20, ttl: 60_000 } })
   @Get('install.sh')
-  installSh(@Query('t') token: string, @Res() res: Response) {
-    if (!this.nodes.verifyAssetToken(token)) {
+  async installSh(@Query('t') token: string, @Res() res: Response) {
+    if (!(await this.nodes.consumeAssetToken(token, 'install.sh'))) {
       res.status(403).send('forbidden');
       return;
     }

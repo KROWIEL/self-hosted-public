@@ -91,6 +91,7 @@ export const en = {
   'nav.sso': 'Single sign-on',
   'nav.previews': 'Preview envs',
   'nav.email': 'Email',
+  'nav.invites': 'Invites',
   'nav.settings': 'Settings',
   'nav.billing': 'Billing',
   'nav.locked': 'Requires an upgrade',
@@ -122,6 +123,9 @@ export const en = {
   // Registration (stage 1)
   'register.title': 'Create your account',
   'register.subtitle': 'Step 1 of 2 — account details',
+  'register.subtitleInvite': 'Step 1 of 2 — invited account',
+  'register.inviteReady':
+    'Invitation accepted — create your account to continue.',
   'register.passwordHint': 'At least 8 characters.',
   'register.continue': 'Continue',
   'register.creating': 'Creating…',
@@ -206,6 +210,14 @@ export const en = {
     'Two-factor authentication is already enabled.',
   'error.auth.twoFactorNotEnabled':
     'Two-factor authentication is not enabled.',
+  'error.auth.registrationDisabled':
+    'Self-service registration is disabled. Ask an administrator for an invite.',
+  'error.auth.inviteRequired':
+    'An invitation is required to create an account.',
+  'error.auth.inviteInvalid':
+    'This invitation is invalid, expired, or has already been used.',
+  'error.auth.inviteEmailMismatch':
+    'This invitation was issued for a different email address.',
   'error.common.adminOnly': 'This action is restricted to administrators.',
   'error.template.notFound': 'Template not found.',
   'error.template.inUse':
@@ -1051,6 +1063,16 @@ export const en = {
   'apiTokens.expiry': 'Expires in (days)',
   'apiTokens.expiryPlaceholder': 'never',
   'apiTokens.create': 'Create token',
+  'apiTokens.scopes': 'Scopes',
+  'apiTokens.scopesHint':
+    'Defaults to read-only. Enable write or admin only if the token needs them.',
+  'apiTokens.scopeRead': 'Read',
+  'apiTokens.scopeReadHint': 'List and fetch resources (GET only).',
+  'apiTokens.scopeFull': 'Full (read + write)',
+  'apiTokens.scopeFullHint': 'Create, update and delete via the API.',
+  'apiTokens.scopeAdmin': 'Admin',
+  'apiTokens.scopeAdminHint':
+    'Reach platform-admin routes (only effective if your account is an admin).',
   'apiTokens.freshTitle': 'Copy your new token now',
   'apiTokens.freshHint':
     "This is the only time the token is shown. Store it somewhere safe — you won't be able to see it again.",
@@ -1219,6 +1241,40 @@ export const en = {
     'No account exists for your email, and automatic account creation is off.',
   'sso.error.access_denied': 'Access was denied by the identity provider.',
   'sso.error.sso_failed': 'Single sign-on failed. Please try again.',
+
+  // Admin registration invites
+  'invites.title': 'Invites',
+  'invites.subtitle':
+    'Issue one-time registration links when public sign-up is disabled.',
+  'invites.adminOnly': 'Only administrators can manage invites.',
+  'invites.aboutTitle': 'What are invites?',
+  'invites.aboutBody':
+    'When open registration is off, new users need an invite. Create a link, share it once, and revoke unused invites anytime. Optionally bind an invite to a specific email.',
+  'invites.createTitle': 'Create an invite',
+  'invites.email': 'Email (optional)',
+  'invites.emailPlaceholder': 'leave blank for any email',
+  'invites.role': 'Role',
+  'invites.roleUser': 'User',
+  'invites.roleAdmin': 'Admin',
+  'invites.expiry': 'Expires in (days)',
+  'invites.create': 'Create invite',
+  'invites.creating': 'Creating…',
+  'invites.freshTitle': 'Copy the invite now',
+  'invites.freshHint':
+    'The token is shown only once. Share the URL with the recipient.',
+  'invites.copyUrl': 'Copy URL',
+  'invites.copyToken': 'Copy token',
+  'invites.copied': 'Copied ✓',
+  'invites.listTitle': 'Issued invites',
+  'invites.empty': 'No invites yet.',
+  'invites.anyEmail': 'Any email',
+  'invites.status.pending': 'Pending',
+  'invites.status.used': 'Used',
+  'invites.status.expired': 'Expired',
+  'invites.expires': 'expires',
+  'invites.created': 'created',
+  'invites.revoke': 'Revoke',
+  'invites.confirmRevoke': 'Revoke this invite? The link will stop working.',
 
   // Preview environments (Pro: preview-envs)
   'previews.title': 'Preview environments',

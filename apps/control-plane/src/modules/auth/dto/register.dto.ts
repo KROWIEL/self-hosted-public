@@ -1,4 +1,4 @@
-import { IsEmail, IsString, MinLength } from 'class-validator';
+import { IsEmail, IsOptional, IsString, MinLength } from 'class-validator';
 
 export class RegisterDto {
   @IsEmail()
@@ -9,4 +9,10 @@ export class RegisterDto {
   @IsString()
   @MinLength(1)
   password: string;
+
+  /** Required when ALLOW_OPEN_REGISTRATION is off (admin-issued invite). */
+  @IsOptional()
+  @IsString()
+  @MinLength(1)
+  inviteToken?: string;
 }

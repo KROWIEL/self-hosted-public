@@ -23,7 +23,24 @@ export const AuthErrors = {
     new ForbiddenException({
       code: 'auth.registrationDisabled',
       message:
-        'Self-service registration is disabled. Ask an administrator to create your account.',
+        'Self-service registration is disabled. Ask an administrator for an invite.',
+    }),
+  inviteRequired: () =>
+    new ForbiddenException({
+      code: 'auth.inviteRequired',
+      message:
+        'An invitation token is required to create an account.',
+    }),
+  inviteInvalid: () =>
+    new BadRequestException({
+      code: 'auth.inviteInvalid',
+      message:
+        'This invitation is invalid, expired, or has already been used.',
+    }),
+  inviteEmailMismatch: () =>
+    new BadRequestException({
+      code: 'auth.inviteEmailMismatch',
+      message: 'This invitation was issued for a different email address.',
     }),
   invalidCredentials: () =>
     new UnauthorizedException({

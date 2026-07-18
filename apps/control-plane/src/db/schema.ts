@@ -611,6 +611,28 @@ export const emailMessages = pgTable('email_messages', {
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });
 
+/// Admin-issued registration invites (H1). When ALLOW_OPEN_REGISTRATION is off,
+/// POST /auth/register requires a valid, unused, non-expired invite token.
+export const invites = pgTable(
+  'invites',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    // Optional email binding — when set, register must use the same address.
+    email: text('email'),
+    tokenHash: text('token_hash').notNull().unique(),
+    createdBy: uuid('created_by')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    role: roleEnum('role').notNull().default('USER'),
+    expiresAt: timestamp('expires_at').notNull(),
+    usedAt: timestamp('used_at'),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+  },
+  (t) => ({
+    expiresIdx: index('invites_expires_at_idx').on(t.expiresAt),
+  }),
+);
+
 export type DbSchema = {
   users: typeof users;
   nodes: typeof nodes;
@@ -643,4 +665,5 @@ export type DbSchema = {
   previewEnvironments: typeof previewEnvironments;
   emailConfig: typeof emailConfig;
   emailMessages: typeof emailMessages;
+  invites: typeof invites;
 };

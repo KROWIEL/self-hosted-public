@@ -595,15 +595,16 @@ func (s *Server) handleRun(w http.ResponseWriter, r *http.Request) {
 
 	name := coloredName(uuid, body.Color)
 	opts := docker.RunOptions{
-		Name:        name,
-		Image:       body.Image,
-		Network:     network,
-		MemLimitMb:  body.MemLimit,
-		CPULimit:    body.CPULimit,
-		PublishPort: publishPort,
-		Env:         body.Env,
-		Labels:      traefikLabels(uuid, body.Domain, body.Port, body.HTTPS, body.HealthPath),
-		Volumes:     mounts,
+		Name:           name,
+		Image:          body.Image,
+		Network:        network,
+		MemLimitMb:     body.MemLimit,
+		CPULimit:       body.CPULimit,
+		PublishPort:    publishPort,
+		Env:            body.Env,
+		Labels:         traefikLabels(uuid, body.Domain, body.Port, body.HTTPS, body.HealthPath),
+		Volumes:        mounts,
+		ReadOnlyRootfs: true, // H7: app containers get read-only rootfs + /tmp tmpfs
 	}
 
 	// Capture progress so the HTTP response stays valid JSON.
@@ -682,11 +683,11 @@ func acmeWildcardEnabled() bool {
 	return strings.TrimSpace(os.Getenv("ACME_CERT_RESOLVER")) == "letsencrypt-dns"
 }
 
-// traefikHostRule matches the apex domain and any subdomain (e.g. m2by.ru,
-// admin.m2by.ru, tenant1.m2by.ru).
+// traefikHostRule matches exactly one hostname. Domains are FQDN-validated by
+// the control plane before deploy; previews also get a concrete host, so a
+// HostRegexp subdomain wildcard is unnecessary and would over-match (H9).
 func traefikHostRule(domain string) string {
-	reDomain := strings.ReplaceAll(domain, ".", `\.`)
-	return fmt.Sprintf("HostRegexp(`^(.+\\.)?%s$`)", reDomain)
+	return fmt.Sprintf("Host(`%s`)", domain)
 }
 
 func (s *Server) handleRemove(w http.ResponseWriter, r *http.Request) {

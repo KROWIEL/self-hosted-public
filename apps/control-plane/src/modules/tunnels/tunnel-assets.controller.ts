@@ -7,10 +7,11 @@ import { TunnelsService } from './tunnels.service';
 /**
  * Delivery of the relay binary + install scripts so a fresh VDS can fetch them
  * with a single curl/iwr — without a panel login. Access is gated by a
- * short-lived signed token (`?t=`) that the panel embeds into the install
- * command (see {@link TunnelsService.install}). This blocks anonymous access and
- * on-demand build abuse while keeping the copy-paste install flow. The per-tunnel
- * auth token that actually secures the relay is injected separately.
+ * short-lived, single-use (per path) signed token (`?t=`) that the panel embeds
+ * into the install command (see {@link TunnelsService.install}). This blocks
+ * anonymous access, replay, and on-demand build abuse while keeping the
+ * copy-paste install flow. The per-tunnel auth token that actually secures the
+ * relay is injected separately.
  *
  * Mounted under `tunnels/assets/*` (not `tunnels/*`) so the routes are not
  * shadowed by the licensed `TunnelsController`'s `:id` param route.
@@ -25,7 +26,7 @@ export class TunnelAssetsController {
     @Query('t') token: string,
     @Res() res: Response,
   ) {
-    if (!this.tunnels.verifyAssetToken(token)) {
+    if (!(await this.tunnels.consumeAssetToken(token, `bin/${platform}`))) {
       res.status(403).send('forbidden');
       return;
     }
@@ -40,8 +41,8 @@ export class TunnelAssetsController {
   }
 
   @Get('install.sh')
-  installSh(@Query('t') token: string, @Res() res: Response) {
-    if (!this.tunnels.verifyAssetToken(token)) {
+  async installSh(@Query('t') token: string, @Res() res: Response) {
+    if (!(await this.tunnels.consumeAssetToken(token, 'install.sh'))) {
       res.status(403).send('forbidden');
       return;
     }
@@ -49,8 +50,8 @@ export class TunnelAssetsController {
   }
 
   @Get('install.ps1')
-  installPs1(@Query('t') token: string, @Res() res: Response) {
-    if (!this.tunnels.verifyAssetToken(token)) {
+  async installPs1(@Query('t') token: string, @Res() res: Response) {
+    if (!(await this.tunnels.consumeAssetToken(token, 'install.ps1'))) {
       res.status(403).send('forbidden');
       return;
     }

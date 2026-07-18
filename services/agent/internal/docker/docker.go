@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"regexp"
 	"strings"
+	"sync"
 )
 
 // volumeNameRe matches safe Docker named-volume identifiers. It rejects any
@@ -41,8 +42,9 @@ func (c *Client) BuildImage(ctx context.Context, contextDir, dockerfile, tag str
 }
 
 // Baseline container hardening applied to every managed run (services + managed
-// databases). read-only rootfs and userns remapping are intentionally NOT set
-// here — they need per-app validation and are tracked as a follow-up.
+// databases). App containers additionally get a read-only rootfs + tmpfs for
+// /tmp and /var/tmp (see RunOptions.ReadOnlyRootfs). Optional gVisor
+// (--runtime=runsc) is off by default behind AGENT_GVISOR=1.
 const (
 	// defaultMemLimitMb caps memory when the caller provides no explicit limit,
 	// so a container can't exhaust host RAM. It's generous enough for typical
@@ -60,11 +62,35 @@ var hardenedCaps = []string{
 	"SETPCAP", "NET_BIND_SERVICE", "KILL",
 }
 
+// gvisorAvailable caches whether the runsc runtime is registered with Docker.
+// Checked at most once when AGENT_GVISOR=1; never fails the run if missing.
+var (
+	gvisorOnce      sync.Once
+	gvisorRuntimeOK bool
+)
+
 // RunContainer (re)creates and starts a container for a service.
 // Returns the new container ID.
 func (c *Client) RunContainer(ctx context.Context, opts RunOptions, w io.Writer) (string, error) {
 	_ = c.run(ctx, io.Discard, "rm", "-f", opts.Name)
 
+	args, err := containerRunArgs(ctx, opts)
+	if err != nil {
+		return "", err
+	}
+
+	fmt.Fprintf(w, ">> starting container %s from %s\n", opts.Name, opts.Image)
+	id, err := c.runCapture(ctx, w, args...)
+	if err != nil {
+		return "", err
+	}
+	return id, nil
+}
+
+// containerRunArgs builds the full `docker run …` argv (including "run" "-d")
+// for the given options. Extracted so unit tests can assert hardening flags
+// without talking to Docker.
+func containerRunArgs(ctx context.Context, opts RunOptions) ([]string, error) {
 	args := []string{"run", "-d", "--name", opts.Name, "--restart", "unless-stopped"}
 
 	// Baseline hardening on every managed container.
@@ -73,6 +99,19 @@ func (c *Client) RunContainer(ctx context.Context, opts RunOptions, w io.Writer)
 	args = append(args, "--cap-drop=ALL")
 	for _, capName := range hardenedCaps {
 		args = append(args, "--cap-add", capName)
+	}
+
+	// Read-only rootfs for user app containers (not DB sidecars / builds). Writable
+	// tmpfs mounts cover the paths most apps need for scratch files (H7).
+	if opts.ReadOnlyRootfs {
+		args = append(args, "--read-only")
+		args = append(args, "--tmpfs", "/tmp:rw,nosuid,nodev,size=64m")
+		args = append(args, "--tmpfs", "/var/tmp:rw,nosuid,nodev,size=64m")
+	}
+
+	// Optional gVisor: only when explicitly enabled AND the runtime exists.
+	if gvisorEnabled() && gvisorRuntimeAvailable(ctx) {
+		args = append(args, "--runtime=runsc")
 	}
 
 	if opts.Network != "" {
@@ -86,7 +125,6 @@ func (c *Client) RunContainer(ctx context.Context, opts RunOptions, w io.Writer)
 	if opts.MemLimitMb > 0 {
 		args = append(args, "--memory", fmt.Sprintf("%dm", opts.MemLimitMb))
 	} else {
-		// Enforce a default cap when the caller doesn't specify one.
 		args = append(args, "--memory", fmt.Sprintf("%dm", defaultMemLimitMb))
 	}
 	if opts.CPULimit > 0 {
@@ -96,11 +134,8 @@ func (c *Client) RunContainer(ctx context.Context, opts RunOptions, w io.Writer)
 		if v.Name == "" || v.MountPath == "" {
 			continue
 		}
-		// Reject anything that isn't a plain named volume so a crafted name
-		// (e.g. "/etc") can't become a host bind-mount. Fail loudly rather than
-		// silently dropping the mount, which could cause data loss.
 		if !ValidVolumeName(v.Name) {
-			return "", fmt.Errorf("invalid volume name %q", v.Name)
+			return nil, fmt.Errorf("invalid volume name %q", v.Name)
 		}
 		args = append(args, "-v", fmt.Sprintf("%s:%s", v.Name, v.MountPath))
 	}
@@ -111,13 +146,27 @@ func (c *Client) RunContainer(ctx context.Context, opts RunOptions, w io.Writer)
 		args = append(args, "--label", l)
 	}
 	args = append(args, opts.Image)
+	return args, nil
+}
 
-	fmt.Fprintf(w, ">> starting container %s from %s\n", opts.Name, opts.Image)
-	id, err := c.runCapture(ctx, w, args...)
-	if err != nil {
-		return "", err
-	}
-	return id, nil
+// gvisorEnabled reports whether the operator opted into the gVisor runtime.
+func gvisorEnabled() bool {
+	return os.Getenv("AGENT_GVISOR") == "1"
+}
+
+// gvisorRuntimeAvailable probes Docker once for the runsc runtime. Returns false
+// (without failing the container start) when Docker is unreachable or runsc is
+// not registered.
+func gvisorRuntimeAvailable(ctx context.Context) bool {
+	gvisorOnce.Do(func() {
+		out, err := exec.CommandContext(ctx, "docker", "info", "--format", "{{json .Runtimes}}").Output()
+		if err != nil {
+			gvisorRuntimeOK = false
+			return
+		}
+		gvisorRuntimeOK = strings.Contains(string(out), "runsc")
+	})
+	return gvisorRuntimeOK
 }
 
 // Remove force-removes a container (ignores "no such container").
@@ -341,13 +390,14 @@ type VolumeMount struct {
 }
 
 type RunOptions struct {
-	Name        string
-	Image       string
-	Network     string
-	MemLimitMb  int
-	CPULimit    int // percent of one core
-	PublishPort int // host port to publish (0 = none); maps host->container 1:1
-	Env         map[string]string
-	Labels      []string
-	Volumes     []VolumeMount
+	Name           string
+	Image          string
+	Network        string
+	MemLimitMb     int
+	CPULimit       int // percent of one core
+	PublishPort    int // host port to publish (0 = none); maps host->container 1:1
+	Env            map[string]string
+	Labels         []string
+	Volumes        []VolumeMount
+	ReadOnlyRootfs bool // app containers only; DB sidecars leave this false
 }
