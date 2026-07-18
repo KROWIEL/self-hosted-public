@@ -19,6 +19,7 @@ import { ProjectRole } from '../../common/rbac/project-role.decorator';
 import { ProjectRolesGuard } from '../../common/rbac/project-roles.guard';
 import { ServicesService } from './services.service';
 import { BuildLogService } from './build-log.service';
+import { ExecTicketService } from './exec-ticket.service';
 import { CreateServiceDto } from './dto/create-service.dto';
 import { UpdateServiceDto } from './dto/update-service.dto';
 import { SetDomainDto, SetEnvDto } from './dto/set-env.dto';
@@ -29,7 +30,28 @@ export class ServicesController {
   constructor(
     private readonly services: ServicesService,
     private readonly buildLog: BuildLogService,
+    private readonly execTickets: ExecTicketService,
   ) {}
+
+  /**
+   * Mints a short-lived, single-use ticket for opening the exec WebSocket. The
+   * interactive shell is powerful, so this mirrors the exec proxy's own check:
+   * project ADMIN (global admins pass). The ticket — not the access JWT — is
+   * then passed in the WS query string, keeping bearer tokens out of proxy logs.
+   */
+  @Post('services/:id/exec-ticket')
+  @ProjectRole(MemberRole.ADMIN, 'service')
+  async execTicket(
+    @Param('id') id: string,
+    @Req() req: Request & { user: { id: string; tokenVersion: number } },
+  ) {
+    const ticket = await this.execTickets.mint(
+      req.user.id,
+      id,
+      req.user.tokenVersion,
+    );
+    return { ticket };
+  }
 
   @Post('projects/:projectId/services')
   @ProjectRole(MemberRole.MEMBER, 'project', 'projectId')

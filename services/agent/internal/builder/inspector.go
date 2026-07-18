@@ -82,7 +82,15 @@ func looksLikeConfig(name string) bool {
 
 // Inspect clones the repo shallowly and returns detected env keys + databases.
 func (b *Builder) Inspect(ctx context.Context, req InspectRequest) (*InspectResult, error) {
-	dir := filepath.Join(b.workDir, "inspect-"+req.WorkID)
+	// Validate the work id and confirm the resolved dir is inside workDir BEFORE
+	// any os.RemoveAll (M3: path traversal / arbitrary deletion).
+	if err := validateID("workID", req.WorkID); err != nil {
+		return nil, err
+	}
+	dir, err := safeSubdir(b.workDir, "inspect-"+req.WorkID)
+	if err != nil {
+		return nil, err
+	}
 	if err := os.RemoveAll(dir); err != nil {
 		return nil, err
 	}
@@ -91,12 +99,17 @@ func (b *Builder) Inspect(ctx context.Context, req InspectRequest) (*InspectResu
 	}
 	defer os.RemoveAll(dir)
 
-	cloneURL := req.RepoURL
-	if req.PATToken != "" {
-		cloneURL = injectToken(req.RepoURL, req.PATToken)
+	if err := validateRef(req.RepoURL, req.Branch); err != nil {
+		return nil, err
 	}
-	if err := run(ctx, io.Discard, dir, "git",
-		"clone", "--depth", "1", "--branch", req.Branch, cloneURL, "."); err != nil {
+	// Credentials via env (http.extraHeader), clean URL, http(s) transports
+	// only, and "--" to end option parsing. See builder.go for the helpers.
+	cloneEnv := tokenCloneEnv(req.PATToken)
+	if err := runEnv(ctx, io.Discard, dir, cloneEnv, "git",
+		"-c", "protocol.allow=never",
+		"-c", "protocol.https.allow=always",
+		"-c", "protocol.http.allow=always",
+		"clone", "--depth", "1", "--branch", req.Branch, "--", req.RepoURL, "."); err != nil {
 		return nil, err
 	}
 

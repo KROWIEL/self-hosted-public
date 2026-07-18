@@ -46,10 +46,20 @@ func main() {
 	}
 
 	cfg.DaemonToken = state.DaemonToken
+	cfg.NodeID = state.NodeID
 	srv := api.NewServer(cfg)
 
+	// Persist rotation state so a restart mid-rotation keeps accepting both the
+	// old and new secret until the panel confirms the switch-over.
+	persist := func(current, next string) error {
+		state.DaemonToken = current
+		state.NextToken = next
+		return store.SaveState(*state)
+	}
+	srv.Configure(state.NodeID, state.NextToken, persist)
+
 	if cfg.PanelURL != "" {
-		go enroll.HeartbeatLoop(cfg.PanelURL, *state, config.Version)
+		go enroll.HeartbeatLoop(cfg.PanelURL, state.NodeID, config.Version, srv.CurrentToken)
 	}
 
 	log.Printf("agent %s listening (https) on :%d", config.Version, cfg.Port)

@@ -34,7 +34,12 @@ export class ApiTokensController {
     @Request() req: { user: { id: string } },
     @Body() dto: CreateApiTokenDto,
   ) {
-    return this.tokens.create(req.user.id, dto.name, dto.expiresInDays);
+    return this.tokens.create(
+      req.user.id,
+      dto.name,
+      dto.expiresInDays,
+      dto.scopes,
+    );
   }
 
   @Delete(':id')

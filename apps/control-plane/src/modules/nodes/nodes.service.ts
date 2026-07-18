@@ -26,7 +26,7 @@ import {
 } from '../../db/schema';
 import { CryptoService } from '../../common/crypto/crypto.service';
 import { EntitlementsService } from '../../common/licensing/entitlements.service';
-import { LicenseErrors } from '../../common/errors/app-errors';
+import { LicenseErrors, NodeErrors } from '../../common/errors/app-errors';
 import { AgentClient } from './agent.client';
 
 interface CreateNodeInput {
@@ -56,6 +56,10 @@ const AGENT_PLATFORMS: Record<
 export class NodesService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(NodesService.name);
   private sweeper?: ReturnType<typeof setInterval>;
+  // Coalesces concurrent on-demand agent builds per platform so the public
+  // binary endpoint can't be spammed into launching many parallel Go builds.
+  private readonly buildLocks = new Map<string, Promise<string>>();
+  private readonly assetTokenTtlMs = agentAssetTokenTtlMs();
 
   constructor(
     @Inject(DRIZZLE) private readonly db: Database,
@@ -197,25 +201,69 @@ export class NodesService implements OnModuleInit, OnModuleDestroy {
     return { nodeId: row.nodeId, daemonToken };
   }
 
-  /** Agent liveness ping. Authorized by the node's provisioned daemon token. */
+  /**
+   * Agent liveness ping. Authorized by the node's provisioned daemon token. A
+   * rotating node's previous secret is also accepted during the migration
+   * window; once the agent heartbeats with the CURRENT secret the rotation has
+   * converged, so the previous secret is retired.
+   */
   async heartbeat(nodeId: string, token: string, version?: string) {
     const node = await this.get(nodeId);
-    const expected = this.crypto.decrypt(node.daemonToken);
-    const a = Buffer.from(token);
-    const b = Buffer.from(expected);
-    if (a.length !== b.length || !timingSafeEqual(a, b)) {
+    const current = this.crypto.decrypt(node.daemonToken);
+    const prev = node.daemonTokenPrev
+      ? this.crypto.decrypt(node.daemonTokenPrev)
+      : '';
+    const matchesCurrent = safeStrEqual(token, current);
+    const matchesPrev = prev ? safeStrEqual(token, prev) : false;
+    if (!matchesCurrent && !matchesPrev) {
       throw new UnauthorizedException();
     }
+    const patch: Partial<typeof nodes.$inferInsert> = {
+      status: 'ONLINE',
+      lastSeen: new Date(),
+      agentVersion: version ?? node.agentVersion,
+      updatedAt: new Date(),
+    };
+    // The agent now presents the new secret -> rotation converged; drop the old.
+    if (matchesCurrent && node.daemonTokenPrev) {
+      patch.daemonTokenPrev = null;
+      patch.daemonTokenRotatedAt = null;
+    }
+    await this.db.update(nodes).set(patch).where(eq(nodes.id, nodeId));
+    return { ok: true };
+  }
+
+  /**
+   * Rotates the node's long-lived daemon secret. The new secret is pushed to the
+   * agent FIRST (authenticated with the current secret); only after the agent
+   * confirms does the panel persist the switch, keeping the old secret as
+   * `daemonTokenPrev` for a migration window. This ordering guarantees a failed
+   * push (agent down, or a legacy agent without the endpoint) never locks a node
+   * out — the DB, and therefore the secret in use, is left untouched.
+   */
+  async rotateDaemonToken(nodeId: string) {
+    const node = await this.get(nodeId);
+    const oldToken = this.crypto.decrypt(node.daemonToken);
+    const newToken = randomBytes(32).toString('hex');
+
+    const res = await this.agent.rotate(node, newToken);
+    if (!res.ok) {
+      if (res.status === 404) throw NodeErrors.rotationUnsupported(node.name);
+      throw NodeErrors.agentRequestFailed(node.name, res.status);
+    }
+
+    const rotatedAt = new Date();
     await this.db
       .update(nodes)
       .set({
-        status: 'ONLINE',
-        lastSeen: new Date(),
-        agentVersion: version ?? node.agentVersion,
-        updatedAt: new Date(),
+        daemonToken: this.crypto.encrypt(newToken),
+        daemonTokenPrev: this.crypto.encrypt(oldToken),
+        daemonTokenRotatedAt: rotatedAt,
+        updatedAt: rotatedAt,
       })
       .where(eq(nodes.id, nodeId));
-    return { ok: true };
+    this.logger.log(`Node ${nodeId} daemon token rotated`);
+    return { ok: true, rotatedAt };
   }
 
   /** Connection details + a ready-to-paste one-liner install command. */
@@ -231,18 +279,22 @@ export class NodesService implements OnModuleInit, OnModuleDestroy {
     origin: string,
   ) {
     const base = origin.replace(/\/$/, '');
+    // Gate the binary + install-script downloads behind a short-lived signed
+    // token so they aren't anonymously reachable (L3).
+    const at = this.mintAssetToken();
     const binUrls = Object.fromEntries(
       Object.keys(AGENT_PLATFORMS).map((p) => [
         p,
-        `${base}/api/v1/node-agent/bin/${p}`,
+        `${base}/api/v1/node-agent/bin/${p}?t=${at}`,
       ]),
     );
+    const shUrl = `${base}/api/v1/node-agent/install.sh?t=${at}`;
     const env =
       `PANEL_URL=${base} JOIN_TOKEN=${joinToken} ` +
       `AGENT_PORT=${node.agentPort}`;
     const linux =
-      `curl -fsSL ${base}/api/v1/node-agent/install.sh -o install.sh && ` +
-      `sudo ${env} BIN_URL=${binUrls['linux-amd64']} sh install.sh`;
+      `curl -fsSL "${shUrl}" -o install.sh && ` +
+      `sudo ${env} BIN_URL="${binUrls['linux-amd64']}" sh install.sh`;
     return {
       nodeId: node.id,
       joinToken,
@@ -256,10 +308,26 @@ export class NodesService implements OnModuleInit, OnModuleDestroy {
   async ensureAgentBinary(platform: string): Promise<string> {
     const target = AGENT_PLATFORMS[platform];
     if (!target) throw new BadRequestException(`Unknown platform: ${platform}`);
-    const agentDir = resolve(process.cwd(), '../../services/agent');
     const distDir = resolve(process.cwd(), '../../services/agent-dist/dist');
     const out = join(distDir, `selfhosted-agent-${platform}${target.ext}`);
     if (existsSync(out)) return out;
+    // Share a single build across concurrent requests for the same platform.
+    const inflight = this.buildLocks.get(platform);
+    if (inflight) return inflight;
+    const build = this.buildAgentBinary(platform, target, distDir, out).finally(
+      () => this.buildLocks.delete(platform),
+    );
+    this.buildLocks.set(platform, build);
+    return build;
+  }
+
+  private async buildAgentBinary(
+    platform: string,
+    target: { goos: string; goarch: string; ext: string },
+    distDir: string,
+    out: string,
+  ): Promise<string> {
+    const agentDir = resolve(process.cwd(), '../../services/agent');
     await mkdir(distDir, { recursive: true }).catch(() => undefined);
     this.logger.log(`Building agent for ${platform}…`);
     const goCmd = process.platform === 'win32' ? 'go.exe' : 'go';
@@ -285,6 +353,45 @@ export class NodesService implements OnModuleInit, OnModuleDestroy {
       );
     }
     return out;
+  }
+
+  /**
+   * Mints a short-lived, tamper-proof token that gates the anonymous agent
+   * binary + install-script endpoints (L3). Mirrors the tunnel-assets pattern:
+   * the panel embeds it in the copy-paste install command so a fresh node can
+   * fetch artifacts with a single curl — without a panel login — while blocking
+   * anonymous access and on-demand build abuse.
+   */
+  mintAssetToken(): string {
+    const payload = JSON.stringify({
+      t: 'node-asset',
+      exp: Date.now() + this.assetTokenTtlMs,
+    });
+    return this.crypto
+      .encrypt(payload)
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=+$/, '');
+  }
+
+  /** Validate an asset token minted by {@link mintAssetToken}. Never throws. */
+  verifyAssetToken(token: string | undefined | null): boolean {
+    if (!token) return false;
+    try {
+      let b64 = token.replace(/-/g, '+').replace(/_/g, '/');
+      while (b64.length % 4 !== 0) b64 += '=';
+      const data = JSON.parse(this.crypto.decrypt(b64)) as {
+        t?: string;
+        exp?: number;
+      };
+      return (
+        data?.t === 'node-asset' &&
+        typeof data.exp === 'number' &&
+        data.exp > Date.now()
+      );
+    } catch {
+      return false;
+    }
   }
 
   /** Flip remote nodes (those with a pinned fingerprint) to OFFLINE if stale. */
@@ -350,10 +457,15 @@ export class NodesService implements OnModuleInit, OnModuleDestroy {
     try {
       return await this.agent.getSystem(node);
     } catch (e) {
+      // Don't leak agent/Docker internals to the client — log and return a
+      // generic reachability flag (L5).
+      this.logger.warn(
+        `systemInfo(${id}) failed: ${e instanceof Error ? e.message : String(e)}`,
+      );
       return {
         version: 'unreachable',
         reachable: false,
-        error: e instanceof Error ? e.message : String(e),
+        error: 'unreachable',
       };
     }
   }
@@ -374,9 +486,12 @@ export class NodesService implements OnModuleInit, OnModuleDestroy {
     try {
       return { reachable: true, ...(await this.agent.getHost(node)) };
     } catch (e) {
+      this.logger.warn(
+        `host(${id}) failed: ${e instanceof Error ? e.message : String(e)}`,
+      );
       return {
         reachable: false,
-        error: e instanceof Error ? e.message : String(e),
+        error: 'unreachable',
       };
     }
   }
@@ -418,4 +533,19 @@ export class NodesService implements OnModuleInit, OnModuleDestroy {
       .orderBy(managedDatabases.name);
     return { services: svc, databases: dbs };
   }
+}
+
+/** Constant-time string comparison with a length guard (avoids leaking length). */
+function safeStrEqual(a: string, b: string): boolean {
+  const bufA = Buffer.from(a);
+  const bufB = Buffer.from(b);
+  if (bufA.length !== bufB.length) return false;
+  return timingSafeEqual(bufA, bufB);
+}
+
+/** Agent asset-token lifetime; override with NODE_ASSET_TOKEN_TTL_MS (default 24h). */
+function agentAssetTokenTtlMs(): number {
+  const raw = process.env.NODE_ASSET_TOKEN_TTL_MS;
+  const n = raw ? Number(raw) : NaN;
+  return Number.isFinite(n) && n > 0 ? n : 24 * 60 * 60 * 1000;
 }

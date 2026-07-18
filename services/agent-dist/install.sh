@@ -14,6 +14,8 @@
 #   AGENT_PORT      HTTPS port the agent listens on          (default 8443)
 #   AGENT_NETWORK   default Docker network for deployments   (default bridge)
 #   AGENT_PANEL_INSECURE  set to 1 if the panel uses a self-signed cert
+#                         (only honored when AGENT_DEV=1 is also set)
+#   AGENT_DEV       set to 1 to allow insecure dev kill-switches   (default 0)
 #   INSTALL_DIR     where to place the binary                (default /usr/local/bin)
 set -e
 
@@ -55,6 +57,7 @@ AGENT_NETWORK=$AGENT_NETWORK
 AGENT_STATE_DIR=$STATE_DIR
 AGENT_WORKDIR=$STATE_DIR/builds
 AGENT_PANEL_INSECURE=${AGENT_PANEL_INSECURE:-0}
+AGENT_DEV=${AGENT_DEV:-0}
 EOF
 chmod 600 /etc/selfhosted-agent.env
 

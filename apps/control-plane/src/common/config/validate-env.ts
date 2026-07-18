@@ -18,6 +18,10 @@ import { config as loadEnv } from 'dotenv';
 export function collectEnvErrors(env: NodeJS.ProcessEnv): string[] {
   const errors: string[] = [];
 
+  // Optional feature flags (documented for discoverability; not validated here):
+  //   ALLOW_OPEN_REGISTRATION  - "1"/"true" to enable public POST /auth/register
+  //                              (default OFF; seeded admin + SSO are unaffected).
+
   const require = (key: string): string | undefined => {
     const v = env[key];
     if (!v || v.trim() === '') errors.push(`${key} is required`);
@@ -26,8 +30,41 @@ export function collectEnvErrors(env: NodeJS.ProcessEnv): string[] {
 
   require('DATABASE_URL');
   require('REDIS_URL');
-  require('JWT_SECRET');
-  require('JWT_REFRESH_SECRET');
+
+  // WEBHOOK_SECRET signs deploy-webhook tokens. It must be a dedicated secret
+  // (not the JWT signing key) and is required in production; in dev an insecure
+  // fallback is used with a runtime warning.
+  if ((env.NODE_ENV ?? '') === 'production') {
+    const webhook = env.WEBHOOK_SECRET;
+    if (!webhook || webhook.trim() === '') {
+      errors.push('WEBHOOK_SECRET is required in production');
+    } else if (webhook === env.JWT_SECRET) {
+      errors.push('WEBHOOK_SECRET must not reuse JWT_SECRET');
+    }
+  }
+
+  // JWT signing secrets must be strong in EVERY environment — a weak, default
+  // or shipped-example secret lets anyone forge valid sessions. This is a fatal
+  // startup error (collected below), not a warning.
+  const jwtExampleDefaults: Record<string, string> = {
+    JWT_SECRET: 'change-me-access-secret',
+    JWT_REFRESH_SECRET: 'change-me-refresh-secret',
+  };
+  for (const key of ['JWT_SECRET', 'JWT_REFRESH_SECRET']) {
+    const v = env[key];
+    if (!v || v.trim() === '') {
+      errors.push(`${key} is required`);
+      continue;
+    }
+    if (v.length < 32) {
+      errors.push(`${key} must be at least 32 characters long`);
+    }
+    if (v.includes('change-me')) {
+      errors.push(`${key} must not contain the placeholder "change-me"`);
+    } else if (v === jwtExampleDefaults[key]) {
+      errors.push(`${key} must not use the shipped .env.example default`);
+    }
+  }
 
   // ENCRYPTION_KEY must be a base64-encoded 32-byte (256-bit) key for AES-256-GCM.
   const encKey = require('ENCRYPTION_KEY');
@@ -55,17 +92,6 @@ export function validateEnv(): void {
 
   const logger = new Logger('Config');
   const errors = collectEnvErrors(process.env);
-
-  // Warn (not fatal) about weak dev defaults so prod deployments get flagged.
-  if (process.env.NODE_ENV === 'production') {
-    const weak = ['dev-', 'change-me'];
-    for (const key of ['JWT_SECRET', 'JWT_REFRESH_SECRET']) {
-      const v = process.env[key] ?? '';
-      if (weak.some((w) => v.includes(w))) {
-        logger.warn(`${key} looks like a dev default — set a strong secret.`);
-      }
-    }
-  }
 
   if (errors.length > 0) {
     logger.error('Invalid configuration:');

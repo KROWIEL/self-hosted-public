@@ -19,6 +19,7 @@ import {
   MinLength,
 } from 'class-validator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { AdminGuard } from '../../common/guards/admin.guard';
 import { NodesService } from './nodes.service';
 import { AgentRunnerService } from './agent-runner.service';
 
@@ -78,7 +79,8 @@ class PruneNodeDto {
   volumes?: boolean;
 }
 
-@UseGuards(JwtAuthGuard)
+// Node lifecycle + cross-tenant workload/metrics are platform-admin only.
+@UseGuards(JwtAuthGuard, AdminGuard)
 @Controller('nodes')
 export class NodesController {
   constructor(
@@ -128,6 +130,15 @@ export class NodesController {
   async remove(@Param('id') id: string) {
     await this.runner.stop(id);
     return this.nodes.remove(id);
+  }
+
+  /**
+   * Rotate this node's long-lived daemon secret. Pushes a new secret to the
+   * agent and switches over only once the agent confirms (back-compat safe).
+   */
+  @Post(':id/rotate-token')
+  rotateToken(@Param('id') id: string) {
+    return this.nodes.rotateDaemonToken(id);
   }
 
   /** Dev: launch the local Go agent for this node (LOCAL_AGENT_ENABLED=1). */

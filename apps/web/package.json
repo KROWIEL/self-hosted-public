@@ -12,7 +12,7 @@
     "@selfhosted/shared": "^0.1.0",
     "@xterm/addon-fit": "^0.11.0",
     "@xterm/xterm": "^6.0.0",
-    "next": "^14.2.13",
+    "next": "^14.2.32",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },

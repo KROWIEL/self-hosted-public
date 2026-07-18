@@ -13,7 +13,7 @@ import {
 import { ErrorBox } from '@/components/ui';
 import { useErrorText, useI18n } from '@/i18n';
 import { LangSwitcher } from '@/components/lang-switcher';
-import { useBranding } from '@/components/branding';
+import { useBranding, safeLogoUrl } from '@/components/branding';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -67,10 +67,10 @@ export default function LoginPage() {
       </div>
       <div className="w-full max-w-sm animate-fade-up">
         <div className="mb-8 flex flex-col items-center text-center">
-          {brand.logoUrl ? (
+          {safeLogoUrl(brand.logoUrl) ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              src={brand.logoUrl}
+              src={safeLogoUrl(brand.logoUrl)}
               alt=""
               className="mb-4 h-12 w-12 rounded-2xl object-cover"
             />

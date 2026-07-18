@@ -1,14 +1,32 @@
 import { NestFactory } from '@nestjs/core';
 import { Logger, ValidationPipe } from '@nestjs/common';
+import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { setupExecProxy } from './exec-proxy';
 import { validateEnv } from './common/config/validate-env';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 
+/**
+ * Build the CORS allowlist from env (comma-separated). We must NOT reflect an
+ * arbitrary origin together with `credentials: true`, so fall back to the dev
+ * web origin rather than to `true`.
+ */
+function corsOrigins(): string[] {
+  const origins = [process.env.WEB_ORIGIN, process.env.APP_BASE_URL]
+    .filter((v): v is string => !!v && v.trim() !== '')
+    .flatMap((v) => v.split(','))
+    .map((o) => o.trim())
+    .filter(Boolean);
+  return origins.length > 0 ? origins : ['http://localhost:3000'];
+}
+
 async function bootstrap() {
   validateEnv();
 
   const app = await NestFactory.create(AppModule);
+
+  // Baseline security headers on the API. Defaults are fine for a JSON API.
+  app.use(helmet());
 
   app.setGlobalPrefix('api/v1');
   app.useGlobalPipes(
@@ -19,7 +37,7 @@ async function bootstrap() {
     }),
   );
   app.useGlobalFilters(new AllExceptionsFilter());
-  app.enableCors({ origin: true, credentials: true });
+  app.enableCors({ origin: corsOrigins(), credentials: true });
   // Run provider OnModuleDestroy hooks (BullMQ workers, Redis) on SIGTERM/SIGINT.
   app.enableShutdownHooks();
 

@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import * as bcrypt from 'bcrypt';
 import { randomBytes } from 'node:crypto';
 import { DRIZZLE, Database } from '../../db/database.module';
@@ -98,12 +98,30 @@ export class UsersService {
     return rows[0];
   }
 
-  /** Hashes and stores a new password. */
+  /**
+   * Hashes and stores a new password. Bumps tokenVersion so every existing
+   * access/refresh token for the account is invalidated on the next request.
+   */
   async updatePassword(userId: string, newPassword: string) {
     const hash = await bcrypt.hash(newPassword, 12);
     await this.db
       .update(users)
-      .set({ password: hash, updatedAt: new Date() })
+      .set({
+        password: hash,
+        tokenVersion: sql`${users.tokenVersion} + 1`,
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, userId));
+  }
+
+  /**
+   * Increments the account's session epoch (tokenVersion), invalidating all
+   * previously issued access/refresh tokens. Used on logout and 2FA disable.
+   */
+  async bumpTokenVersion(userId: string) {
+    await this.db
+      .update(users)
+      .set({ tokenVersion: sql`${users.tokenVersion} + 1`, updatedAt: new Date() })
       .where(eq(users.id, userId));
   }
 

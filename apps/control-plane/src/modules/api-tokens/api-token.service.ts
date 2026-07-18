@@ -1,4 +1,4 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { createHash, randomBytes } from 'node:crypto';
 import { and, desc, eq } from 'drizzle-orm';
 import { DRIZZLE, Database } from '../../db/database.module';
@@ -6,13 +6,22 @@ import { apiTokens, users } from '../../db/schema';
 import { EntitlementsService } from '../../common/licensing/entitlements.service';
 import {
   API_TOKEN_PREFIX,
+  ApiTokenScope,
   LAST_USED_THROTTLE_MS,
+  normalizeScopes,
+  parseScopes,
 } from './api-tokens.constants';
 
 export interface AuthedUser {
   id: string;
   email: string;
   role: string;
+}
+
+/** Result of resolving a raw PAT: the user plus the token's granted scopes. */
+export interface AuthedToken {
+  user: AuthedUser;
+  scopes: ApiTokenScope[];
 }
 
 @Injectable()
@@ -27,16 +36,32 @@ export class ApiTokenService {
   }
 
   /** Creates a token, returning the raw value ONCE (never stored in clear). */
-  async create(userId: string, name: string, expiresInDays?: number) {
+  async create(
+    userId: string,
+    name: string,
+    expiresInDays?: number,
+    scopes?: string[],
+  ) {
     const secret = randomBytes(24).toString('hex');
     const raw = `${API_TOKEN_PREFIX}${secret}`;
     const preview = `${API_TOKEN_PREFIX}${secret.slice(0, 6)}…`;
     const expiresAt = expiresInDays
       ? new Date(Date.now() + expiresInDays * 24 * 60 * 60 * 1000)
       : null;
+    const normalized = normalizeScopes(
+      scopes,
+      (bad) => new BadRequestException(`Unknown API token scope: ${bad}`),
+    );
     const [row] = await this.db
       .insert(apiTokens)
-      .values({ userId, name, tokenHash: this.hash(raw), preview, expiresAt })
+      .values({
+        userId,
+        name,
+        tokenHash: this.hash(raw),
+        preview,
+        expiresAt,
+        scopes: normalized.join(','),
+      })
       .returning();
     return { token: raw, item: this.view(row) };
   }
@@ -64,6 +89,7 @@ export class ApiTokenService {
       id: row.id,
       name: row.name,
       preview: row.preview,
+      scopes: parseScopes(row.scopes),
       lastUsedAt: row.lastUsedAt,
       expiresAt: row.expiresAt,
       createdAt: row.createdAt,
@@ -71,10 +97,11 @@ export class ApiTokenService {
   }
 
   /**
-   * Resolves the user behind a raw PAT, or null if it's invalid, expired, or the
-   * `api-cli` module isn't licensed (so tokens die with a downgrade).
+   * Resolves the user + granted scopes behind a raw PAT, or null if it's
+   * invalid, expired, or the `api-cli` module isn't licensed (so tokens die
+   * with a downgrade).
    */
-  async validateRaw(raw: string): Promise<AuthedUser | null> {
+  async validateRaw(raw: string): Promise<AuthedToken | null> {
     if (!raw.startsWith(API_TOKEN_PREFIX)) return null;
     const [row] = await this.db
       .select()
@@ -99,6 +126,9 @@ export class ApiTokenService {
         .set({ lastUsedAt: new Date() })
         .where(eq(apiTokens.id, row.id));
     }
-    return { id: user.id, email: user.email, role: user.role };
+    return {
+      user: { id: user.id, email: user.email, role: user.role },
+      scopes: parseScopes(row.scopes),
+    };
   }
 }

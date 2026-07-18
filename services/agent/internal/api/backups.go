@@ -1,13 +1,17 @@
 package api
 
 import (
+	"compress/gzip"
 	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
+
+	"github.com/self-hosted/agent/internal/docker"
 )
 
 // Backup / restore of volumes (tar.gz) and managed databases (sql.gz).
@@ -29,10 +33,15 @@ type backupBody struct {
 	DBName    string `json:"dbName"`
 }
 
-// safeFile rejects names with path separators (prevents path traversal).
+// safeFileRe restricts backup file names to a conservative charset so they can
+// never carry path separators, shell metacharacters or option-like prefixes.
+var safeFileRe = regexp.MustCompile(`^[A-Za-z0-9._-]+$`)
+
+// safeFile rejects names with path separators or traversal (prevents path
+// traversal) and anything outside the allowed charset.
 func safeFile(name string) bool {
 	return name != "" && filepath.Base(name) == name &&
-		!strings.Contains(name, "..")
+		!strings.Contains(name, "..") && safeFileRe.MatchString(name)
 }
 
 func (s *Server) backupPath(file string) string {
@@ -55,18 +64,31 @@ func (s *Server) handleBackupCreate(w http.ResponseWriter, r *http.Request) {
 	var err error
 	switch body.Kind {
 	case "VOLUME":
+		// Reject non-volume names so "-v <name>:/data" can't become a host
+		// bind-mount (e.g. "/etc:/data").
+		if !docker.ValidVolumeName(body.Volume) {
+			http.Error(w, "bad request", http.StatusBadRequest)
+			return
+		}
+		// Direct argv (no shell): file name is already charset-restricted.
 		err = s.docker.RunEphemeral(ctx,
 			"-v", body.Volume+":/data:ro",
 			"-v", s.cfg.BackupDir+":/out",
-			"alpine", "sh", "-c",
-			fmt.Sprintf("tar czf /out/%s -C /data .", body.File),
+			"alpine", "tar", "czf", "/out/"+body.File, "-C", "/data", ".",
 		)
 	case "DATABASE":
 		var f *os.File
 		f, err = os.Create(path)
 		if err == nil {
 			defer f.Close()
-			err = s.docker.ExecCapture(ctx, body.Container, f, "sh", "-c", dumpCmd(body))
+			// Dump uncompressed from the container (argv only, password via
+			// env) and gzip on the agent side to preserve the .sql.gz format.
+			gz := gzip.NewWriter(f)
+			err = s.docker.ExecCaptureEnv(ctx, body.Container,
+				dbPasswordEnv(body.Engine, body.Password), gz, dumpArgv(body)...)
+			if cerr := gz.Close(); cerr != nil && err == nil {
+				err = cerr
+			}
 		}
 	default:
 		http.Error(w, "bad kind", http.StatusBadRequest)
@@ -102,18 +124,33 @@ func (s *Server) handleBackupRestore(w http.ResponseWriter, r *http.Request) {
 	var err error
 	switch body.Kind {
 	case "VOLUME":
+		if !docker.ValidVolumeName(body.Volume) {
+			http.Error(w, "bad request", http.StatusBadRequest)
+			return
+		}
+		// The rm-glob + tar sequence needs a shell, but the file name is passed
+		// as a positional arg ($1), never interpolated into the script.
 		err = s.docker.RunEphemeral(ctx,
 			"-v", body.Volume+":/data",
 			"-v", s.cfg.BackupDir+":/in",
 			"alpine", "sh", "-c",
-			fmt.Sprintf("rm -rf /data/* && tar xzf /in/%s -C /data", body.File),
+			`rm -rf /data/* && tar xzf "/in/$1" -C /data`,
+			"sh", body.File,
 		)
 	case "DATABASE":
 		var f *os.File
 		f, err = os.Open(path)
 		if err == nil {
 			defer f.Close()
-			err = s.docker.ExecStdin(ctx, body.Container, f, "sh", "-c", restoreCmd(body))
+			// Decompress on the agent side, feed plain SQL to the client over
+			// stdin (argv only, password via env).
+			var gz *gzip.Reader
+			gz, err = gzip.NewReader(f)
+			if err == nil {
+				defer gz.Close()
+				err = s.docker.ExecStdinEnv(ctx, body.Container,
+					dbPasswordEnv(body.Engine, body.Password), gz, restoreArgv(body)...)
+			}
 		}
 	default:
 		http.Error(w, "bad kind", http.StatusBadRequest)
@@ -153,16 +190,33 @@ func (s *Server) handleBackupDelete(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, map[string]any{"ok": true})
 }
 
-func dumpCmd(b backupBody) string {
+// dumpArgv is the in-container command (argv, no shell) that writes an
+// uncompressed dump to stdout. The agent gzips the stream.
+func dumpArgv(b backupBody) []string {
 	if b.Engine == "mysql" {
-		return fmt.Sprintf("mysqldump -uroot -p%s %s | gzip", b.Password, b.DBName)
+		return []string{"mysqldump", "-uroot", b.DBName}
 	}
-	return fmt.Sprintf("pg_dump -U %s %s | gzip", b.User, b.DBName)
+	return []string{"pg_dump", "-U", b.User, b.DBName}
 }
 
-func restoreCmd(b backupBody) string {
+// restoreArgv is the in-container command (argv, no shell) that reads plain SQL
+// from stdin. The agent decompresses the .gz before piping it in.
+func restoreArgv(b backupBody) []string {
 	if b.Engine == "mysql" {
-		return fmt.Sprintf("gunzip | mysql -uroot -p%s %s", b.Password, b.DBName)
+		return []string{"mysql", "-uroot", b.DBName}
 	}
-	return fmt.Sprintf("gunzip | psql -U %s -d %s", b.User, b.DBName)
+	return []string{"psql", "-U", b.User, "-d", b.DBName}
+}
+
+// dbPasswordEnv maps a DB password onto the env var the client tools read
+// (MYSQL_PWD / PGPASSWORD), so it never appears on a command line. Returns nil
+// when no password is set (unchanged behavior for trust-auth setups).
+func dbPasswordEnv(engine, password string) map[string]string {
+	if password == "" {
+		return nil
+	}
+	if engine == "mysql" {
+		return map[string]string{"MYSQL_PWD": password}
+	}
+	return map[string]string{"PGPASSWORD": password}
 }

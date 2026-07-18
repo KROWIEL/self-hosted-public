@@ -15,7 +15,7 @@ import {
   EntitlementsProvider,
   useEntitlements,
 } from '@/components/entitlements';
-import { useBranding } from '@/components/branding';
+import { useBranding, safeLogoUrl } from '@/components/branding';
 
 type IconProps = { className?: string };
 
@@ -247,12 +247,13 @@ const COLLAPSE_KEY = 'sidebarCollapsed';
 
 function Brand() {
   const brand = useBranding();
+  const logo = safeLogoUrl(brand.logoUrl);
   return (
     <Link href="/dashboard" className="flex items-center gap-2.5">
-      {brand.logoUrl ? (
+      {logo ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
-          src={brand.logoUrl}
+          src={logo}
           alt=""
           className="h-8 w-8 rounded-xl object-cover"
         />

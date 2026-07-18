@@ -125,6 +125,9 @@ export class AgentRunnerService
       ...process.env,
       AGENT_PORT: String(node.agentPort),
       AGENT_DAEMON_TOKEN: this.crypto.decrypt(node.daemonToken),
+      // Lets the local agent audience-check signed request tokens when the panel
+      // starts minting them (agentVersion >= 0.3.0).
+      AGENT_NODE_ID: node.id,
       AGENT_WORKDIR: workDir,
       AGENT_NETWORK: process.env.AGENT_NETWORK ?? 'bridge',
       AGENT_TEMPLATES_DIR:

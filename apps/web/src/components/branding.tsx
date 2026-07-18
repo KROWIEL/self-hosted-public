@@ -80,11 +80,48 @@ export function BrandingApplier(): null {
   return null;
 }
 
+/**
+ * Guards against a hostile branding logo URL. Only `https:` URLs, same-origin
+ * URLs, and relative same-origin paths are allowed; `data:`, `javascript:`,
+ * `blob:` and plain remote `http:` are rejected so a stored logo can't smuggle
+ * script or exfiltrate via a favicon/`<img>` (L-1). An empty value means "no
+ * logo" and is considered valid. Runs both on save and on apply.
+ */
+export function isSafeLogoUrl(raw: string): boolean {
+  const url = (raw ?? '').trim();
+  if (!url) return true;
+  // Relative same-origin path (but not a protocol-relative "//host" URL).
+  if (url.startsWith('/') && !url.startsWith('//')) return true;
+  let parsed: URL;
+  try {
+    const base =
+      typeof window !== 'undefined' ? window.location.origin : undefined;
+    parsed = new URL(url, base);
+  } catch {
+    return false;
+  }
+  if (parsed.protocol === 'https:') return true;
+  if (
+    typeof window !== 'undefined' &&
+    parsed.origin === window.location.origin
+  ) {
+    return true;
+  }
+  return false;
+}
+
+/** Returns the URL when safe, otherwise an empty string (renders no logo). */
+export function safeLogoUrl(raw: string): string {
+  const url = (raw ?? '').trim();
+  return isSafeLogoUrl(url) ? url : '';
+}
+
 const FAVICON_ID = 'brand-favicon';
 
-function applyFavicon(url: string) {
+function applyFavicon(rawUrl: string) {
   if (typeof document === 'undefined') return;
   const existing = document.getElementById(FAVICON_ID) as HTMLLinkElement | null;
+  const url = safeLogoUrl(rawUrl);
   if (!url) {
     existing?.remove();
     return;

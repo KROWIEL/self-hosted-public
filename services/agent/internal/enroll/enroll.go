@@ -17,6 +17,7 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"fmt"
+	"log"
 	"math/big"
 	"net/http"
 	"os"
@@ -25,11 +26,20 @@ import (
 )
 
 // httpClient talks to the panel. Set AGENT_PANEL_INSECURE=1 when the panel uses
-// a self-signed certificate (e.g. behind a grey-IP reverse tunnel in dev).
+// a self-signed certificate (e.g. behind a grey-IP reverse tunnel in dev). This
+// kill-switch is honored ONLY when the explicit AGENT_DEV=1 sentinel is also set
+// (L2), so panel TLS verification can't be silently disabled in production.
 func httpClient() *http.Client {
 	tr := &http.Transport{}
 	if os.Getenv("AGENT_PANEL_INSECURE") == "1" {
-		tr.TLSClientConfig = &tls.Config{InsecureSkipVerify: true} // #nosec G402 — opt-in
+		if os.Getenv("AGENT_DEV") == "1" {
+			log.Printf("WARNING: AGENT_PANEL_INSECURE is ACTIVE — skipping panel TLS " +
+				"verification. Local development only.")
+			tr.TLSClientConfig = &tls.Config{InsecureSkipVerify: true} // #nosec G402 — opt-in dev
+		} else {
+			log.Printf("WARNING: AGENT_PANEL_INSECURE=1 ignored because AGENT_DEV=1 is not set; " +
+				"verifying panel TLS. Set AGENT_DEV=1 to enable it for local development.")
+		}
 	}
 	return &http.Client{Timeout: 15 * time.Second, Transport: tr}
 }
@@ -40,9 +50,13 @@ type Store struct {
 }
 
 // State is the provisioned identity written after a successful enrollment.
+// NextToken is set only during a daemon-token rotation: the agent has been
+// handed a new secret but has not yet confirmed the control plane switched to
+// it. Persisting it lets a restart mid-rotation keep accepting both secrets.
 type State struct {
 	NodeID      string `json:"nodeId"`
 	DaemonToken string `json:"daemonToken"`
+	NextToken   string `json:"nextToken,omitempty"`
 }
 
 func NewStore(dir string) *Store { return &Store{dir: dir} }
@@ -169,17 +183,20 @@ func Enroll(panelURL, joinToken, fingerprint string, version string, port int) (
 }
 
 // HeartbeatLoop periodically reports liveness to the panel until ctx-less exit.
-func HeartbeatLoop(panelURL string, st State, version string) {
+// tokenFn returns the agent's current daemon secret at send time (not a captured
+// copy) so that after a rotation converges the heartbeat presents the new secret
+// and the panel can safely retire the old one.
+func HeartbeatLoop(panelURL, nodeID, version string, tokenFn func() string) {
 	tick := time.NewTicker(30 * time.Second)
 	defer tick.Stop()
 	beat := func() {
-		body, _ := json.Marshal(map[string]any{"nodeId": st.NodeID, "version": version})
+		body, _ := json.Marshal(map[string]any{"nodeId": nodeID, "version": version})
 		req, err := http.NewRequest(http.MethodPost, panelURL+"/api/v1/node-agent/heartbeat", bytes.NewReader(body))
 		if err != nil {
 			return
 		}
 		req.Header.Set("Content-Type", "application/json")
-		req.Header.Set("Authorization", "Bearer "+st.DaemonToken)
+		req.Header.Set("Authorization", "Bearer "+tokenFn())
 		resp, err := httpClient().Do(req)
 		if err != nil {
 			return

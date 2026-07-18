@@ -3,6 +3,8 @@ import {
   BadRequestException,
   ConflictException,
   ForbiddenException,
+  HttpException,
+  HttpStatus,
   UnauthorizedException,
 } from '@nestjs/common';
 
@@ -17,11 +19,26 @@ export const AuthErrors = {
       code: 'auth.emailTaken',
       message: 'An account with this email already exists.',
     }),
+  registrationDisabled: () =>
+    new ForbiddenException({
+      code: 'auth.registrationDisabled',
+      message:
+        'Self-service registration is disabled. Ask an administrator to create your account.',
+    }),
   invalidCredentials: () =>
     new UnauthorizedException({
       code: 'auth.invalidCredentials',
       message: 'Invalid email or password.',
     }),
+  tooManyAttempts: () =>
+    new HttpException(
+      {
+        code: 'auth.tooManyAttempts',
+        message:
+          'Too many failed attempts. Please wait a few minutes and try again.',
+      },
+      HttpStatus.TOO_MANY_REQUESTS,
+    ),
   totpRequired: () =>
     new UnauthorizedException({
       code: 'auth.totpRequired',
@@ -41,6 +58,17 @@ export const AuthErrors = {
     new UnauthorizedException({
       code: 'auth.invalidRefresh',
       message: 'Your session has expired. Please sign in again.',
+    }),
+  tokenReadOnly: () =>
+    new ForbiddenException({
+      code: 'auth.tokenReadOnly',
+      message: 'This API token is read-only and cannot perform this action.',
+    }),
+  csrfInvalid: () =>
+    new ForbiddenException({
+      code: 'auth.csrfInvalid',
+      message:
+        'Missing or invalid CSRF token. Refresh the page and try again.',
     }),
   currentPasswordInvalid: () =>
     new BadRequestException({
@@ -174,6 +202,21 @@ export const NodeErrors = {
     new BadGatewayException({
       code: 'nodes.agentUnreachable',
       message: `The agent on node "${node}" is unreachable. Make sure it is running (Nodes → Start agent).`,
+      meta: { node },
+    }),
+  // Generic upstream failure: the raw agent/Docker response is logged
+  // server-side and never returned to the client (L5).
+  agentRequestFailed: (node: string, status?: number) =>
+    new BadGatewayException({
+      code: 'nodes.agentRequestFailed',
+      message: `The agent on node "${node}" returned an error. Check the panel logs for details.`,
+      meta: { node, status },
+    }),
+  // The agent is too old to support daemon-token rotation (no /rotate endpoint).
+  rotationUnsupported: (node: string) =>
+    new BadGatewayException({
+      code: 'nodes.rotationUnsupported',
+      message: `The agent on node "${node}" is too old to rotate its token. Upgrade the agent, then try again.`,
       meta: { node },
     }),
 };

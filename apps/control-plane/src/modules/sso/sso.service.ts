@@ -1,4 +1,5 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
+import { timingSafeEqual } from 'node:crypto';
 import { eq } from 'drizzle-orm';
 import { DRIZZLE, Database } from '../../db/database.module';
 import { ssoConfig } from '../../db/schema';
@@ -28,8 +29,20 @@ export interface ReqLike {
 
 interface StatePayload {
   nonce: string;
+  // Random value also stored in an HttpOnly cookie and re-checked on callback,
+  // binding the completed flow to the browser that started it (anti login-CSRF).
+  csrf: string;
   exp: number;
 }
+
+/**
+ * Outcome of {@link SsoService.handleCallback}: on success the controller sets
+ * the session cookies from `tokens`; either way it redirects the browser to
+ * `redirect`.
+ */
+export type SsoCallbackResult =
+  | { ok: true; tokens: { accessToken: string; refreshToken: string }; redirect: string }
+  | { ok: false; redirect: string };
 
 /**
  * Single sign-on via OpenID Connect (Pro: sso). Stores a singleton IdP config
@@ -136,8 +149,13 @@ export class SsoService {
       .onConflictDoUpdate({ target: ssoConfig.id, set: values });
   }
 
-  /** Build the provider authorization URL to redirect the browser to. */
-  async buildAuthUrl(req: ReqLike): Promise<string> {
+  /**
+   * Build the provider authorization URL to redirect the browser to. Returns the
+   * URL plus a `csrf` value the controller stores in an HttpOnly cookie; the
+   * callback re-checks it against the value embedded in the (encrypted) state to
+   * ensure the flow is being completed by the browser that started it.
+   */
+  async buildAuthUrl(req: ReqLike): Promise<{ url: string; csrf: string }> {
     if (!(await this.entitlements.hasModule('sso'))) throw SsoErrors.notLicensed();
     const r = await this.row();
     if (!r || !r.enabled || !r.issuer || !r.clientId || !r.clientSecretEnc) {
@@ -145,8 +163,13 @@ export class SsoService {
     }
     const disc = await discover(r.issuer);
     const nonce = randomToken(16);
+    const csrf = randomToken(16);
     const state = this.crypto.encrypt(
-      JSON.stringify({ nonce, exp: Date.now() + STATE_TTL_MS } as StatePayload),
+      JSON.stringify({
+        nonce,
+        csrf,
+        exp: Date.now() + STATE_TTL_MS,
+      } as StatePayload),
     );
     const params = new URLSearchParams({
       response_type: 'code',
@@ -156,21 +179,26 @@ export class SsoService {
       state,
       nonce,
     });
-    return `${disc.authorization_endpoint}?${params.toString()}`;
+    return { url: `${disc.authorization_endpoint}?${params.toString()}`, csrf };
   }
 
   /**
-   * Complete the flow. Always returns a web-app URL to redirect to (never
-   * throws): success carries the session tokens in the URL fragment, failure
-   * carries a machine-readable `error` code the callback page localizes.
+   * Complete the flow. Never throws: on success it returns the freshly minted
+   * session tokens plus a redirect target so the controller can set them as
+   * HttpOnly cookies (H-1) and bounce the browser to the dashboard; on failure
+   * it returns a redirect carrying a machine-readable `error` code the callback
+   * page localizes. Tokens are no longer leaked through the URL fragment.
    */
   async handleCallback(
     req: ReqLike,
     q: { code?: string; state?: string; error?: string },
-  ): Promise<string> {
+    cookieCsrf?: string,
+  ): Promise<SsoCallbackResult> {
     const appBase = this.appBase();
-    const fail = (code: string) =>
-      `${appBase}/sso/callback#error=${encodeURIComponent(code)}`;
+    const fail = (code: string): SsoCallbackResult => ({
+      ok: false,
+      redirect: `${appBase}/sso/callback#error=${encodeURIComponent(code)}`,
+    });
 
     try {
       if (q.error) return fail(q.error);
@@ -189,6 +217,11 @@ export class SsoService {
         return fail('bad_state');
       }
       if (!st?.nonce || !st.exp || st.exp < Date.now()) return fail('bad_state');
+      // Bind the callback to the browser that started the flow: the state's csrf
+      // must match the HttpOnly cookie set at buildAuthUrl (anti login-CSRF).
+      if (!st.csrf || !constantTimeEqual(st.csrf, cookieCsrf)) {
+        return fail('bad_state');
+      }
 
       const clientSecret = this.crypto.decrypt(r.clientSecretEnc);
       const disc = await discover(r.issuer);
@@ -232,15 +265,25 @@ export class SsoService {
         id: user.id,
         email: user.email,
         role: user.role,
+        tokenVersion: user.tokenVersion,
       });
-      const frag = new URLSearchParams({
-        access: session.accessToken,
-        refresh: session.refreshToken,
-      });
-      return `${appBase}/sso/callback#${frag.toString()}`;
+      return {
+        ok: true,
+        tokens: session,
+        redirect: `${appBase}/dashboard`,
+      };
     } catch (e) {
       this.logger.warn(`SSO callback failed: ${(e as Error).message}`);
       return fail('sso_failed');
     }
   }
+}
+
+/** Length-safe, constant-time string comparison (returns false on mismatch). */
+function constantTimeEqual(a: string, b: string | undefined | null): boolean {
+  if (!b) return false;
+  const ba = Buffer.from(a);
+  const bb = Buffer.from(b);
+  if (ba.length !== bb.length) return false;
+  return timingSafeEqual(ba, bb);
 }

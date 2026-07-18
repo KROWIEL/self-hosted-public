@@ -29,6 +29,7 @@ import {
   streamServiceLogs,
   updateService,
   execSocketUrl,
+  createExecTicket,
   listVolumes,
   addVolume,
   removeVolume,
@@ -771,12 +772,38 @@ function TerminalModal({
       }
     };
 
+    // Schedules a reconnect with capped exponential backoff.
+    const scheduleRetry = () => {
+      if (disposed) return;
+      attempt += 1;
+      const delay = Math.min(1000 * 2 ** (attempt - 1), 10000);
+      setStatus('reconnecting');
+      term?.write(
+        '\r\n\x1b[33m— ' +
+          t('service.terminalReconnecting') +
+          ` (${Math.round(delay / 1000)}s) —\x1b[0m\r\n`,
+      );
+      retryTimer = setTimeout(() => void connect(), delay);
+    };
+
     // (Re)opens the WS; on unexpected close it retries with capped backoff so a
-    // brief network blip or agent restart doesn't kill the shell session.
-    const connect = () => {
+    // brief network blip or agent restart doesn't kill the shell session. Each
+    // attempt first mints a fresh single-use ticket (they're one-shot / ~30s).
+    const connect = async () => {
       if (disposed) return;
       setStatus(attempt === 0 ? 'connecting' : 'reconnecting');
-      ws = new WebSocket(execSocketUrl(serviceId));
+
+      let ticket: string;
+      try {
+        ticket = await createExecTicket(serviceId);
+      } catch {
+        // Couldn't authorize a ticket (e.g. permission/network) — back off.
+        scheduleRetry();
+        return;
+      }
+      if (disposed) return;
+
+      ws = new WebSocket(execSocketUrl(serviceId, ticket));
       ws.binaryType = 'arraybuffer';
 
       ws.onopen = () => {
@@ -794,15 +821,7 @@ function TerminalModal({
       };
       ws.onclose = () => {
         if (disposed) return;
-        attempt += 1;
-        const delay = Math.min(1000 * 2 ** (attempt - 1), 10000);
-        setStatus('reconnecting');
-        term?.write(
-          '\r\n\x1b[33m— ' +
-            t('service.terminalReconnecting') +
-            ` (${Math.round(delay / 1000)}s) —\x1b[0m\r\n`,
-        );
-        retryTimer = setTimeout(connect, delay);
+        scheduleRetry();
       };
       ws.onerror = () => {
         try {
@@ -850,7 +869,7 @@ function TerminalModal({
       };
       window.addEventListener('resize', onWinResize);
 
-      connect();
+      void connect();
     })();
 
     return () => {

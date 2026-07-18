@@ -53,11 +53,68 @@ compose() {
   fi
 }
 
+# Generate a cryptographically strong, base64-encoded random secret.
+# $1 = number of random bytes. Prints the secret on a single line.
+gen_secret() {
+  local bytes="$1"
+  if command -v openssl >/dev/null 2>&1; then
+    openssl rand -base64 "$bytes" | tr -d '\n'
+  elif [ -r /dev/urandom ]; then
+    head -c "$bytes" /dev/urandom | base64 | tr -d '\n'
+  else
+    err "No secure RNG available (need openssl or /dev/urandom) to generate secrets."
+    exit 1
+  fi
+}
+
+# Ensure a secret in the env file has a strong value. Only placeholder
+# ("change-me"), empty, or missing values are filled in, so real secrets a user
+# has already set are never overwritten (idempotent on re-run). Returns success
+# (0) if the file was changed, non-zero if left untouched.
+set_env_secret() {
+  local file="$1" key="$2" value="$3"
+  local tmp line current found=0 changed=0
+  tmp="$(mktemp)"
+  while IFS= read -r line || [ -n "$line" ]; do
+    if printf '%s' "$line" | grep -qE "^[[:space:]]*${key}[[:space:]]*="; then
+      found=1
+      current="$(printf '%s' "${line#*=}" | tr -d '[:space:]')"
+      if [ -z "$current" ] || printf '%s' "$current" | grep -q 'change-me'; then
+        printf '%s=%s\n' "$key" "$value" >> "$tmp"
+        changed=1
+      else
+        printf '%s\n' "$line" >> "$tmp"
+      fi
+    else
+      printf '%s\n' "$line" >> "$tmp"
+    fi
+  done < "$file"
+  if [ "$found" -eq 0 ]; then
+    printf '%s=%s\n' "$key" "$value" >> "$tmp"
+    changed=1
+  fi
+  mv "$tmp" "$file"
+  return $((1 - changed))
+}
+
 # 1. Environment file
 if [ ! -f .env ]; then
   log "No .env found — creating one from .env.example"
   cp .env.example .env
-  warn "Edit .env and set real secrets before using this in production."
+fi
+
+# The control-plane fails fast on missing/weak/placeholder JWT and encryption
+# secrets, so make sure .env has strong random values before we try to boot.
+# JWT secrets need >=32 chars (48 bytes -> 64 base64 chars); ENCRYPTION_KEY must
+# decode to exactly 32 bytes for AES-256-GCM.
+generated=()
+if set_env_secret .env JWT_SECRET "$(gen_secret 48)"; then generated+=("JWT_SECRET"); fi
+if set_env_secret .env JWT_REFRESH_SECRET "$(gen_secret 48)"; then generated+=("JWT_REFRESH_SECRET"); fi
+if set_env_secret .env WEBHOOK_SECRET "$(gen_secret 32)"; then generated+=("WEBHOOK_SECRET"); fi
+if set_env_secret .env ENCRYPTION_KEY "$(gen_secret 32)"; then generated+=("ENCRYPTION_KEY"); fi
+if [ "${#generated[@]}" -gt 0 ]; then
+  log "Generated strong random secret(s) in .env: ${generated[*]}"
+  warn "These are local dev secrets in .env. Set your own strong values for production."
 fi
 
 # 2. Dependencies

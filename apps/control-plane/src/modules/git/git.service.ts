@@ -5,8 +5,26 @@ import { promisify } from 'node:util';
 import { DRIZZLE, Database } from '../../db/database.module';
 import { gitCredentials } from '../../db/schema';
 import { CryptoService } from '../../common/crypto/crypto.service';
+import {
+  assertRequestUrlAllowed,
+  SsrfBlockedError,
+} from '../../common/net/ssrf-guard';
 
 const execFileAsync = promisify(execFile);
+
+/**
+ * Hosts a credential of a given provider is allowed to authenticate against.
+ * GitHub is fixed to github.com; a self-hosted GitLab host can be pinned via
+ * GITLAB_HOST (defaults to gitlab.com). This stops a decrypted PAT from being
+ * sent to an attacker-controlled host (credential exfiltration / SSRF).
+ */
+function allowedHostsForProvider(provider: string): string[] {
+  if (provider === 'GITLAB') {
+    const configured = (process.env.GITLAB_HOST ?? '').trim().toLowerCase();
+    return [configured || 'gitlab.com'];
+  }
+  return ['github.com'];
+}
 
 interface CreateGitCredentialInput {
   name: string;
@@ -73,6 +91,22 @@ export class GitService {
     if (!rows[0]) throw new NotFoundException('Credential not found');
 
     const cred = rows[0];
+
+    // Only allow verifying against the credential's own provider host, and
+    // reject any host resolving to a private/loopback/link-local/metadata
+    // address before the decrypted PAT is ever put on the wire.
+    try {
+      await assertRequestUrlAllowed(
+        repoUrl,
+        allowedHostsForProvider(cred.provider),
+      );
+    } catch (e) {
+      if (e instanceof SsrfBlockedError) {
+        return { ok: false, message: e.message, code: e.code };
+      }
+      throw e;
+    }
+
     const pat = this.crypto.decrypt(cred.patEnc);
     const authUrl = injectToken(repoUrl, cred.provider, cred.username, pat);
 

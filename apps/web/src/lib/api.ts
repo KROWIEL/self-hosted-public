@@ -130,7 +130,6 @@ export async function exportAudit(
   format: 'csv' | 'json',
   opts: { action?: string; from?: string; to?: string; limit?: number } = {},
 ) {
-  const token = getToken();
   const qs = new URLSearchParams({ format });
   if (opts.action) qs.set('action', opts.action);
   if (opts.from) qs.set('from', opts.from);
@@ -138,8 +137,9 @@ export async function exportAudit(
   if (opts.limit) qs.set('limit', String(opts.limit));
   let res: Response;
   try {
+    // Session travels in the HttpOnly cookie (H-1); include credentials.
     res = await fetch(`${API_URL}/audit/export?${qs.toString()}`, {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      credentials: 'include',
     });
   } catch {
     throw new ApiError(
@@ -468,12 +468,6 @@ export const setSsoConfig = (body: SsoConfigInput) =>
 /** Top-level URL to begin the OIDC flow (browser navigates here directly). */
 export const ssoStartUrl = () => `${API_URL}/auth/sso/start`;
 
-/** Persist a session obtained out-of-band (e.g. from the SSO callback). */
-export function setSession(accessToken: string, refreshToken: string) {
-  window.localStorage.setItem('accessToken', accessToken);
-  window.localStorage.setItem('refreshToken', refreshToken);
-}
-
 // ---- Preview environments (Pro: preview-envs) ----
 
 export interface PreviewEnv {
@@ -616,18 +610,57 @@ export interface GitCredential {
   createdAt: string;
 }
 
-// ---- Auth token storage ----
+// ---- Auth session (HttpOnly cookies + CSRF, H-1) ----
 
-export function getToken(): string | null {
-  if (typeof window === 'undefined') return null;
-  return window.localStorage.getItem('accessToken');
+/**
+ * The access/refresh tokens now live in HttpOnly cookies the browser sends
+ * automatically; JavaScript can no longer read them. The only client-readable
+ * marker is the non-HttpOnly `csrf` cookie, set at login and cleared at logout —
+ * we treat its presence as "there is a session" and echo its value back in the
+ * `x-csrf-token` header on mutating requests (double-submit CSRF).
+ */
+const CSRF_COOKIE = 'csrf';
+
+function readCookie(name: string): string | null {
+  if (typeof document === 'undefined') return null;
+  for (const part of document.cookie.split(';')) {
+    const idx = part.indexOf('=');
+    if (idx === -1) continue;
+    if (part.slice(0, idx).trim() === name) {
+      return decodeURIComponent(part.slice(idx + 1).trim());
+    }
+  }
+  return null;
+}
+
+/** The current CSRF token (from the readable `csrf` cookie), or null. */
+export function getCsrfToken(): string | null {
+  return readCookie(CSRF_COOKIE);
 }
 
 export function isAuthed(): boolean {
-  return getToken() !== null;
+  return getCsrfToken() !== null;
+}
+
+/** Best-effort client-side clear of the readable session marker. */
+function clearCsrfCookie() {
+  if (typeof document === 'undefined') return;
+  document.cookie = `${CSRF_COOKIE}=; Max-Age=0; path=/`;
 }
 
 export function logout() {
+  // Best-effort server-side invalidation: bump the account's session epoch and
+  // clear the auth cookies. Fire-and-forget — the CSRF header is captured
+  // synchronously by the fetch before we drop the local marker below.
+  try {
+    void api<{ ok: boolean }>('/auth/logout', { method: 'POST' }).catch(
+      () => undefined,
+    );
+  } catch {
+    /* ignore */
+  }
+  clearCsrfCookie();
+  // Legacy cleanup: remove any tokens left in localStorage by an older build.
   window.localStorage.removeItem('accessToken');
   window.localStorage.removeItem('refreshToken');
   window.localStorage.removeItem('mustChangePassword');
@@ -685,18 +718,49 @@ function parseApiError(status: number, raw: string): ApiError {
   });
 }
 
-export async function api<T>(
+const MUTATING_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
+
+/**
+ * Silently exchange the (HttpOnly) refresh cookie for a fresh access cookie.
+ * Returns true on success so the caller can retry the original request once.
+ */
+async function tryRefreshSession(): Promise<boolean> {
+  try {
+    const csrf = getCsrfToken();
+    const res = await fetch(`${API_URL}/auth/refresh`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(csrf ? { 'x-csrf-token': csrf } : {}),
+      },
+      body: '{}',
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+async function apiRequest<T>(
   path: string,
-  options: RequestInit = {},
+  options: RequestInit,
+  allowRefresh: boolean,
 ): Promise<T> {
-  const token = getToken();
+  const method = (options.method ?? 'GET').toUpperCase();
+  const csrf = getCsrfToken();
   let res: Response;
   try {
     res = await fetch(`${API_URL}${path}`, {
       ...options,
+      // Send the HttpOnly session cookies (H-1) on every call.
+      credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        // Double-submit CSRF: echo the readable csrf cookie on mutations.
+        ...(MUTATING_METHODS.has(method) && csrf
+          ? { 'x-csrf-token': csrf }
+          : {}),
         ...(options.headers ?? {}),
       },
     });
@@ -708,6 +772,18 @@ export async function api<T>(
       'network.unreachable',
     );
   }
+  // Access token expired but we still hold a session marker: transparently
+  // refresh once and replay the request. Never loop on the auth endpoints.
+  if (
+    res.status === 401 &&
+    allowRefresh &&
+    getCsrfToken() &&
+    !path.startsWith('/auth/')
+  ) {
+    if (await tryRefreshSession()) {
+      return apiRequest<T>(path, options, false);
+    }
+  }
   if (!res.ok) {
     throw parseApiError(res.status, await res.text());
   }
@@ -716,14 +792,20 @@ export async function api<T>(
   return (text ? JSON.parse(text) : undefined) as T;
 }
 
-// ---- Auth ----
-
-interface TokenPair {
-  accessToken: string;
-  refreshToken: string;
+export async function api<T>(
+  path: string,
+  options: RequestInit = {},
+): Promise<T> {
+  return apiRequest<T>(path, options, true);
 }
 
-interface AuthResult extends TokenPair {
+// ---- Auth ----
+
+/**
+ * Login/register responses no longer carry raw tokens (H-1): the session is set
+ * as HttpOnly cookies by the control plane. Only routing flags come back.
+ */
+interface AuthResult {
   needsOnboarding?: boolean;
   mustChangePassword?: boolean;
 }
@@ -796,29 +878,23 @@ export interface TwoFactorSetup {
   qrDataUrl: string;
 }
 
-function storeTokens(tokens: TokenPair) {
-  window.localStorage.setItem('accessToken', tokens.accessToken);
-  window.localStorage.setItem('refreshToken', tokens.refreshToken);
-}
-
 export async function login(email: string, password: string, totp?: string) {
+  // The control plane sets the session cookies on this response; we only keep
+  // the (non-secret) weak-password flag for the client-side redirect.
   const res = await api<AuthResult>('/auth/login', {
     method: 'POST',
     body: JSON.stringify({ email, password, ...(totp ? { totp } : {}) }),
   });
-  storeTokens(res);
   setMustChangePassword(!!res.mustChangePassword);
   return res;
 }
 
 /** Stage 1: create the account and sign in (still needs onboarding). */
 export async function register(email: string, password: string) {
-  const res = await api<AuthResult>('/auth/register', {
+  return api<AuthResult>('/auth/register', {
     method: 'POST',
     body: JSON.stringify({ email, password }),
   });
-  storeTokens(res);
-  return res;
 }
 
 /** Stage 2: fetch a fresh TOTP secret + QR to display. */
@@ -1042,9 +1118,8 @@ export async function streamServiceLogs(
   id: string,
   signal?: AbortSignal,
 ): Promise<Response> {
-  const token = getToken();
   const res = await fetch(`${API_URL}/services/${id}/logs/stream`, {
-    headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+    credentials: 'include',
     signal,
   });
   if (!res.ok || !res.body) {
@@ -1054,13 +1129,26 @@ export async function streamServiceLogs(
 }
 
 /**
- * Builds the WebSocket URL for an interactive container shell. The access token
- * is passed as a query param because browsers can't set WS headers.
+ * Requests a short-lived, single-use exec ticket for a service. The ticket —
+ * not the access JWT — is what opens the WebSocket, keeping bearer tokens out
+ * of proxy logs/history.
  */
-export function execSocketUrl(serviceId: string): string {
-  const token = getToken() ?? '';
+export async function createExecTicket(serviceId: string): Promise<string> {
+  const { ticket } = await api<{ ticket: string }>(
+    `/services/${serviceId}/exec-ticket`,
+    { method: 'POST' },
+  );
+  return ticket;
+}
+
+/**
+ * Builds the WebSocket URL for an interactive container shell. A single-use
+ * ticket (from createExecTicket) is passed as a query param because browsers
+ * can't set WS headers; unlike a JWT it's opaque, short-lived and one-shot.
+ */
+export function execSocketUrl(serviceId: string, ticket: string): string {
   const wsBase = API_URL.replace(/^http/, 'ws');
-  return `${wsBase}/services/${serviceId}/exec?token=${encodeURIComponent(token)}`;
+  return `${wsBase}/services/${serviceId}/exec?ticket=${encodeURIComponent(ticket)}`;
 }
 
 /** Opens the live build-log stream for a deployment (see streamServiceLogs). */
@@ -1068,9 +1156,8 @@ export async function streamDeploymentLogs(
   deploymentId: string,
   signal?: AbortSignal,
 ): Promise<Response> {
-  const token = getToken();
   const res = await fetch(`${API_URL}/deployments/${deploymentId}/logs/stream`, {
-    headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+    credentials: 'include',
     signal,
   });
   if (!res.ok || !res.body) {
@@ -1400,9 +1487,8 @@ export const deleteBackup = (id: string) =>
 
 /** Streams a backup file to the browser as a download (auth via header). */
 export async function downloadBackup(id: string, fileName: string) {
-  const token = getToken();
   const res = await fetch(`${API_URL}/backups/${id}/download`, {
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    credentials: 'include',
   });
   if (!res.ok) throw new Error(`Download failed: ${res.status}`);
   const blob = await res.blob();

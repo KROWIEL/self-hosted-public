@@ -5,8 +5,10 @@ import {
   Headers,
   Param,
   Post,
+  Query,
   Res,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import type { Response } from 'express';
 import { resolve } from 'node:path';
 import { existsSync } from 'node:fs';
@@ -69,8 +71,20 @@ export class NodeAgentController {
     return this.nodes.heartbeat(dto.nodeId, token, dto.version);
   }
 
+  // Anonymous artifact delivery: gated by a short-lived signed token (`?t=`)
+  // the panel embeds in the install command, plus a strict rate limit as
+  // defense-in-depth against on-demand build abuse (L3).
+  @Throttle({ default: { limit: 20, ttl: 60_000 } })
   @Get('bin/:platform')
-  async bin(@Param('platform') platform: string, @Res() res: Response) {
+  async bin(
+    @Param('platform') platform: string,
+    @Query('t') token: string,
+    @Res() res: Response,
+  ) {
+    if (!this.nodes.verifyAssetToken(token)) {
+      res.status(403).send('forbidden');
+      return;
+    }
     let path: string;
     try {
       path = await this.nodes.ensureAgentBinary(platform);
@@ -81,8 +95,13 @@ export class NodeAgentController {
     res.download(path, `selfhosted-agent-${platform}`);
   }
 
+  @Throttle({ default: { limit: 20, ttl: 60_000 } })
   @Get('install.sh')
-  installSh(@Res() res: Response) {
+  installSh(@Query('t') token: string, @Res() res: Response) {
+    if (!this.nodes.verifyAssetToken(token)) {
+      res.status(403).send('forbidden');
+      return;
+    }
     const path = resolve(
       process.cwd(),
       '../../services/agent-dist',

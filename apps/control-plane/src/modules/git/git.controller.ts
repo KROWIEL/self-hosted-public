@@ -9,6 +9,7 @@ import {
 } from '@nestjs/common';
 import { IsIn, IsOptional, IsString, MinLength } from 'class-validator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { AdminGuard } from '../../common/guards/admin.guard';
 import { GitService } from './git.service';
 
 class CreateGitCredentialDto {
@@ -28,7 +29,8 @@ class CreateGitCredentialDto {
   pat: string;
 }
 
-@UseGuards(JwtAuthGuard)
+// Global git credentials (PATs) are platform-admin only.
+@UseGuards(JwtAuthGuard, AdminGuard)
 @Controller('git-credentials')
 export class GitController {
   constructor(private readonly git: GitService) {}

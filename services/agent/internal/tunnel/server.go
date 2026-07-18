@@ -3,6 +3,7 @@ package tunnel
 import (
 	"bufio"
 	"context"
+	"crypto/subtle"
 	"crypto/tls"
 	"fmt"
 	"log"
@@ -99,7 +100,10 @@ func (s *Server) handleControl(conn net.Conn) {
 		_ = conn.Close()
 		return
 	}
-	if hello.Token != s.cfg.Token || s.cfg.Token == "" {
+	// Constant-time compare to avoid leaking the token via response timing. An
+	// empty configured token always rejects (fail closed).
+	if s.cfg.Token == "" ||
+		subtle.ConstantTimeCompare([]byte(hello.Token), []byte(s.cfg.Token)) != 1 {
 		_ = writeJSONLine(conn, HelloAck{OK: false, Error: "unauthorized"})
 		_ = conn.Close()
 		s.logf("control rejected: bad token from %s", conn.RemoteAddr())

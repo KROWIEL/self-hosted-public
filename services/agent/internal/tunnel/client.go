@@ -9,7 +9,10 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"os"
+	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/hashicorp/yamux"
@@ -24,8 +27,16 @@ type ClientConfig struct {
 	// Targets maps a public port to the local address to forward it to,
 	// e.g. {443: "127.0.0.1:443", 80: "127.0.0.1:80"}.
 	Targets map[int]string
-	// Fingerprint, if set, pins the server's cert SHA-256 (hex).
+	// Fingerprint, if set, pins the server's cert SHA-256 (hex). Takes priority
+	// over TOFU.
 	Fingerprint string
+	// FingerprintFile enables trust-on-first-use (TOFU): when no Fingerprint is
+	// configured, the first server cert seen is captured and persisted here, and
+	// every later connect must match it. Empty disables TOFU persistence.
+	FingerprintFile string
+	// Insecure explicitly opts into blind TLS trust (no pinning, no TOFU). It
+	// requires a deliberate flag and emits a hard warning; never the default.
+	Insecure bool
 	// ProxyProtocol prepends a PROXY v1 header to the local connection so the
 	// target can recover the real client IP.
 	ProxyProtocol bool
@@ -38,6 +49,9 @@ type ClientConfig struct {
 type Client struct {
 	cfg  ClientConfig
 	logf func(string, ...any)
+
+	mu     sync.Mutex
+	pinned string // lowercased hex SHA-256 of the trusted server cert, if known
 }
 
 func NewClient(cfg ClientConfig) *Client {
@@ -45,7 +59,17 @@ func NewClient(cfg ClientConfig) *Client {
 	if logf == nil {
 		logf = log.Printf
 	}
-	return &Client{cfg: cfg, logf: logf}
+	c := &Client{cfg: cfg, logf: logf}
+
+	// Seed the pinned fingerprint: an explicit config value wins; otherwise load
+	// any value previously captured via TOFU.
+	c.pinned = strings.ToLower(strings.TrimSpace(cfg.Fingerprint))
+	if c.pinned == "" && cfg.FingerprintFile != "" {
+		if b, err := os.ReadFile(cfg.FingerprintFile); err == nil {
+			c.pinned = strings.ToLower(strings.TrimSpace(string(b)))
+		}
+	}
+	return c
 }
 
 // Run connects and serves until ctx is cancelled, reconnecting on failure.
@@ -77,15 +101,13 @@ func (c *Client) Run(ctx context.Context) error {
 }
 
 func (c *Client) serveOnce(ctx context.Context) error {
-	tlsCfg := &tls.Config{InsecureSkipVerify: true, MinVersion: tls.VersionTLS12}
-	if c.cfg.Fingerprint != "" {
-		want := strings.ToLower(c.cfg.Fingerprint)
-		tlsCfg.VerifyPeerCertificate = func(rawCerts [][]byte, _ [][]*x509.Certificate) error {
-			if len(rawCerts) == 0 || rawFingerprint(rawCerts[0]) != want {
-				return errors.New("tunnel: server fingerprint mismatch")
-			}
-			return nil
-		}
+	// We always set InsecureSkipVerify (the server uses a self-signed cert) but
+	// supply our own verifier that pins the fingerprint (configured or TOFU).
+	// Blind trust is only reached when Insecure is explicitly set.
+	tlsCfg := &tls.Config{
+		InsecureSkipVerify:    true, //nolint:gosec // verified via VerifyPeerCertificate (pin/TOFU)
+		MinVersion:            tls.VersionTLS12,
+		VerifyPeerCertificate: c.verifyPeer,
 	}
 
 	d := &tls.Dialer{Config: tlsCfg}
@@ -130,6 +152,67 @@ func (c *Client) serveOnce(ctx context.Context) error {
 		}
 		go c.handleStream(stream)
 	}
+}
+
+// verifyPeer implements the TLS peer verification for the self-signed server:
+//   - if a fingerprint is pinned (configured or previously captured via TOFU),
+//     require an exact match;
+//   - else if a FingerprintFile is set, TOFU: capture + persist this cert and
+//     pin it for subsequent connects;
+//   - else if Insecure is explicitly enabled, accept blindly (loud warning);
+//   - otherwise refuse to connect (fail closed) rather than trust blindly.
+func (c *Client) verifyPeer(rawCerts [][]byte, _ [][]*x509.Certificate) error {
+	if len(rawCerts) == 0 {
+		return errors.New("tunnel: server presented no certificate")
+	}
+	fp := rawFingerprint(rawCerts[0])
+
+	c.mu.Lock()
+	pinned := c.pinned
+	c.mu.Unlock()
+
+	if pinned != "" {
+		if fp != pinned {
+			return errors.New("tunnel: server fingerprint mismatch")
+		}
+		return nil
+	}
+
+	// No pin yet — trust on first use if we have somewhere to persist it.
+	if c.cfg.FingerprintFile != "" {
+		c.mu.Lock()
+		c.pinned = fp
+		c.mu.Unlock()
+		if err := persistFingerprint(c.cfg.FingerprintFile, fp); err != nil {
+			c.logf("tunnel: WARNING could not persist pinned fingerprint to %s: %v "+
+				"(pinned in-memory for this session only)", c.cfg.FingerprintFile, err)
+		} else {
+			c.logf("tunnel: pinned server fingerprint %s (TOFU) → %s", fp, c.cfg.FingerprintFile)
+		}
+		return nil
+	}
+
+	if c.cfg.Insecure {
+		c.logf("tunnel: WARNING connecting with INSECURE blind TLS trust — the " +
+			"server certificate is NOT verified; set a fingerprint or state dir")
+		return nil
+	}
+
+	return errors.New("tunnel: no pinned fingerprint and TOFU persistence is " +
+		"disabled; refusing blind trust (set --fingerprint, --state-dir/--fingerprint-file, or --insecure)")
+}
+
+// persistFingerprint atomically writes the pinned fingerprint to disk (0600),
+// creating the parent directory if needed.
+func persistFingerprint(path, fp string) error {
+	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
+		return err
+	}
+	tmp := path + ".tmp"
+	if err := os.WriteFile(tmp, []byte(fp+"\n"), 0o600); err != nil {
+		return err
+	}
+	return os.Rename(tmp, path)
 }
 
 func (c *Client) handleStream(stream net.Conn) {

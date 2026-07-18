@@ -9,7 +9,7 @@ import {
   setBranding,
 } from '@/lib/api';
 import { AppShell } from '@/components/shell';
-import { refreshBranding } from '@/components/branding';
+import { refreshBranding, isSafeLogoUrl, safeLogoUrl } from '@/components/branding';
 import { useEntitlements } from '@/components/entitlements';
 import { UpgradeNotice } from '@/components/upgrade-notice';
 import {
@@ -71,13 +71,19 @@ function WhiteLabelContent() {
   }, [unlocked, isAdmin]);
 
   async function onSave() {
+    const logoUrl = form.logoUrl.trim();
+    if (!isSafeLogoUrl(logoUrl)) {
+      setNotice(null);
+      setError(t('whiteLabel.invalidLogoUrl'));
+      return;
+    }
     setBusy(true);
     setError(null);
     setNotice(null);
     try {
       await setBranding({
         appName: form.appName.trim() || 'Self-Hosted',
-        logoUrl: form.logoUrl.trim(),
+        logoUrl,
         accentColor: form.accentColor.trim(),
         hidePoweredBy: form.hidePoweredBy,
       });
@@ -198,10 +204,10 @@ function WhiteLabelContent() {
             {t('whiteLabel.preview')}
           </div>
           <div className="flex items-center gap-2.5 rounded-xl border border-white/10 bg-ink-950/40 px-4 py-3">
-            {form.logoUrl ? (
+            {safeLogoUrl(form.logoUrl) ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={form.logoUrl}
+                src={safeLogoUrl(form.logoUrl)}
                 alt=""
                 className="h-8 w-8 rounded-xl object-cover"
               />

@@ -64,6 +64,34 @@
       "when": 1784120263554,
       "tag": "0008_curvy_tana_nile",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1784390398454,
+      "tag": "0009_lowly_karma",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1784393825274,
+      "tag": "0010_api_token_scopes",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1784394841225,
+      "tag": "0011_activation_baseline",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1784398740539,
+      "tag": "0012_brown_morlun",
+      "breakpoints": true
     }
   ]
 }

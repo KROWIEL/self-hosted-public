@@ -1,19 +1,25 @@
 import type { INestApplication } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
 import { MemberRole } from '@selfhosted/shared';
 import type { Server } from 'node:http';
 import { WebSocket, WebSocketServer, type RawData } from 'ws';
-import { CryptoService } from './common/crypto/crypto.service';
 import { ServicesService } from './modules/services/services.service';
+import { ExecTicketService } from './modules/services/exec-ticket.service';
 import { MembersService } from './modules/members/members.service';
 import { ProjectResolver } from './modules/members/project-resolver.service';
+import { UsersService } from './modules/users/users.service';
+import { AgentTokenService } from './modules/nodes/agent-token.service';
 
 const EXEC_PATH = /^\/api\/v1\/services\/([^/]+)\/exec$/;
 
 /**
  * Raw WebSocket proxy for interactive container shells:
- *   browser (JWT in ?token) ⟷ control plane ⟷ agent (daemon token) ⟷ docker exec.
+ *   browser (single-use ?ticket) ⟷ control plane ⟷ agent (daemon token) ⟷ docker exec.
  * Kept off the Nest gateway layer so we can stream raw PTY frames untouched.
+ *
+ * Authorization is ticket-based: the browser first POSTs /services/:id/exec-ticket
+ * (project-ADMIN checked) to mint a short-lived, single-use ticket, then opens
+ * the WS with ?ticket=. Here we atomically burn the ticket, reload the user from
+ * the DB and re-check the CURRENT project role — never trusting a token claim.
  */
 type LiveSocket = WebSocket & { isAlive?: boolean };
 
@@ -23,13 +29,13 @@ type LiveSocket = WebSocket & { isAlive?: boolean };
  */
 export function setupExecProxy(app: INestApplication): () => void {
   const server = app.getHttpServer() as Server;
-  const jwt = app.get(JwtService, { strict: false });
   const services = app.get(ServicesService, { strict: false });
-  const crypto = app.get(CryptoService, { strict: false });
+  const agentToken = app.get(AgentTokenService, { strict: false });
   const members = app.get(MembersService, { strict: false });
   const resolver = app.get(ProjectResolver, { strict: false });
+  const users = app.get(UsersService, { strict: false });
+  const execTickets = app.get(ExecTicketService, { strict: false });
   const wss = new WebSocketServer({ noServer: true });
-  const secret = process.env.JWT_SECRET ?? 'change-me-access-secret';
 
   // Heartbeat: drop clients that stopped answering (closed tab, dead network)
   // so their upstream docker-exec sessions get cleaned up too.
@@ -63,22 +69,30 @@ export function setupExecProxy(app: INestApplication): () => void {
       return;
     }
 
-    const token = url.searchParams.get('token') ?? '';
-    let actor: { id: string; role: string };
-    try {
-      const payload = jwt.verify<{ sub: string; role: string }>(token, {
-        secret,
-      });
-      actor = { id: payload.sub, role: payload.role };
-    } catch {
-      socket.destroy();
-      return;
-    }
-
     const serviceId = match[1];
+    const ticket = url.searchParams.get('ticket') ?? '';
+
     // Interactive shell = powerful; require project ADMIN (global admins pass).
     void (async () => {
       try {
+        // Atomically burn the single-use ticket; reject if missing/expired/used
+        // or if it was minted for a different service.
+        const payload = await execTickets.redeem(ticket);
+        if (!payload || payload.serviceId !== serviceId) {
+          socket.destroy();
+          return;
+        }
+
+        // Load the user fresh from the DB: deny if the account is gone or its
+        // session epoch changed since the ticket was minted (logout/2FA/pw).
+        const user = await users.findById(payload.userId);
+        if (!user || user.tokenVersion !== payload.tokenVersion) {
+          socket.destroy();
+          return;
+        }
+
+        // Authorize using the CURRENT role from the DB, never a token claim.
+        const actor = { id: user.id, role: user.role };
         const projectId = await resolver.resolve('service', serviceId);
         await members.assertRole(actor, projectId, MemberRole.ADMIN);
       } catch {
@@ -90,7 +104,7 @@ export function setupExecProxy(app: INestApplication): () => void {
         client.on('pong', () => {
           client.isAlive = true;
         });
-        void bridge(client, serviceId, services, crypto);
+        void bridge(client, serviceId, services, agentToken);
       });
     })();
   });
@@ -112,7 +126,7 @@ async function bridge(
   client: WebSocket,
   serviceId: string,
   services: ServicesService,
-  crypto: CryptoService,
+  agentToken: AgentTokenService,
 ): Promise<void> {
   let node: Awaited<ReturnType<ServicesService['getNodeRow']>>;
   try {
@@ -122,11 +136,10 @@ async function bridge(
     return;
   }
 
-  const daemonToken = crypto.decrypt(node.daemonToken);
   const scheme = process.env.AGENT_INSECURE_HTTP === '1' ? 'ws' : 'wss';
   const upstream = new WebSocket(
     `${scheme}://${node.fqdn}:${node.agentPort}/api/servers/${serviceId}/exec`,
-    { headers: { Authorization: `Bearer ${daemonToken}` } },
+    { headers: { Authorization: `Bearer ${agentToken.authToken(node)}` } },
   );
 
   const queue: Array<[RawData, boolean]> = [];

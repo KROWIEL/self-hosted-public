@@ -56,6 +56,10 @@ export const users = pgTable('users', {
   // TOTP shared secret, encrypted at rest (AES-256-GCM). Non-null = 2FA on.
   totpSecret: text('totp_secret'),
   role: roleEnum('role').notNull().default('USER'),
+  // Monotonic session epoch. Every access/refresh token embeds the value it was
+  // signed with (claim `tv`); bumping it (password change, 2FA disable, logout)
+  // invalidates all previously issued tokens for the user.
+  tokenVersion: integer('token_version').notNull().default(0),
   // Set at login when the account password fails the current strength policy;
   // the UI then forces a password change (without blocking sign-in).
   mustChangePassword: boolean('must_change_password').notNull().default(false),
@@ -73,6 +77,11 @@ export const nodes = pgTable('nodes', {
   fqdn: text('fqdn').notNull(),
   agentPort: integer('agent_port').notNull().default(8443),
   daemonToken: text('daemon_token').notNull(),
+  // During a daemon-token rotation the previous secret is retained (encrypted)
+  // so already-running agents/heartbeats keep authenticating until they confirm
+  // the new one; cleared once the node converges on the new secret.
+  daemonTokenPrev: text('daemon_token_prev'),
+  daemonTokenRotatedAt: timestamp('daemon_token_rotated_at'),
   publicKey: text('public_key'),
   status: nodeStatusEnum('status').notNull().default('OFFLINE'),
   // Whether the local Go agent should be (re)started automatically on panel
@@ -408,6 +417,12 @@ export const licenses = pgTable('licenses', {
 export const installation = pgTable('installation', {
   id: text('id').primaryKey().default('default'),
   instanceId: uuid('instance_id').notNull().defaultRandom(),
+  // Start of the current offline grace window (set on first run / key change).
+  // Persisted so the window survives restarts instead of resetting each boot.
+  activationBaselineAt: timestamp('activation_baseline_at'),
+  // Timestamp of the last successful activation heartbeat, so the grace window
+  // anchors to the last success rather than process start after a restart.
+  lastActivationOkAt: timestamp('last_activation_ok_at'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });
 
@@ -487,6 +502,12 @@ export const apiTokens = pgTable('api_tokens', {
   tokenHash: text('token_hash').notNull().unique(),
   // Non-secret display hint, e.g. 'shpat_ab12cd…'.
   preview: text('preview').notNull(),
+  // Coarse authorization scopes (M4), stored comma-separated. One access level
+  // ('read' = GET/HEAD only, or 'full' = read+write) plus an optional 'admin'
+  // scope required to reach platform-admin routes. Defaults to 'full' for new
+  // tokens; the migration backfills pre-existing rows to 'full,admin' to keep
+  // prior behaviour.
+  scopes: text('scopes').notNull().default('full'),
   lastUsedAt: timestamp('last_used_at'),
   expiresAt: timestamp('expires_at'),
   createdAt: timestamp('created_at').notNull().defaultNow(),

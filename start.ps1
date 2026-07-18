@@ -47,11 +47,76 @@ function Invoke-Compose {
   }
 }
 
+# Generate a cryptographically strong, base64-encoded random secret.
+function New-RandomSecret {
+  param([int]$ByteCount = 48)
+  $bytes = [byte[]]::new($ByteCount)
+  $rng = [System.Security.Cryptography.RandomNumberGenerator]::Create()
+  try { $rng.GetBytes($bytes) } finally { $rng.Dispose() }
+  return [Convert]::ToBase64String($bytes)
+}
+
+# Ensure a secret in the env file has a strong value. Only placeholder
+# ("change-me"), empty, or missing values are filled in, so real secrets a user
+# has already set are never overwritten (idempotent on re-run). Returns $true if
+# the file was changed.
+function Set-EnvSecret {
+  param(
+    [Parameter(Mandatory)][string]$Path,
+    [Parameter(Mandatory)][string]$Key,
+    [Parameter(Mandatory)][string]$Value
+  )
+  $lines = @(Get-Content -LiteralPath $Path)
+  $pattern = "^\s*$([regex]::Escape($Key))\s*="
+  $found = $false
+  $changed = $false
+  for ($i = 0; $i -lt $lines.Count; $i++) {
+    if ($lines[$i] -match $pattern) {
+      $found = $true
+      $current = (($lines[$i] -split '=', 2)[1]).Trim()
+      if ([string]::IsNullOrWhiteSpace($current) -or $current -match 'change-me') {
+        $lines[$i] = "$Key=$Value"
+        $changed = $true
+      }
+      break
+    }
+  }
+  if (-not $found) {
+    $lines += "$Key=$Value"
+    $changed = $true
+  }
+  if ($changed) {
+    $full = (Resolve-Path -LiteralPath $Path).ProviderPath
+    $text = ($lines -join "`n") + "`n"
+    [System.IO.File]::WriteAllText($full, $text, (New-Object System.Text.UTF8Encoding($false)))
+  }
+  return $changed
+}
+
 # 1. Environment file
 if (-not (Test-Path .env)) {
   Write-Log "No .env found - creating one from .env.example"
   Copy-Item .env.example .env
-  Write-Warn "Edit .env and set real secrets before using this in production."
+}
+
+# The control-plane fails fast on missing/weak/placeholder JWT and encryption
+# secrets, so make sure .env has strong random values before we try to boot.
+# JWT secrets need >=32 chars (48 bytes -> 64 base64 chars); ENCRYPTION_KEY must
+# decode to exactly 32 bytes for AES-256-GCM.
+$generated = @()
+foreach ($item in @(
+    @{ Key = 'JWT_SECRET';         Bytes = 48 },
+    @{ Key = 'JWT_REFRESH_SECRET'; Bytes = 48 },
+    @{ Key = 'WEBHOOK_SECRET';     Bytes = 32 },
+    @{ Key = 'ENCRYPTION_KEY';     Bytes = 32 }
+  )) {
+  if (Set-EnvSecret -Path '.env' -Key $item.Key -Value (New-RandomSecret -ByteCount $item.Bytes)) {
+    $generated += $item.Key
+  }
+}
+if ($generated.Count -gt 0) {
+  Write-Log ("Generated strong random secret(s) in .env: " + ($generated -join ', '))
+  Write-Warn "These are local dev secrets in .env. Set your own strong values for production."
 }
 
 # 2. Dependencies

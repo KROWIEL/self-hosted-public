@@ -1080,6 +1080,8 @@ export const en = {
   'whiteLabel.appName': 'App name',
   'whiteLabel.accentColor': 'Accent colour',
   'whiteLabel.logoUrl': 'Logo URL',
+  'whiteLabel.invalidLogoUrl':
+    'Logo URL must be an https:// link or a relative path — data: and javascript: URLs are not allowed.',
   'whiteLabel.hidePoweredBy': 'Hide “Powered by” attribution',
   'whiteLabel.preview': 'Preview',
   'whiteLabel.save': 'Save branding',

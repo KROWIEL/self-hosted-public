@@ -3,6 +3,7 @@ import {
   ConflictException,
   Inject,
   Injectable,
+  Logger,
   NotFoundException,
   OnModuleDestroy,
 } from '@nestjs/common';
@@ -36,7 +37,9 @@ import {
 
 @Injectable()
 export class ServicesService implements OnModuleDestroy {
+  private readonly logger = new Logger(ServicesService.name);
   private readonly lockRedis: Redis;
+  private webhookSecretWarned = false;
 
   constructor(
     @Inject(DRIZZLE) private readonly db: Database,
@@ -235,10 +238,14 @@ export class ServicesService implements OnModuleDestroy {
     try {
       return await this.agent.getStats(node, id);
     } catch (e) {
+      // Log agent internals server-side; return only a generic flag (L5).
+      this.logger.warn(
+        `stats(${id}) failed: ${e instanceof Error ? e.message : String(e)}`,
+      );
       return {
         running: false,
         state: 'unreachable',
-        error: e instanceof Error ? e.message : String(e),
+        error: 'unreachable',
       };
     }
   }
@@ -275,10 +282,15 @@ export class ServicesService implements OnModuleDestroy {
         currentCpuPerc += parsePercent(stats.cpuPerc);
         currentMemMb += parseMemoryMb(stats.memUsage);
       } catch (e) {
+        this.logger.warn(
+          `resource summary: service ${svc.id} stats failed: ${
+            e instanceof Error ? e.message : String(e)
+          }`,
+        );
         unavailable.push({
           serviceId: svc.id,
           name: svc.name,
-          error: e instanceof Error ? e.message : String(e),
+          error: 'unreachable',
         });
       }
     }
@@ -528,9 +540,34 @@ export class ServicesService implements OnModuleDestroy {
 
   /** Deterministic webhook token for a service (HMAC, no DB column needed). */
   webhookToken(id: string): string {
-    const secret =
-      process.env.WEBHOOK_SECRET ?? process.env.JWT_SECRET ?? 'webhook-secret';
-    return createHmac('sha256', secret).update(id).digest('hex').slice(0, 32);
+    return createHmac('sha256', this.webhookSecret())
+      .update(id)
+      .digest('hex')
+      .slice(0, 32);
+  }
+
+  /**
+   * Dedicated secret for signing deploy-webhook tokens. Intentionally NOT
+   * derived from JWT_SECRET so rotating one doesn't affect the other. Required
+   * in production (fail closed); a warned, insecure fallback is used only in
+   * development to keep the local flow working.
+   */
+  private webhookSecret(): string {
+    const s = process.env.WEBHOOK_SECRET?.trim();
+    if (s) return s;
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error(
+        'WEBHOOK_SECRET is not set — refusing to sign deploy webhooks with a predictable key.',
+      );
+    }
+    if (!this.webhookSecretWarned) {
+      this.logger.warn(
+        'WEBHOOK_SECRET is not set; using an insecure development fallback. ' +
+          'Set WEBHOOK_SECRET before deploying to production.',
+      );
+      this.webhookSecretWarned = true;
+    }
+    return 'dev-only-insecure-webhook-secret';
   }
 
   /** Returns the auto-deploy webhook URL + token for a service. */

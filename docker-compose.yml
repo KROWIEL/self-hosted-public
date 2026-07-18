@@ -39,9 +39,11 @@ services:
   # Service containers are attached (by the agent) to the shared `selfhosted-edge`
   # network so Traefik can reach them; routing is driven by container labels.
   traefik:
-    # Track the latest v3.x: older pins (v3.1) ship a Docker client that a very
-    # new Engine (API >= 1.53) rejects with an empty "Error response from daemon".
-    image: traefik:v3
+    # Pinned by digest for a reproducible, tamper-resistant supply chain (M7).
+    # This is the current v3.x manifest — v3 (not an older v3.1 pin) so the
+    # bundled Docker client stays compatible with a very new Engine (API
+    # >= 1.53). Refresh with: docker buildx imagetools inspect traefik:v3
+    image: traefik:v3@sha256:4299bbed850421258fc5448c2e0e6ad350981d4d335a68de11b92448aedbefe5
     container_name: selfhosted-traefik
     restart: unless-stopped
     # Pin the Docker API version: Traefik's embedded client otherwise negotiates

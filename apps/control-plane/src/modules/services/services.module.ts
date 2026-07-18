@@ -6,6 +6,7 @@ import { WebhooksController } from './webhooks.controller';
 import { ServicesService } from './services.service';
 import { DeployWorker } from './deploy.worker';
 import { BuildLogService } from './build-log.service';
+import { ExecTicketService } from './exec-ticket.service';
 import {
   DEPLOY_QUEUE,
   DEPLOY_QUEUE_NAME,
@@ -19,12 +20,13 @@ import {
     ServicesService,
     DeployWorker,
     BuildLogService,
+    ExecTicketService,
     {
       provide: DEPLOY_QUEUE,
       useFactory: () =>
         new Queue(DEPLOY_QUEUE_NAME, { connection: createRedisConnection() }),
     },
   ],
-  exports: [ServicesService],
+  exports: [ServicesService, ExecTicketService],
 })
 export class ServicesModule {}

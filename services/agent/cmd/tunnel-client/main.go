@@ -9,6 +9,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"syscall"
@@ -49,6 +50,9 @@ func main() {
 	server := flag.String("server", env("TUNNEL_SERVER", ""), "public control endpoint (host:port)")
 	token := flag.String("token", env("TUNNEL_TOKEN", ""), "shared auth token")
 	fingerprint := flag.String("fingerprint", env("TUNNEL_FINGERPRINT", ""), "pinned server cert SHA-256 (hex, optional)")
+	fingerprintFile := flag.String("fingerprint-file", env("TUNNEL_FINGERPRINT_FILE", ""), "path to persist the TOFU-pinned fingerprint (default: <state-dir>/<server>.fp)")
+	stateDir := flag.String("state-dir", env("TUNNEL_STATE_DIR", ""), "directory to persist TOFU state (default: OS config dir)")
+	insecure := flag.Bool("insecure", env("TUNNEL_INSECURE", "") == "1", "DANGEROUS: blindly trust the server cert (no pin, no TOFU)")
 	proxyProto := flag.Bool("proxy-protocol", env("TUNNEL_PROXY_PROTOCOL", "") == "1", "prepend PROXY v1 header to local connections")
 	targets := mapFlag{}
 	flag.Var(targets, "map", "port mapping PORT=HOST:PORT (repeatable; default 443=127.0.0.1:443)")
@@ -74,16 +78,50 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
+	// Resolve where to persist the TOFU-pinned fingerprint. When an explicit
+	// fingerprint or --insecure is given, TOFU persistence is not used. Otherwise
+	// default to a stable per-server file so TOFU survives restarts and existing
+	// tunnels keep working (first connect captures the fingerprint).
+	fpFile := *fingerprintFile
+	if fpFile == "" && *fingerprint == "" && !*insecure {
+		fpFile = filepath.Join(resolveStateDir(*stateDir), "fp-"+sanitize(*server)+".hex")
+	}
+
 	cl := tunnel.NewClient(tunnel.ClientConfig{
-		ServerAddr:    *server,
-		Token:         *token,
-		Targets:       targets,
-		Fingerprint:   *fingerprint,
-		ProxyProtocol: *proxyProto,
+		ServerAddr:      *server,
+		Token:           *token,
+		Targets:         targets,
+		Fingerprint:     *fingerprint,
+		FingerprintFile: fpFile,
+		Insecure:        *insecure,
+		ProxyProtocol:   *proxyProto,
 	})
 	if err := cl.Run(ctx); err != nil && ctx.Err() == nil {
 		log.Fatalf("tunnel-client: %v", err)
 	}
+}
+
+// resolveStateDir picks a stable directory for TOFU state. Precedence: explicit
+// flag/env, then AGENT_STATE_DIR (shared with the agent), then the OS user
+// config dir, then a local ".selfhosted-tunnel" fallback.
+func resolveStateDir(flagVal string) string {
+	if flagVal != "" {
+		return flagVal
+	}
+	if v := os.Getenv("AGENT_STATE_DIR"); v != "" {
+		return filepath.Join(v, "tunnel")
+	}
+	if v, err := os.UserConfigDir(); err == nil && v != "" {
+		return filepath.Join(v, "selfhosted-tunnel")
+	}
+	return ".selfhosted-tunnel"
+}
+
+// sanitize turns a host:port into a filesystem-safe token for a filename.
+func sanitize(s string) string {
+	r := strings.NewReplacer(":", "_", "/", "_", "\\", "_", "*", "_", "?", "_",
+		"\"", "_", "<", "_", ">", "_", "|", "_")
+	return r.Replace(s)
 }
 
 func env(k, def string) string {

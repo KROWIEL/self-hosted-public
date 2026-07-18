@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/self-hosted/agent/internal/docker"
 )
@@ -118,8 +119,10 @@ func (s *Server) handleDBStatus(w http.ResponseWriter, r *http.Request) {
 			_, e := s.docker.Exec(ctx, body.Container, "pg_isready", "-U", body.User, "-d", body.DBName)
 			ready = e == nil
 		case "mysql":
-			cmd := fmt.Sprintf("mysqladmin ping -uroot -p%s --silent", body.Password)
-			_, e := s.docker.Exec(ctx, body.Container, "sh", "-c", cmd)
+			// argv only; password via MYSQL_PWD env, never on the command line.
+			_, e := s.docker.ExecEnv(ctx, body.Container,
+				dbPasswordEnv("mysql", body.Password),
+				"mysqladmin", "ping", "-uroot", "--silent")
 			ready = e == nil
 		}
 	}
@@ -152,21 +155,28 @@ func (s *Server) handleDBSchema(w http.ResponseWriter, r *http.Request) {
 	var err error
 	switch body.Engine {
 	case "postgres":
-		// Idempotent CREATE DATABASE via the always-present "postgres" db.
-		cmd := fmt.Sprintf(
-			`psql -U %s -d postgres -tc "SELECT 1 FROM pg_database WHERE datname='%s'" | grep -q . || psql -U %s -d postgres -c "CREATE DATABASE \"%s\""`,
-			body.User, body.Schema, body.User, body.Schema,
-		)
-		_, err = s.docker.Exec(ctx, body.Container, "sh", "-c", cmd)
+		// Idempotent CREATE DATABASE, split into two argv-only psql calls (no
+		// shell pipe/`||`): first check existence, then create if absent.
+		pgEnv := dbPasswordEnv("postgres", body.Password)
+		var out string
+		out, err = s.docker.ExecEnv(ctx, body.Container, pgEnv,
+			"psql", "-U", body.User, "-d", "postgres", "-tAc",
+			fmt.Sprintf("SELECT 1 FROM pg_database WHERE datname='%s'", body.Schema))
+		if err == nil && strings.TrimSpace(out) == "" {
+			_, err = s.docker.ExecEnv(ctx, body.Container, pgEnv,
+				"psql", "-U", body.User, "-d", "postgres", "-c",
+				fmt.Sprintf(`CREATE DATABASE "%s"`, body.Schema))
+		}
 	case "mysql":
 		// Call mysql directly (no shell) so backtick identifier quoting is not
-		// interpreted as shell command substitution.
+		// interpreted as shell command substitution; password via MYSQL_PWD.
 		stmt := fmt.Sprintf(
 			"CREATE DATABASE IF NOT EXISTS `%s`; GRANT ALL ON `%s`.* TO '%s'@'%%';",
 			body.Schema, body.Schema, body.User,
 		)
-		_, err = s.docker.Exec(ctx, body.Container,
-			"mysql", "-uroot", "-p"+body.Password, "-e", stmt)
+		_, err = s.docker.ExecEnv(ctx, body.Container,
+			dbPasswordEnv("mysql", body.Password),
+			"mysql", "-uroot", "-e", stmt)
 	default:
 		http.Error(w, "bad engine", http.StatusBadRequest)
 		return
@@ -210,8 +220,9 @@ func (s *Server) handleDBGrant(w http.ResponseWriter, r *http.Request) {
 			"GRANT ALL PRIVILEGES ON *.* TO '%s'@'%%' WITH GRANT OPTION; FLUSH PRIVILEGES;",
 			body.User,
 		)
-		_, err = s.docker.Exec(ctx, body.Container,
-			"mysql", "-uroot", "-p"+body.Password, "-e", stmt)
+		_, err = s.docker.ExecEnv(ctx, body.Container,
+			dbPasswordEnv("mysql", body.Password),
+			"mysql", "-uroot", "-e", stmt)
 	default:
 		http.Error(w, "bad engine", http.StatusBadRequest)
 		return

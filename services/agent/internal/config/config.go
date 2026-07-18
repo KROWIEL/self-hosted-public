@@ -1,21 +1,53 @@
 package config
 
 import (
+	"log"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 )
 
-// Version is the agent build version reported to the control plane.
-const Version = "0.2.0"
+// devSentinel reports whether the explicit AGENT_DEV=1 opt-in is set. Insecure
+// kill-switches (plain HTTP, skip panel TLS verify) are ignored unless it is, so
+// they can't be flipped on by accident in production (L2).
+func devSentinel() bool {
+	return os.Getenv("AGENT_DEV") == "1"
+}
+
+// insecureHTTP resolves AGENT_INSECURE_HTTP, honoring it only alongside the
+// AGENT_DEV sentinel and emitting a hard warning either way.
+func insecureHTTP() bool {
+	if os.Getenv("AGENT_INSECURE_HTTP") != "1" {
+		return false
+	}
+	if !devSentinel() {
+		log.Printf("WARNING: AGENT_INSECURE_HTTP=1 ignored because AGENT_DEV=1 is not set; " +
+			"refusing to serve plain HTTP. Set AGENT_DEV=1 to enable it for local development.")
+		return false
+	}
+	log.Printf("WARNING: AGENT_INSECURE_HTTP is ACTIVE — the agent serves PLAIN HTTP with no TLS. " +
+		"This is for local development only; never expose it on an untrusted network.")
+	return true
+}
+
+// Version is the agent build version reported to the control plane. 0.3.0+
+// verifies short-lived HS256 request tokens and supports daemon-token rotation;
+// the control plane uses this version to decide when to mint signed tokens.
+const Version = "0.3.0"
 
 // Config holds agent runtime configuration sourced from environment.
 type Config struct {
 	Port int
-	// DaemonToken is the bearer token the control plane must present.
-	// MVP: shared token. Later: verify RSA-signed JWT with the panel's public key.
+	// DaemonToken is the shared secret the control plane authenticates with —
+	// either presented raw (legacy / back-compat) or used to sign short-lived
+	// HS256 request tokens the agent verifies.
 	DaemonToken string
+	// NodeID is this node's control-plane id. Enrolled agents load it from
+	// persisted state; the dev agent may set it via AGENT_NODE_ID so signed
+	// request tokens can be audience-checked. Empty disables the audience check.
+	NodeID string
 	// WorkDir is where repos are cloned during builds (prefer tmpfs in prod).
 	WorkDir string
 	// Network is the default Docker network deployed services join.
@@ -35,6 +67,15 @@ type Config struct {
 	StateDir string
 	// Insecure disables TLS (plain HTTP). Intended for the local dev agent only.
 	Insecure bool
+
+	// --- Build/inspect resource limits (DoS hardening) ---
+	// BuildTimeout caps a single image build; InspectTimeout caps a repo inspect.
+	// Both also cancel automatically when the caller disconnects.
+	BuildTimeout   time.Duration
+	InspectTimeout time.Duration
+	// MaxConcurrentBuilds caps how many builds may run at once on this agent, so
+	// a burst of deploys can't exhaust CPU/RAM/disk. Minimum 1.
+	MaxConcurrentBuilds int
 }
 
 func Load() Config {
@@ -42,13 +83,18 @@ func Load() Config {
 	return Config{
 		Port:        envInt("AGENT_PORT", 8443),
 		DaemonToken: os.Getenv("AGENT_DAEMON_TOKEN"),
+		NodeID:      os.Getenv("AGENT_NODE_ID"),
 		WorkDir:     workDir,
 		Network:     envStr("AGENT_NETWORK", "bridge"),
 		BackupDir:   envStr("AGENT_BACKUP_DIR", filepath.Join(workDir, "backups")),
 		PanelURL:    strings.TrimRight(envStr("AGENT_PANEL_URL", os.Getenv("PANEL_URL")), "/"),
 		JoinToken:   envStr("AGENT_JOIN_TOKEN", os.Getenv("JOIN_TOKEN")),
 		StateDir:    envStr("AGENT_STATE_DIR", "/var/lib/selfhosted-agent"),
-		Insecure:    os.Getenv("AGENT_INSECURE_HTTP") == "1",
+		Insecure:    insecureHTTP(),
+
+		BuildTimeout:        envDuration("AGENT_BUILD_TIMEOUT", 20*time.Minute),
+		InspectTimeout:      envDuration("AGENT_INSPECT_TIMEOUT", 2*time.Minute),
+		MaxConcurrentBuilds: envInt("AGENT_MAX_CONCURRENT_BUILDS", 2),
 	}
 }
 
@@ -64,6 +110,23 @@ func envInt(key string, def int) int {
 		if n, err := strconv.Atoi(v); err == nil {
 			return n
 		}
+	}
+	return def
+}
+
+// envDuration reads a Go duration string (e.g. "20m", "90s", "1h30m") from the
+// environment. A bare integer is treated as seconds for convenience. Falls back
+// to def when unset, malformed or non-positive.
+func envDuration(key string, def time.Duration) time.Duration {
+	v := strings.TrimSpace(os.Getenv(key))
+	if v == "" {
+		return def
+	}
+	if d, err := time.ParseDuration(v); err == nil && d > 0 {
+		return d
+	}
+	if n, err := strconv.Atoi(v); err == nil && n > 0 {
+		return time.Duration(n) * time.Second
 	}
 	return def
 }

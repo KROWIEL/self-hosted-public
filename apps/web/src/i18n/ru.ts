@@ -1086,6 +1086,8 @@ export const ru: Dict = {
   'whiteLabel.appName': 'Название приложения',
   'whiteLabel.accentColor': 'Акцентный цвет',
   'whiteLabel.logoUrl': 'URL логотипа',
+  'whiteLabel.invalidLogoUrl':
+    'URL логотипа должен быть ссылкой https:// или относительным путём — адреса data: и javascript: недопустимы.',
   'whiteLabel.hidePoweredBy': 'Скрыть отметку «Работает на»',
   'whiteLabel.preview': 'Предпросмотр',
   'whiteLabel.save': 'Сохранить брендинг',

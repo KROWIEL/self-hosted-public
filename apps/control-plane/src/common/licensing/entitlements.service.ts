@@ -60,7 +60,7 @@ export class EntitlementsService implements OnModuleInit, OnModuleDestroy {
 
   constructor(@Inject(DRIZZLE) private readonly db: Database) {}
 
-  onModuleInit(): void {
+  async onModuleInit(): Promise<void> {
     if (isUsingDevLicenseKey()) {
       this.logger.warn(
         'Licensing is using the throwaway DEV public key — the matching private ' +
@@ -73,6 +73,9 @@ export class EntitlementsService implements OnModuleInit, OnModuleDestroy {
       this.logger.log('License activation: offline / key-only mode (no LICENSE_ACTIVATION_URL).');
       return;
     }
+    // Restore the persisted grace-window baseline and last-success timestamp so
+    // a restart doesn't reset the offline grace window (Info finding).
+    await this.loadActivationState();
     this.logger.log(
       `License activation: online mode via ${this.activationUrl} (grace ${Math.round(this.maxAgeMs / 3_600_000)}h).`,
     );
@@ -97,26 +100,92 @@ export class EntitlementsService implements OnModuleInit, OnModuleDestroy {
     return env ? env : null;
   }
 
-  /** Stable per-installation id used as the activation "seat" identifier. */
-  private async instanceId(): Promise<string> {
+  /** The singleton installation row, created on first access. */
+  private async installationRow(): Promise<typeof installation.$inferSelect> {
     const existing = await this.db
       .select()
       .from(installation)
       .where(eq(installation.id, 'default'))
       .limit(1);
-    if (existing[0]) return existing[0].instanceId;
+    if (existing[0]) return existing[0];
     const inserted = await this.db
       .insert(installation)
       .values({ id: 'default' })
       .onConflictDoNothing()
       .returning();
-    if (inserted[0]) return inserted[0].instanceId;
+    if (inserted[0]) return inserted[0];
     const again = await this.db
       .select()
       .from(installation)
       .where(eq(installation.id, 'default'))
       .limit(1);
-    return again[0]?.instanceId ?? 'unknown';
+    return again[0];
+  }
+
+  /** Stable per-installation id used as the activation "seat" identifier. */
+  private async instanceId(): Promise<string> {
+    return (await this.installationRow())?.instanceId ?? 'unknown';
+  }
+
+  /** Restore persisted activation timestamps into memory (online mode only). */
+  private async loadActivationState(): Promise<void> {
+    try {
+      const row = await this.installationRow();
+      if (row?.activationBaselineAt) {
+        this.activationBaselineAt = row.activationBaselineAt.getTime();
+      } else {
+        // First run after this feature landed: anchor now and persist it.
+        this.activationBaselineAt = Date.now();
+        await this.db
+          .update(installation)
+          .set({ activationBaselineAt: new Date(this.activationBaselineAt) })
+          .where(eq(installation.id, 'default'));
+      }
+      if (row?.lastActivationOkAt) {
+        this.lastOkAt = row.lastActivationOkAt.getTime();
+      }
+    } catch (e) {
+      this.logger.warn(
+        `Could not load persisted activation state: ${
+          e instanceof Error ? e.message : String(e)
+        }`,
+      );
+    }
+  }
+
+  /** Persist the last successful heartbeat timestamp. Best-effort. */
+  private async persistLastOk(ts: number): Promise<void> {
+    try {
+      await this.db
+        .update(installation)
+        .set({ lastActivationOkAt: new Date(ts) })
+        .where(eq(installation.id, 'default'));
+    } catch (e) {
+      this.logger.warn(
+        `Could not persist activation success: ${
+          e instanceof Error ? e.message : String(e)
+        }`,
+      );
+    }
+  }
+
+  /** Persist a fresh grace-window baseline and clear the last-success mark. */
+  private async persistActivationReset(baseline: number): Promise<void> {
+    try {
+      await this.db
+        .update(installation)
+        .set({
+          activationBaselineAt: new Date(baseline),
+          lastActivationOkAt: null,
+        })
+        .where(eq(installation.id, 'default'));
+    } catch (e) {
+      this.logger.warn(
+        `Could not persist activation reset: ${
+          e instanceof Error ? e.message : String(e)
+        }`,
+      );
+    }
   }
 
   /** One activation heartbeat against the license server. Never throws. */
@@ -152,6 +221,8 @@ export class EntitlementsService implements OnModuleInit, OnModuleDestroy {
       if (data?.ok) {
         this.lastOkAt = Date.now();
         this.lastAttempt = { ok: true, at: this.lastOkAt };
+        // Persist so the grace window anchors to this success across restarts.
+        await this.persistLastOk(this.lastOkAt);
       } else {
         this.lastAttempt = { ok: false, at: Date.now(), reason: data?.reason ?? 'rejected' };
         this.logger.warn(`License activation rejected: ${this.lastAttempt.reason}`);
@@ -253,6 +324,7 @@ export class EntitlementsService implements OnModuleInit, OnModuleDestroy {
     this.lastAttempt = null;
     // New key → fresh grace window so activation can't lock a just-entered key.
     this.activationBaselineAt = Date.now();
+    await this.persistActivationReset(this.activationBaselineAt);
     // Re-activate immediately so the UI reflects the new key without waiting.
     if (this.activationUrl) await this.heartbeat();
     return this.get(true);
@@ -265,6 +337,7 @@ export class EntitlementsService implements OnModuleInit, OnModuleDestroy {
     this.lastOkAt = 0;
     this.lastAttempt = null;
     this.activationBaselineAt = Date.now();
+    await this.persistActivationReset(this.activationBaselineAt);
     return this.get(true);
   }
 }

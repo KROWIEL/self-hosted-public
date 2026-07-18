@@ -9,6 +9,14 @@ export const metadata: Metadata = {
   description: 'Deploy your SaaS projects from git into Docker.',
 };
 
+// Nonce-based CSP (see src/middleware.ts) requires dynamic rendering: Next only
+// stamps the per-request nonce onto <script> tags when a page is rendered at
+// request time. Statically prerendered pages have no nonce, so under
+// `script-src 'nonce-...' 'strict-dynamic'` their scripts would be blocked and
+// the app would never hydrate. Forcing dynamic rendering here cascades to every
+// route under this root layout.
+export const dynamic = 'force-dynamic';
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ru">

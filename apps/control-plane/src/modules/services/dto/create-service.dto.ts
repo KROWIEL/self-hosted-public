@@ -5,6 +5,8 @@ import {
   IsObject,
   IsOptional,
   IsString,
+  IsUrl,
+  Matches,
   MinLength,
 } from 'class-validator';
 
@@ -22,7 +24,15 @@ export class CreateServiceDto {
   @IsString()
   templateId: string;
 
+  // Only http(s) git URLs. Reject leading "-" (would be parsed as a git flag/
+  // option-injection) and non-web schemes like file:/ext: (local/arbitrary
+  // transport). `require_tld: false` keeps self-hosted/internal hosts working.
   @IsString()
+  @Matches(/^(?!-)/, { message: 'repoUrl must not start with "-"' })
+  @IsUrl(
+    { protocols: ['http', 'https'], require_protocol: true, require_tld: false },
+    { message: 'repoUrl must be a valid http(s) URL' },
+  )
   repoUrl: string;
 
   @IsOptional()

@@ -3,37 +3,134 @@ package api
 import (
 	"bytes"
 	"context"
-	"crypto/subtle"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
 	"strconv"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/self-hosted/agent/internal/builder"
 	"github.com/self-hosted/agent/internal/config"
 	"github.com/self-hosted/agent/internal/docker"
 )
 
+// tokenState holds the shared daemon secret(s) the agent authenticates requests
+// against. During a rotation it accepts BOTH the current and the pending "next"
+// secret; the first request that authenticates with `next` proves the control
+// plane has switched over, so `next` is promoted to current and the old secret
+// is dropped. `persist` writes the state through to disk (nil for the dev agent).
+type tokenState struct {
+	mu      sync.Mutex
+	current string
+	next    string
+	nodeID  string
+	persist func(current, next string) error
+}
+
+func (t *tokenState) snapshot() (current, next, nodeID string) {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	return t.current, t.next, t.nodeID
+}
+
+// observe promotes the pending secret once the control plane starts using it,
+// closing the rotation window so the old secret no longer authenticates.
+func (t *tokenState) observe(matched string) {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	if t.next != "" && matched == t.next {
+		t.current = t.next
+		t.next = ""
+		if t.persist != nil {
+			_ = t.persist(t.current, t.next)
+		}
+	}
+}
+
+// setNext stages a new secret received from the control plane. The agent keeps
+// accepting the current secret until the panel confirms the new one (observe).
+func (t *tokenState) setNext(newToken string) {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	if newToken == "" || newToken == t.current {
+		return
+	}
+	t.next = newToken
+	if t.persist != nil {
+		_ = t.persist(t.current, t.next)
+	}
+}
+
+func (t *tokenState) currentToken() string {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	return t.current
+}
+
 type Server struct {
 	cfg     config.Config
 	docker  *docker.Client
 	builder *builder.Builder
 	mux     *http.ServeMux
+	tokens  *tokenState
+
+	// buildSem caps concurrent builds; buildTimeout/inspectTimeout bound their
+	// runtime. Set from config with safe fallbacks so a bare Config still works.
+	buildSem       chan struct{}
+	buildTimeout   time.Duration
+	inspectTimeout time.Duration
 }
 
 func NewServer(cfg config.Config) *Server {
 	d := docker.New()
+
+	maxBuilds := cfg.MaxConcurrentBuilds
+	if maxBuilds < 1 {
+		maxBuilds = 2
+	}
+	buildTimeout := cfg.BuildTimeout
+	if buildTimeout <= 0 {
+		buildTimeout = 20 * time.Minute
+	}
+	inspectTimeout := cfg.InspectTimeout
+	if inspectTimeout <= 0 {
+		inspectTimeout = 2 * time.Minute
+	}
+
 	s := &Server{
-		cfg:     cfg,
-		docker:  d,
-		builder: builder.New(d, cfg.WorkDir),
-		mux:     http.NewServeMux(),
+		cfg:            cfg,
+		docker:         d,
+		builder:        builder.New(d, cfg.WorkDir),
+		mux:            http.NewServeMux(),
+		tokens:         &tokenState{current: cfg.DaemonToken, nodeID: cfg.NodeID},
+		buildSem:       make(chan struct{}, maxBuilds),
+		buildTimeout:   buildTimeout,
+		inspectTimeout: inspectTimeout,
 	}
 	s.routes()
 	return s
 }
+
+// Configure wires the agent's identity (node id, for audience checks), a
+// pending rotation secret loaded from persisted state, and a persist callback.
+// Called once at startup by an enrolled agent; the dev agent leaves persist nil.
+func (s *Server) Configure(nodeID, next string, persist func(current, next string) error) {
+	s.tokens.mu.Lock()
+	defer s.tokens.mu.Unlock()
+	if nodeID != "" {
+		s.tokens.nodeID = nodeID
+	}
+	s.tokens.next = next
+	s.tokens.persist = persist
+}
+
+// CurrentToken returns the secret the agent currently authenticates with. Used
+// by the heartbeat loop so, after a rotation converges, heartbeats present the
+// new secret and the panel can retire the old one.
+func (s *Server) CurrentToken() string { return s.tokens.currentToken() }
 
 func (s *Server) Run() error {
 	addr := fmt.Sprintf(":%d", s.cfg.Port)
@@ -75,19 +172,61 @@ func (s *Server) routes() {
 	s.mux.HandleFunc("POST /api/backups/restore", s.handleBackupRestore)
 	s.mux.HandleFunc("GET /api/backups/download", s.handleBackupDownload)
 	s.mux.HandleFunc("DELETE /api/backups", s.handleBackupDelete)
+	s.mux.HandleFunc("POST /api/rotate", s.handleRotate)
 }
 
-// auth enforces the shared daemon token (constant-time compare).
+// auth authenticates a CP->agent request. It accepts a short-lived HS256 request
+// token signed with the node's shared secret (preferred) OR the raw static
+// secret (constant-time compare, for already-enrolled agents and the control
+// plane's legacy fallback). Both the current and, during a rotation, the pending
+// "next" secret are accepted; using the next secret promotes it and closes the
+// rotation window.
 func (s *Server) auth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		token := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
-		if s.cfg.DaemonToken == "" ||
-			subtle.ConstantTimeCompare([]byte(token), []byte(s.cfg.DaemonToken)) != 1 {
+		matched, ok := s.authenticate(r)
+		if !ok {
 			http.Error(w, "unauthorized", http.StatusUnauthorized)
 			return
 		}
+		s.tokens.observe(matched)
 		next.ServeHTTP(w, r)
 	})
+}
+
+// authenticate returns the shared secret the request authenticated against (so
+// the caller can detect a rotation switch-over) and whether it was authorized.
+func (s *Server) authenticate(r *http.Request) (matched string, ok bool) {
+	token := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
+	if token == "" {
+		return "", false
+	}
+	current, nextSecret, nodeID := s.tokens.snapshot()
+	now := time.Now()
+	for _, secret := range []string{current, nextSecret} {
+		if tokenMatches(token, secret, nodeID, now) {
+			return secret, true
+		}
+	}
+	return "", false
+}
+
+type rotateBody struct {
+	NewToken string `json:"newToken"`
+}
+
+// handleRotate stages a new daemon secret pushed by the control plane. The
+// request is already authenticated (with the current or pending secret) by the
+// auth middleware; the agent now accepts the new secret too until the panel
+// switches over. Persisted so the agent survives a restart mid-rotation.
+func (s *Server) handleRotate(w http.ResponseWriter, r *http.Request) {
+	var body rotateBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil ||
+		strings.TrimSpace(body.NewToken) == "" {
+		http.Error(w, "bad request", http.StatusBadRequest)
+		return
+	}
+	s.tokens.setNext(strings.TrimSpace(body.NewToken))
+	writeJSON(w, map[string]any{"ok": true, "rotated": true})
 }
 
 func (s *Server) handleVersion(w http.ResponseWriter, _ *http.Request) {
@@ -344,7 +483,21 @@ func (s *Server) handleBuild(w http.ResponseWriter, r *http.Request) {
 	flusher, _ := w.(http.Flusher)
 	w.Header().Set("Content-Type", "application/x-ndjson")
 
-	sha, err := s.builder.Build(context.Background(), builder.BuildRequest{
+	// Concurrency cap: wait for a build slot, but bail out if the client goes
+	// away first so a disconnected deploy can't hold a slot hostage.
+	select {
+	case s.buildSem <- struct{}{}:
+		defer func() { <-s.buildSem }()
+	case <-r.Context().Done():
+		writeJSON(w, map[string]any{"error": "build cancelled while queued"})
+		return
+	}
+
+	// Cancel on client disconnect (r.Context) and hard-cap the total runtime.
+	ctx, cancel := context.WithTimeout(r.Context(), s.buildTimeout)
+	defer cancel()
+
+	sha, err := s.builder.Build(ctx, builder.BuildRequest{
 		ServiceID:         uuid,
 		RepoURL:           body.RepoURL,
 		Branch:            body.Branch,
@@ -375,7 +528,11 @@ func (s *Server) handleInspect(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "bad request", http.StatusBadRequest)
 		return
 	}
-	res, err := s.builder.Inspect(context.Background(), builder.InspectRequest{
+	// Cancel on client disconnect and hard-cap the inspect (shallow clone + scan).
+	ctx, cancel := context.WithTimeout(r.Context(), s.inspectTimeout)
+	defer cancel()
+
+	res, err := s.builder.Inspect(ctx, builder.InspectRequest{
 		WorkID:   body.WorkID,
 		RepoURL:  body.RepoURL,
 		Branch:   body.Branch,
