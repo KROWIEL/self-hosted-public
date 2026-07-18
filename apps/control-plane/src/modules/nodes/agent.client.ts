@@ -107,6 +107,8 @@ export interface AgentRunInput {
   env: Record<string, string>;
   domain?: string;
   https?: boolean;
+  /** Skip ACME; use Traefik file-provider custom cert for this host. */
+  customTls?: boolean;
   network?: string;
   volumes?: AgentVolumeMount[];
   /** Blue-green color ('blue' | 'green'); omit for legacy single-container run. */
@@ -495,6 +497,7 @@ export class AgentClient {
           env: input.env,
           domain: input.domain ?? '',
           https: input.https ?? false,
+          customTls: input.customTls ?? false,
           network: input.network ?? '',
           volumes: input.volumes ?? [],
           color: input.color ?? '',
@@ -521,6 +524,7 @@ export class AgentClient {
         env: input.env,
         domain: input.domain ?? '',
         https: input.https ?? false,
+        customTls: input.customTls ?? false,
         network: input.network ?? '',
         volumes: input.volumes ?? [],
         color: input.color ?? '',
@@ -794,6 +798,26 @@ export class AgentClient {
     return this.request<{ ok: boolean }>(node, `/servers/${serviceId}`, {
       method: 'DELETE',
     });
+  }
+
+  /** Write a custom TLS cert for Traefik's file provider on the node. */
+  putCert(
+    node: NodeRow,
+    input: { host: string; certPem: string; keyPem: string },
+  ) {
+    return this.request<{ ok: boolean; error?: string }>(node, '/certs', {
+      method: 'PUT',
+      body: JSON.stringify(input),
+    });
+  }
+
+  /** Remove a custom TLS cert from the node's Traefik file provider. */
+  deleteCert(node: NodeRow, host: string) {
+    return this.request<{ ok: boolean; error?: string }>(
+      node,
+      `/certs?host=${encodeURIComponent(host)}`,
+      { method: 'DELETE' },
+    );
   }
 
   /**

@@ -209,7 +209,7 @@ func (s *Server) handleRunImage(w http.ResponseWriter, r *http.Request) {
 		CPULimit:       body.CPULimit,
 		PublishPort:    publishPort,
 		Env:            body.Env,
-		Labels:         traefikLabels(uuid, body.Domain, body.Port, body.HTTPS, body.HealthPath),
+		Labels:         traefikLabels(uuid, body.Domain, body.Port, body.HTTPS, body.HealthPath, body.CustomTLS),
 		Volumes:        mounts,
 		ReadOnlyRootfs: true,
 	}

@@ -269,14 +269,29 @@ export const listAlertEvents = () => api<AlertEvent[]>('/alerts/events');
 
 // ---- Offsite backups (Pro: offsite-backups) ----
 
+export type OffsiteProvider = 's3' | 'gcs' | 'azure' | 'sftp';
+
+export interface OffsiteProviderConfig {
+  accountName?: string;
+  container?: string;
+  useConnectionString?: boolean;
+  host?: string;
+  port?: number;
+  username?: string;
+  remotePath?: string;
+  authMethod?: 'password' | 'privateKey';
+}
+
 export interface OffsiteConfig {
   enabled: boolean;
+  provider: OffsiteProvider;
   endpoint: string;
   region: string;
   bucket: string;
   prefix: string;
   accessKeyId: string;
   forcePathStyle: boolean;
+  providerConfig: OffsiteProviderConfig;
   /** Whether a secret key is stored; the value itself is never returned. */
   secretKeySet: boolean;
   updatedAt: string | null;
@@ -284,6 +299,7 @@ export interface OffsiteConfig {
 
 export interface OffsiteConfigInput {
   enabled?: boolean;
+  provider?: OffsiteProvider;
   endpoint?: string;
   region?: string;
   bucket?: string;
@@ -292,6 +308,7 @@ export interface OffsiteConfigInput {
   /** Omit to keep the stored secret; send a value to rotate it. */
   secretKey?: string;
   forcePathStyle?: boolean;
+  providerConfig?: OffsiteProviderConfig;
 }
 
 export interface OffsiteUpload {
@@ -322,6 +339,63 @@ export const syncOffsite = () =>
 export const uploadBackupOffsite = (id: string) =>
   api<{ ok: boolean; key?: string; error?: string }>(`/offsite/backups/${id}`, {
     method: 'POST',
+  });
+
+// ---- Certificates (Free core) ----
+
+export interface DomainCertificate {
+  id: string;
+  host: string;
+  https: boolean;
+  certSource: 'acme' | 'custom';
+  customCertSet: boolean;
+  status: 'acme' | 'custom' | 'http-only';
+  serviceId: string;
+  serviceName: string;
+  nodeId: string;
+  nodeName: string | null;
+  createdAt: string;
+}
+
+export interface TlsSettings {
+  acmeEmail: string;
+  dnsProvider: string;
+  wildcardEnabled: boolean;
+  cloudflareTokenSet: boolean;
+  env: {
+    acmeEmail: string;
+    dnsProvider: string;
+    wildcardEnabled: boolean;
+    cloudflareTokenSet: boolean;
+  };
+  updatedAt: string | null;
+}
+
+export interface TlsSettingsInput {
+  acmeEmail?: string;
+  dnsProvider?: string;
+  wildcardEnabled?: boolean;
+  cloudflareToken?: string;
+}
+
+export const listDomainCertificates = () =>
+  api<DomainCertificate[]>('/certificates');
+export const setDomainCustomCert = (
+  id: string,
+  body: { certPem: string; keyPem: string },
+) =>
+  api<DomainCertificate>(`/certificates/${id}/custom`, {
+    method: 'PUT',
+    body: JSON.stringify(body),
+  });
+export const clearDomainCustomCert = (id: string) =>
+  api<DomainCertificate>(`/certificates/${id}/custom`, { method: 'DELETE' });
+export const getTlsSettings = () =>
+  api<TlsSettings>('/certificates/tls-settings');
+export const setTlsSettings = (body: TlsSettingsInput) =>
+  api<TlsSettings>('/certificates/tls-settings', {
+    method: 'PUT',
+    body: JSON.stringify(body),
   });
 
 // ---- Email (Pro: email) ----

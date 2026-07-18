@@ -271,6 +271,8 @@ export class DeployWorker implements OnModuleInit, OnModuleDestroy {
       mountPath: v.mountPath,
     }));
 
+    await this.setDeploy(deploymentId, { phase: 'run' });
+    await this.ensureCustomCert(node, domainRow);
     const run = await this.agent.runImage(node, {
       serviceId,
       image: svc.image,
@@ -280,6 +282,7 @@ export class DeployWorker implements OnModuleInit, OnModuleDestroy {
       env,
       domain: domainRow?.host,
       https: domainRow?.https,
+      customTls: this.isCustomTls(domainRow),
       volumes: volumeMounts,
     });
     if (!run.ok) {
@@ -390,6 +393,7 @@ export class DeployWorker implements OnModuleInit, OnModuleDestroy {
       );
     }
     if (svc.zeroDowntime && domainRow?.host && volumeRows.length === 0) {
+      await this.ensureCustomCert(node, domainRow);
       await this.zeroDowntimeDeploy({
         node,
         svc,
@@ -400,10 +404,12 @@ export class DeployWorker implements OnModuleInit, OnModuleDestroy {
         env,
         domain: domainRow.host,
         https: domainRow.https,
+        customTls: this.isCustomTls(domainRow),
         volumes: volumeMounts,
       });
     } else {
       await this.setDeploy(deploymentId, { phase: 'run' });
+      await this.ensureCustomCert(node, domainRow);
       const run = await this.agent.run(node, {
         serviceId,
         image: imageTag,
@@ -413,6 +419,7 @@ export class DeployWorker implements OnModuleInit, OnModuleDestroy {
         env,
         domain: domainRow?.host,
         https: domainRow?.https,
+        customTls: this.isCustomTls(domainRow),
         volumes: volumeMounts,
       });
       if (!run.ok) {
@@ -462,6 +469,7 @@ export class DeployWorker implements OnModuleInit, OnModuleDestroy {
     env: Record<string, string>;
     domain: string;
     https: boolean;
+    customTls?: boolean;
     volumes: { name: string; mountPath: string }[];
   }) {
     const { node, svc, tpl, deploymentId, imageTag, port, env } = ctx;
@@ -483,6 +491,7 @@ export class DeployWorker implements OnModuleInit, OnModuleDestroy {
       env,
       domain: ctx.domain,
       https: ctx.https,
+      customTls: ctx.customTls ?? false,
       volumes: ctx.volumes,
       color: newColor,
       healthPath,
@@ -575,6 +584,30 @@ export class DeployWorker implements OnModuleInit, OnModuleDestroy {
       await new Promise((r) => setTimeout(r, 3000));
     }
     return false;
+  }
+
+  private isCustomTls(domainRow?: typeof domains.$inferSelect): boolean {
+    return domainRow?.certSource === 'custom' && !!domainRow.customCertEnc;
+  }
+
+  /** Re-push encrypted custom PEMs to the node before deploy (best-effort). */
+  private async ensureCustomCert(
+    node: typeof nodes.$inferSelect,
+    domainRow?: typeof domains.$inferSelect,
+  ) {
+    if (
+      !domainRow ||
+      domainRow.certSource !== 'custom' ||
+      !domainRow.customCertEnc ||
+      !domainRow.customKeyEnc
+    ) {
+      return;
+    }
+    await this.agent.putCert(node, {
+      host: domainRow.host,
+      certPem: this.crypto.decrypt(domainRow.customCertEnc),
+      keyPem: this.crypto.decrypt(domainRow.customKeyEnc),
+    });
   }
 
   private async resolveEnv(serviceId: string): Promise<Record<string, string>> {

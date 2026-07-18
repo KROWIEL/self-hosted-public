@@ -81,12 +81,18 @@ services:
       - "--certificatesresolvers.letsencrypt-dns.acme.dnschallenge=true"
       - "--certificatesresolvers.letsencrypt-dns.acme.dnschallenge.provider=${ACME_DNS_PROVIDER:-cloudflare}"
       - "--certificatesresolvers.letsencrypt-dns.acme.dnschallenge.resolvers=1.1.1.1:53,8.8.8.8:53"
+      # Custom (uploaded) certificates via file provider. Agent writes PEMs into
+      # .docker-data/traefik/certs and regenerates dynamic/certs.yml.
+      - "--providers.file.directory=/dynamic"
+      - "--providers.file.watch=true"
     ports:
       - "80:80"
       - "443:443"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - traefik-acme:/acme
+      - ./.docker-data/traefik/certs:/certs
+      - ./.docker-data/traefik/dynamic:/dynamic
     networks:
       - edge
 

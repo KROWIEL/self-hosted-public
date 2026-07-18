@@ -432,7 +432,25 @@ export const domains = pgTable('domains', {
     .references(() => services.id, { onDelete: 'cascade' }),
   host: text('host').notNull().unique(),
   https: boolean('https').notNull().default(true),
+  // 'acme' (Traefik Let's Encrypt) | 'custom' (uploaded PEM cert+key).
+  certSource: text('cert_source').notNull().default('acme'),
+  // Encrypted PEM certificate + private key when certSource = 'custom'.
+  customCertEnc: text('custom_cert_enc'),
+  customKeyEnc: text('custom_key_enc'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+
+/// Panel-side TLS / ACME preferences (Free). Traefik still reads ACME_* from
+/// the host `.env` at container start — these rows document intent and can
+/// hold an optional Cloudflare token for display / future automation.
+export const tlsSettings = pgTable('tls_settings', {
+  id: text('id').primaryKey().default('default'),
+  acmeEmail: text('acme_email').notNull().default(''),
+  dnsProvider: text('dns_provider').notNull().default('cloudflare'),
+  wildcardEnabled: boolean('wildcard_enabled').notNull().default(false),
+  // Encrypted Cloudflare DNS API token (optional; Traefik uses env today).
+  cloudflareTokenEnc: text('cloudflare_token_enc').notNull().default(''),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });
 
 /// A reverse tunnel that exposes this (grey-IP) panel/Traefik through a public
@@ -574,10 +592,15 @@ export const apiTokens = pgTable('api_tokens', {
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });
 
-/// Offsite backups (Pro: offsite-backups). Singleton S3-compatible destination.
+/// Offsite backups (Pro: offsite-backups). Singleton destination.
+/// `provider` selects the backend: s3 | gcs | azure | sftp (default s3).
+/// S3/GCS reuse endpoint/region/bucket/keys; Azure/SFTP store non-secret
+/// fields in `providerConfig` and secrets in `secretKeyEnc` (AES-256-GCM).
 export const offsiteConfig = pgTable('offsite_config', {
   id: text('id').primaryKey().default('default'),
   enabled: boolean('enabled').notNull().default(false),
+  // 's3' | 'gcs' | 'azure' | 'sftp'
+  provider: text('provider').notNull().default('s3'),
   endpoint: text('endpoint').notNull().default(''),
   region: text('region').notNull().default('us-east-1'),
   bucket: text('bucket').notNull().default(''),
@@ -586,6 +609,10 @@ export const offsiteConfig = pgTable('offsite_config', {
   secretKeyEnc: text('secret_key_enc').notNull().default(''),
   // MinIO and most non-AWS providers need path-style addressing.
   forcePathStyle: boolean('force_path_style').notNull().default(true),
+  // Provider-specific non-secret settings (Azure account/container, SFTP host…).
+  providerConfig: jsonb('provider_config')
+    .notNull()
+    .default(sql`'{}'::jsonb`),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });
 
@@ -708,6 +735,7 @@ export type DbSchema = {
   envVars: typeof envVars;
   deployments: typeof deployments;
   domains: typeof domains;
+  tlsSettings: typeof tlsSettings;
   volumes: typeof volumes;
   managedDatabases: typeof managedDatabases;
   backups: typeof backups;

@@ -54,6 +54,10 @@ type Config struct {
 	Network string
 	// BackupDir is where volume/database snapshots are stored on the node.
 	BackupDir string
+	// TraefikCertsDir / TraefikDynamicDir hold custom TLS PEMs + file-provider
+	// YAML. Bind-mount the same host paths into Traefik as /certs and /dynamic.
+	TraefikCertsDir   string
+	TraefikDynamicDir string
 
 	// --- Remote-node (Track 4) ---
 	// PanelURL is the control-plane base URL (e.g. https://panel.example) used
@@ -80,6 +84,7 @@ type Config struct {
 
 func Load() Config {
 	workDir := envStr("AGENT_WORKDIR", "/tmp/agent-builds")
+	stateDir := envStr("AGENT_STATE_DIR", "/var/lib/selfhosted-agent")
 	return Config{
 		Port:        envInt("AGENT_PORT", 8443),
 		DaemonToken: os.Getenv("AGENT_DAEMON_TOKEN"),
@@ -87,10 +92,18 @@ func Load() Config {
 		WorkDir:     workDir,
 		Network:     envStr("AGENT_NETWORK", "bridge"),
 		BackupDir:   envStr("AGENT_BACKUP_DIR", filepath.Join(workDir, "backups")),
-		PanelURL:    strings.TrimRight(envStr("AGENT_PANEL_URL", os.Getenv("PANEL_URL")), "/"),
-		JoinToken:   envStr("AGENT_JOIN_TOKEN", os.Getenv("JOIN_TOKEN")),
-		StateDir:    envStr("AGENT_STATE_DIR", "/var/lib/selfhosted-agent"),
-		Insecure:    insecureHTTP(),
+		TraefikCertsDir: envStr(
+			"AGENT_TRAEFIK_CERTS_DIR",
+			filepath.Join(stateDir, "traefik", "certs"),
+		),
+		TraefikDynamicDir: envStr(
+			"AGENT_TRAEFIK_DYNAMIC_DIR",
+			filepath.Join(stateDir, "traefik", "dynamic"),
+		),
+		PanelURL:  strings.TrimRight(envStr("AGENT_PANEL_URL", os.Getenv("PANEL_URL")), "/"),
+		JoinToken: envStr("AGENT_JOIN_TOKEN", os.Getenv("JOIN_TOKEN")),
+		StateDir:  stateDir,
+		Insecure:  insecureHTTP(),
 
 		BuildTimeout:        envDuration("AGENT_BUILD_TIMEOUT", 20*time.Minute),
 		InspectTimeout:      envDuration("AGENT_INSPECT_TIMEOUT", 2*time.Minute),

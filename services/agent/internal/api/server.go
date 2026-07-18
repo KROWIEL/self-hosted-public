@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/self-hosted/agent/internal/builder"
+	"github.com/self-hosted/agent/internal/certs"
 	"github.com/self-hosted/agent/internal/config"
 	"github.com/self-hosted/agent/internal/docker"
 )
@@ -74,6 +75,7 @@ type Server struct {
 	cfg     config.Config
 	docker  *docker.Client
 	builder *builder.Builder
+	certs   *certs.Manager
 	mux     *http.ServeMux
 	tokens  *tokenState
 
@@ -104,6 +106,7 @@ func NewServer(cfg config.Config) *Server {
 		cfg:            cfg,
 		docker:         d,
 		builder:        builder.New(d, cfg.WorkDir),
+		certs:          certs.New(cfg.TraefikCertsDir, cfg.TraefikDynamicDir),
 		mux:            http.NewServeMux(),
 		tokens:         &tokenState{current: cfg.DaemonToken, nodeID: cfg.NodeID},
 		buildSem:       make(chan struct{}, maxBuilds),
@@ -178,6 +181,9 @@ func (s *Server) routes() {
 	s.mux.HandleFunc("GET /api/backups/download", s.handleBackupDownload)
 	s.mux.HandleFunc("DELETE /api/backups", s.handleBackupDelete)
 	s.mux.HandleFunc("POST /api/rotate", s.handleRotate)
+	s.mux.HandleFunc("PUT /api/certs", s.handleCertPut)
+	s.mux.HandleFunc("DELETE /api/certs", s.handleCertDelete)
+	s.mux.HandleFunc("GET /api/certs", s.handleCertList)
 }
 
 // auth authenticates a CP->agent request. It accepts a short-lived HS256 request
@@ -565,8 +571,10 @@ type runBody struct {
 	Env      map[string]string `json:"env"`
 	Domain   string            `json:"domain"`
 	HTTPS    bool              `json:"https"`
-	Network  string            `json:"network"`
-	Volumes  []volumeMount     `json:"volumes"`
+	// CustomTLS skips ACME certresolver and relies on Traefik file-provider certs.
+	CustomTLS bool `json:"customTls"`
+	Network   string         `json:"network"`
+	Volumes   []volumeMount  `json:"volumes"`
 	// Color ('blue'|'green') runs the container as svc-<uuid>-<color> for
 	// blue-green deploys; empty keeps the legacy single-container name.
 	Color string `json:"color"`
@@ -609,7 +617,7 @@ func (s *Server) handleRun(w http.ResponseWriter, r *http.Request) {
 		CPULimit:       body.CPULimit,
 		PublishPort:    publishPort,
 		Env:            body.Env,
-		Labels:         traefikLabels(uuid, body.Domain, body.Port, body.HTTPS, body.HealthPath),
+		Labels:         traefikLabels(uuid, body.Domain, body.Port, body.HTTPS, body.HealthPath, body.CustomTLS),
 		Volumes:        mounts,
 		ReadOnlyRootfs: true, // H7: app containers get read-only rootfs + /tmp tmpfs
 	}
@@ -634,7 +642,8 @@ func (s *Server) handleRun(w http.ResponseWriter, r *http.Request) {
 // containers register as two servers of one Traefik service — enabling a smooth
 // overlap during blue-green switchover. When healthPath is set, a load-balancer
 // healthcheck keeps Traefik from routing to a backend that is still starting.
-func traefikLabels(uuid, domain string, port int, https bool, healthPath string) []string {
+// When customTLS is true, ACME is skipped and Traefik uses file-provider certs.
+func traefikLabels(uuid, domain string, port int, https bool, healthPath string, customTLS bool) []string {
 	if domain == "" {
 		return nil
 	}
@@ -652,17 +661,22 @@ func traefikLabels(uuid, domain string, port int, https bool, healthPath string)
 		)
 	}
 	if https {
-		resolver := acmeCertResolver()
 		labels = append(labels,
 			fmt.Sprintf("traefik.http.routers.%s.entrypoints=websecure", router),
-			fmt.Sprintf("traefik.http.routers.%s.tls.certresolver=%s", router, resolver),
+			fmt.Sprintf("traefik.http.routers.%s.tls=true", router),
 		)
-		// DNS-01: one wildcard cert covers apex + all tenant subdomains.
-		if acmeWildcardEnabled() {
+		if !customTLS {
+			resolver := acmeCertResolver()
 			labels = append(labels,
-				fmt.Sprintf("traefik.http.routers.%s.tls.domains[0].main=%s", router, domain),
-				fmt.Sprintf("traefik.http.routers.%s.tls.domains[0].sans=*.%s", router, domain),
+				fmt.Sprintf("traefik.http.routers.%s.tls.certresolver=%s", router, resolver),
 			)
+			// DNS-01: one wildcard cert covers apex + all tenant subdomains.
+			if acmeWildcardEnabled() {
+				labels = append(labels,
+					fmt.Sprintf("traefik.http.routers.%s.tls.domains[0].main=%s", router, domain),
+					fmt.Sprintf("traefik.http.routers.%s.tls.domains[0].sans=*.%s", router, domain),
+				)
+			}
 		}
 	} else {
 		labels = append(labels, fmt.Sprintf("traefik.http.routers.%s.entrypoints=web", router))

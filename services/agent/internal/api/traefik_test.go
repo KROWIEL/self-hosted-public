@@ -22,7 +22,7 @@ func TestTraefikLabelsHTTPChallenge(t *testing.T) {
 	t.Setenv("ACME_WILDCARD_CERTS", "")
 	t.Setenv("ACME_CERT_RESOLVER", "")
 
-	labels := traefikLabels("abc", "m2by.ru", 8080, true, "")
+	labels := traefikLabels("abc", "m2by.ru", 8080, true, "", false)
 	joined := strings.Join(labels, "\n")
 
 	if !strings.Contains(joined, "tls.certresolver=letsencrypt") {
@@ -37,7 +37,7 @@ func TestTraefikLabelsDNSWildcard(t *testing.T) {
 	t.Setenv("ACME_WILDCARD_CERTS", "1")
 	t.Setenv("ACME_CERT_RESOLVER", "")
 
-	labels := traefikLabels("abc", "m2by.ru", 8080, true, "")
+	labels := traefikLabels("abc", "m2by.ru", 8080, true, "", false)
 	joined := strings.Join(labels, "\n")
 
 	if !strings.Contains(joined, "tls.certresolver=letsencrypt-dns") {
@@ -52,7 +52,7 @@ func TestTraefikLabelsDNSWildcard(t *testing.T) {
 }
 
 func TestTraefikLabelsHealthcheck(t *testing.T) {
-	labels := traefikLabels("abc", "m2by.ru", 8080, true, "/health")
+	labels := traefikLabels("abc", "m2by.ru", 8080, true, "/health", false)
 	joined := strings.Join(labels, "\n")
 
 	if !strings.Contains(joined, "loadbalancer.healthcheck.path=/health") {
@@ -84,8 +84,23 @@ func TestAcmeCertResolverOverride(t *testing.T) {
 	}
 }
 
+func TestTraefikLabelsCustomTLS(t *testing.T) {
+	t.Setenv("ACME_WILDCARD_CERTS", "1")
+	labels := traefikLabels("abc", "m2by.ru", 8080, true, "", true)
+	joined := strings.Join(labels, "\n")
+	if !strings.Contains(joined, "tls=true") {
+		t.Fatalf("expected tls=true, got:\n%s", joined)
+	}
+	if strings.Contains(joined, "certresolver") {
+		t.Fatalf("custom TLS must not set certresolver:\n%s", joined)
+	}
+	if strings.Contains(joined, "tls.domains") {
+		t.Fatalf("custom TLS must not set ACME domains:\n%s", joined)
+	}
+}
+
 func TestTraefikLabelsNoHTTPS(t *testing.T) {
-	labels := traefikLabels("abc", "m2by.ru", 8080, false, "")
+	labels := traefikLabels("abc", "m2by.ru", 8080, false, "", false)
 	for _, l := range labels {
 		if strings.Contains(l, "tls") {
 			t.Fatalf("unexpected tls label: %s", l)
@@ -94,7 +109,7 @@ func TestTraefikLabelsNoHTTPS(t *testing.T) {
 }
 
 func TestTraefikLabelsNoDomain(t *testing.T) {
-	if labels := traefikLabels("abc", "", 8080, true, ""); labels != nil {
+	if labels := traefikLabels("abc", "", 8080, true, "", false); labels != nil {
 		t.Fatalf("expected nil labels, got %v", labels)
 	}
 }

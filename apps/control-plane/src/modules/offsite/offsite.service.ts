@@ -4,12 +4,6 @@ import {
   Injectable,
   Logger,
 } from '@nestjs/common';
-import {
-  DeleteObjectCommand,
-  PutObjectCommand,
-  S3Client,
-} from '@aws-sdk/client-s3';
-import { Upload } from '@aws-sdk/lib-storage';
 import { Readable } from 'node:stream';
 import { and, desc, eq, gt, isNull, or } from 'drizzle-orm';
 import { DRIZZLE, Database } from '../../db/database.module';
@@ -17,6 +11,16 @@ import { CryptoService } from '../../common/crypto/crypto.service';
 import { backups, offsiteConfig, offsiteUploads } from '../../db/schema';
 import { BackupsService } from '../backups/backups.service';
 import { SetOffsiteConfigDto } from './dto/offsite.dto';
+import {
+  asProviderConfig,
+  GCS_S3_ENDPOINT,
+  isOffsiteProvider,
+  joinRemoteKey,
+  validateOffsiteConfig,
+  type OffsiteProvider,
+  type ProviderConfig,
+} from './offsite.providers';
+import { buildUploader } from './offsite.uploader';
 
 type ConfigRow = typeof offsiteConfig.$inferSelect;
 
@@ -24,8 +28,9 @@ type ConfigRow = typeof offsiteConfig.$inferSelect;
 const LOOKBACK_MS = 7 * 24 * 60 * 60 * 1000;
 
 /**
- * Mirrors local backups to an S3-compatible bucket (AWS S3, MinIO, R2, …).
- * Credentials are encrypted at rest; the secret is never returned to the UI.
+ * Mirrors local backups to an offsite destination (S3, GCS via S3-compat,
+ * Azure Blob, or SFTP). Credentials are encrypted at rest; secrets are never
+ * returned to the UI.
  */
 @Injectable()
 export class OffsiteService {
@@ -46,16 +51,30 @@ export class OffsiteService {
     return row ?? null;
   }
 
+  private providerOf(row: ConfigRow | null): OffsiteProvider {
+    const p = row?.provider ?? 's3';
+    return isOffsiteProvider(p) ? p : 's3';
+  }
+
+  private providerConfigOf(row: ConfigRow | null): ProviderConfig {
+    return asProviderConfig(row?.providerConfig ?? {});
+  }
+
   async getConfig() {
     const row = await this.getConfigRow();
+    const provider = this.providerOf(row);
     return {
       enabled: row?.enabled ?? false,
-      endpoint: row?.endpoint ?? '',
+      provider,
+      endpoint:
+        row?.endpoint ||
+        (provider === 'gcs' ? GCS_S3_ENDPOINT : ''),
       region: row?.region ?? 'us-east-1',
       bucket: row?.bucket ?? '',
       prefix: row?.prefix ?? '',
       accessKeyId: row?.accessKeyId ?? '',
       forcePathStyle: row?.forcePathStyle ?? true,
+      providerConfig: this.providerConfigOf(row),
       secretKeySet: !!row?.secretKeyEnc,
       updatedAt: row?.updatedAt ?? null,
     };
@@ -63,21 +82,56 @@ export class OffsiteService {
 
   async setConfig(dto: SetOffsiteConfigDto) {
     const existing = await this.getConfigRow();
+    const provider: OffsiteProvider =
+      dto.provider && isOffsiteProvider(dto.provider)
+        ? dto.provider
+        : this.providerOf(existing);
+
     const secretKeyEnc = dto.secretKey
       ? this.crypto.encrypt(dto.secretKey)
       : existing?.secretKeyEnc ?? '';
+
+    const prevCfg = this.providerConfigOf(existing);
+    const nextCfg: ProviderConfig = dto.providerConfig
+      ? { ...prevCfg, ...asProviderConfig(dto.providerConfig) }
+      : prevCfg;
+
+    let endpoint = dto.endpoint ?? existing?.endpoint ?? '';
+    if (provider === 'gcs' && !endpoint.trim()) {
+      endpoint = GCS_S3_ENDPOINT;
+    }
+
     const values = {
-      id: 'default',
+      id: 'default' as const,
       enabled: dto.enabled ?? existing?.enabled ?? false,
-      endpoint: dto.endpoint ?? existing?.endpoint ?? '',
+      provider,
+      endpoint,
       region: dto.region ?? existing?.region ?? 'us-east-1',
       bucket: dto.bucket ?? existing?.bucket ?? '',
       prefix: dto.prefix ?? existing?.prefix ?? '',
       accessKeyId: dto.accessKeyId ?? existing?.accessKeyId ?? '',
       secretKeyEnc,
       forcePathStyle: dto.forcePathStyle ?? existing?.forcePathStyle ?? true,
+      providerConfig: nextCfg,
       updatedAt: new Date(),
     };
+
+    const validation = validateOffsiteConfig({
+      provider,
+      endpoint: values.endpoint,
+      region: values.region,
+      bucket: values.bucket,
+      accessKeyId: values.accessKeyId,
+      secretKeySet: !!values.secretKeyEnc,
+      providerConfig: nextCfg,
+    });
+    // Allow saving a partial draft when disabled; require full config when enabling.
+    if (values.enabled && validation.length) {
+      throw new BadRequestException(
+        `Offsite destination incomplete: ${validation.join('; ')}`,
+      );
+    }
+
     await this.db
       .insert(offsiteConfig)
       .values(values)
@@ -85,36 +139,49 @@ export class OffsiteService {
     return this.getConfig();
   }
 
-  private async client(): Promise<{ row: ConfigRow; s3: S3Client }> {
+  private async uploader() {
     const row = await this.getConfigRow();
-    if (!row || !row.endpoint || !row.bucket || !row.accessKeyId || !row.secretKeyEnc) {
-      throw new BadRequestException('Offsite destination is not fully configured');
+    if (!row) {
+      throw new BadRequestException('Offsite destination is not configured');
     }
-    const s3 = new S3Client({
+    const provider = this.providerOf(row);
+    const providerConfig = this.providerConfigOf(row);
+    const secretKey = row.secretKeyEnc
+      ? this.crypto.decrypt(row.secretKeyEnc)
+      : '';
+    const errs = validateOffsiteConfig({
+      provider,
       endpoint: row.endpoint,
       region: row.region,
-      forcePathStyle: row.forcePathStyle,
-      credentials: {
-        accessKeyId: row.accessKeyId,
-        secretAccessKey: this.crypto.decrypt(row.secretKeyEnc),
-      },
+      bucket: row.bucket,
+      accessKeyId: row.accessKeyId,
+      secretKeySet: !!secretKey,
+      providerConfig,
     });
-    return { row, s3 };
+    if (errs.length) {
+      throw new BadRequestException(
+        `Offsite destination is not fully configured: ${errs.join('; ')}`,
+      );
+    }
+    return {
+      row,
+      uploader: buildUploader({
+        provider,
+        endpoint: row.endpoint || (provider === 'gcs' ? GCS_S3_ENDPOINT : ''),
+        region: row.region,
+        bucket: row.bucket,
+        accessKeyId: row.accessKeyId,
+        secretKey,
+        forcePathStyle: row.forcePathStyle,
+        providerConfig,
+      }),
+    };
   }
 
-  private joinKey(prefix: string, name: string): string {
-    const p = (prefix || '').replace(/^\/+|\/+$/g, '');
-    return p ? `${p}/${name}` : name;
-  }
-
-  /** Round-trips a tiny object to verify credentials + bucket access. */
+  /** Round-trips a tiny object to verify credentials + destination access. */
   async testConfig() {
-    const { row, s3 } = await this.client();
-    const key = this.joinKey(row.prefix, `.offsite-test-${Date.now()}`);
-    await s3.send(
-      new PutObjectCommand({ Bucket: row.bucket, Key: key, Body: 'ok' }),
-    );
-    await s3.send(new DeleteObjectCommand({ Bucket: row.bucket, Key: key }));
+    const { row, uploader } = await this.uploader();
+    await uploader.test(row.prefix);
     return { ok: true };
   }
 
@@ -125,17 +192,13 @@ export class OffsiteService {
     if (backup.status !== 'SUCCESS') {
       throw new BadRequestException('Only successful backups can be uploaded');
     }
-    const { row, s3 } = await this.client();
-    const key = this.joinKey(row.prefix, backup.fileName);
+    const { row, uploader } = await this.uploader();
+    const key = joinRemoteKey(row.prefix, backup.fileName);
     try {
       const { res } = await this.backups.openDownload(backupId);
       if (!res.body) throw new Error('empty backup stream from node');
       const body = Readable.fromWeb(res.body as never);
-      const upload = new Upload({
-        client: s3,
-        params: { Bucket: row.bucket, Key: key, Body: body },
-      });
-      await upload.done();
+      await uploader.upload(body, key);
       await this.recordUpload(backupId, key, 'uploaded', backup.sizeBytes ?? null, null);
       return { ok: true, key };
     } catch (e) {

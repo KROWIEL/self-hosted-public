@@ -107,6 +107,12 @@ const Icon = {
       <path d="M12 13v6M9.5 15.5 12 13l2.5 2.5" />
     </Svg>
   ),
+  cert: (p: IconProps) => (
+    <Svg {...p}>
+      <rect x="4" y="3" width="16" height="18" rx="2" />
+      <path d="M9 8h6M9 12h6M9 16h3" />
+    </Svg>
+  ),
   key: (p: IconProps) => (
     <Svg {...p}>
       <circle cx="7.5" cy="15.5" r="4.5" />
@@ -212,18 +218,23 @@ const NAV: NavItem[] = [
     icon: Icon.alerts,
     module: 'alerts',
   },
-  {
-    href: '/offsite',
-    label: 'nav.offsite',
-    icon: Icon.offsite,
-    module: 'offsite-backups',
-  },
-  {
-    href: '/api-tokens',
-    label: 'nav.apiTokens',
-    icon: Icon.key,
-    module: 'api-cli',
-  },
+    {
+      href: '/offsite',
+      label: 'nav.offsite',
+      icon: Icon.offsite,
+      module: 'offsite-backups',
+    },
+    {
+      href: '/certificates',
+      label: 'nav.certificates',
+      icon: Icon.cert,
+    },
+    {
+      href: '/api-tokens',
+      label: 'nav.apiTokens',
+      icon: Icon.key,
+      module: 'api-cli',
+    },
   {
     href: '/metrics',
     label: 'nav.metrics',
