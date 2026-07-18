@@ -287,6 +287,8 @@ function BillingContent() {
           lowerThanCurrent={TIER_RANK.free < currentRank}
           features={[
             feat('billing.feat.free.deploy'),
+            feat('billing.feat.free.catalog'),
+            feat('billing.feat.free.volumes'),
             feat('billing.feat.free.https'),
             feat('billing.feat.free.databases'),
             feat('billing.feat.free.observability'),
@@ -303,6 +305,7 @@ function BillingContent() {
           highlight
           features={[
             feat('billing.feat.homelab.allFree'),
+            feat('billing.feat.homelab.catalog'),
             {
               title: t('billing.feat.homelab.tunnels.title'),
               desc: t('billing.moduleDesc.reverse-tunnels'),

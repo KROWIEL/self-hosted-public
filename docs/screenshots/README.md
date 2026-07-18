@@ -1,31 +1,31 @@
-# Images for the README & landing page
+# Screenshots
 
-Drop the files below into the indicated paths and they will show up automatically
-(the README and `landing/index.html` already reference these exact names).
+Panel captures referenced by the top-level [`README.md`](../../README.md).
+Use these exact file names so the links resolve.
 
-## Required
+| File | What to capture |
+|---|---|
+| `dashboard.png` | Projects dashboard with capacity + at least one running service |
+| `deploy.gif` | Triggering a deploy with the live build-log stream (5–15s) |
+| `service-logs.png` | Service detail with deployment / build log open |
+| `project.png` | Project page: services + managed database |
+| `members.png` | Project members & RBAC roles |
+| `nodes.png` | Nodes list with agent / services / databases |
+| `templates.png` | Template management grouped by category |
+| `catalog.png` | App catalog (Free + Home-Lab badges) |
+| `billing.png` | Plans: Free / Home-Lab / Pro feature cards |
+| `certificates.png` | Domain TLS status + custom PEM upload |
+| `alerts.png` | Alert channels (Discord / Slack / Telegram / webhook) |
+| `offsite.png` | Offsite backup destination (S3 / GCS / Azure / SFTP) |
+| `git-apps.png` | GitHub/GitLab webhook PR preview setup |
+| `exposure.png` | Reverse tunnels / Exposure |
+| `metrics.png` | Metrics history charts |
+| `settings-2fa.png` | Account settings with 2FA section |
 
-| File | Path | Recommended size | Shown where |
-|------|------|------------------|-------------|
-| Banner / hero | `docs/banner.png` | 1280×640 (2:1) | Top of README + GitHub social preview |
-| Dashboard | `docs/screenshots/dashboard.png` | 1600×1000 | README grid + landing hero |
-| Service detail | `docs/screenshots/service.png` | 1600×1000 | README grid |
-| Deploy & logs | `docs/screenshots/deploy.png` | 1600×1000 | README grid |
-| Reverse tunnels | `docs/screenshots/tunnels.png` | 1600×1000 | README grid |
-| Templates | `docs/screenshots/templates.png` | 1600×1000 | README grid |
-| Billing & plans | `docs/screenshots/billing.png` | 1600×1000 | README grid |
+Tips:
 
-## Optional
-
-| File | Path | Notes |
-|------|------|-------|
-| Demo GIF | `docs/demo.gif` | Short (10–20 s) end-to-end deploy loop; keep < 8 MB |
-| Login / 2FA | `docs/screenshots/login.png` | Extra screenshot if you want |
-
-## Tips
-
-- Use a consistent theme (dark) and window size across shots.
-- PNG for screenshots, GIF (or MP4 linked externally) for motion.
-- After adding `docs/banner.png`, also set it as the repo's **Social preview**
-  (GitHub → Settings → General → Social preview) for nice link cards.
-- Compress with tinypng.com or `oxipng` to keep the repo light.
+- Use a clean demo account and non-sensitive data (no real tokens, secrets, or private emails in public shots when possible).
+- Capture at a consistent window width so the gallery lines up (~1200–1600px).
+- For `deploy.gif`, keep it short and optimize (`ffmpeg`, `gifski`) to stay well under a few MB.
+- Prefer EN locale for README shots.
+- PNG for static shots; GIF for deploy.

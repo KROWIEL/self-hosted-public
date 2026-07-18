@@ -872,7 +872,7 @@ export const en = {
 
   // Billing / licensing
   'billing.subtitle':
-    'Manage this installation’s plan. The free core is unlimited; paid plans unlock add-on modules.',
+    'Manage this installation’s plan. Free covers the core PaaS; Home-Lab and Pro unlock tunnels, cron, and add-on modules.',
   'billing.currentPlan': 'Current plan',
   'billing.active': 'Active',
   'billing.free': 'Free',
@@ -912,12 +912,18 @@ export const en = {
   'billing.tier.homelab': 'Home-Lab',
   'billing.tier.pro': 'Pro',
   // Free tier — the core PaaS, no license required.
-  'billing.feat.free.deploy.title': 'Deploy from Git, templates & Docker',
+  'billing.feat.free.deploy.title': 'Git, image & Compose deploys',
   'billing.feat.free.deploy.desc':
-    'Push-to-deploy any repository, launch from one-click app templates, or run any Docker image — no manual server wiring.',
-  'billing.feat.free.https.title': 'Automatic HTTPS',
+    'Clone & build from Git (template, repo Dockerfile, or Nixpacks), run an existing image, or bring up a Docker Compose stack — with live build logs.',
+  'billing.feat.free.catalog.title': 'App catalog (starter set)',
+  'billing.feat.free.catalog.desc':
+    'One-click install of curated apps (Uptime Kuma, MinIO, Gitea, n8n, and more) with volumes and env presets.',
+  'billing.feat.free.volumes.title': 'Persistent volumes',
+  'billing.feat.free.volumes.desc':
+    'Attach named volumes to services so data survives redeploys, with volume backups from the panel.',
+  'billing.feat.free.https.title': 'HTTPS & certificates',
   'billing.feat.free.https.desc':
-    'Traefik issues and renews Let’s Encrypt certificates per subdomain, so every service is served over TLS out of the box.',
+    'Automatic Let’s Encrypt via Traefik, a certificates page for domain TLS status, and optional custom PEM upload.',
   'billing.feat.free.databases.title': 'Managed databases',
   'billing.feat.free.databases.desc':
     'Spin up PostgreSQL or MySQL per project, with scheduled backups and one-click restore.',
@@ -930,10 +936,13 @@ export const en = {
   'billing.feat.free.node.title': '1 node included',
   'billing.feat.free.node.desc':
     'Run the whole platform on a single server — perfect for a personal project or a trial.',
-  // Home-Lab tier — Free core plus reverse tunnels.
+  // Home-Lab tier — Free core plus reverse tunnels, cron, full catalog.
   'billing.feat.homelab.allFree.title': 'Everything in Free',
   'billing.feat.homelab.allFree.desc':
     'The complete free core, plus the home-lab additions below.',
+  'billing.feat.homelab.catalog.title': 'Full app catalog',
+  'billing.feat.homelab.catalog.desc':
+    'Unlock Home-Lab catalog apps (Vaultwarden, SFTPGo, Umami, and more) beyond the Free starter set.',
   'billing.feat.homelab.tunnels.title': 'Secure reverse tunnels',
   'billing.feat.homelab.cron.title': 'Per-service cron jobs',
   'billing.feat.homelab.limits.title': '3 nodes + 3 tunnels',
@@ -942,7 +951,7 @@ export const en = {
   // Pro tier — everything, unlimited, all modules.
   'billing.feat.pro.allHomelab.title': 'Everything in Free & Home-Lab',
   'billing.feat.pro.allHomelab.desc':
-    'The full free core and reverse tunnels, plus every add-on module below.',
+    'Full catalog, reverse tunnels, per-service cron, plus every Pro add-on module below.',
   'billing.feat.pro.unlimited.title': 'Unlimited nodes & tunnels',
   'billing.feat.pro.unlimited.desc':
     'Scale across as many servers and expose as many services as you need — no caps.',
@@ -953,11 +962,11 @@ export const en = {
   'billing.moduleDesc.service-cron':
     'Schedule recurring commands inside a running service container (backups, cache warmers, maintenance scripts) with last-run status in the panel.',
   'billing.moduleDesc.preview-envs':
-    'Deploy any branch as a disposable, isolated copy with its own optional subdomain, auto-torn down by TTL — review changes safely before they ship.',
+    'Spin up disposable previews from any branch, and auto-create/update/tear them down from GitHub or GitLab pull-request webhooks — with optional PR comments.',
   'billing.moduleDesc.offsite-backups':
-    'Mirror managed-database backups to any S3-compatible bucket with encrypted credentials, so your data survives even if a node is lost.',
+    'Mirror backups to S3, GCS (S3-compat), Azure Blob, or SFTP with encrypted credentials, so your data survives even if a node is lost.',
   'billing.moduleDesc.alerts':
-    'Send webhook alerts (Slack, Discord, Telegram, custom) for node-offline, failed deploys or backups and resource thresholds — hear about incidents before your users do.',
+    'First-class Discord, Slack, Telegram and generic webhook channels for node-offline, failed deploys/backups and resource thresholds — hear about incidents before your users do.',
   'billing.moduleDesc.metrics-history':
     'Continuously sample and store per-node CPU, RAM and disk usage, with history charts for capacity planning and troubleshooting.',
   'billing.moduleDesc.sso':

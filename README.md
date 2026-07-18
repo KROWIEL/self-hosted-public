@@ -48,13 +48,44 @@
 
 ### 📸 Screenshots
 
-|  |  |
-|---|---|
-| ![Dashboard](docs/screenshots/dashboard.png) | ![Service](docs/screenshots/service.png) |
-| ![Deploy & logs](docs/screenshots/deploy.png) | ![Reverse tunnels](docs/screenshots/tunnels.png) |
-| ![Templates](docs/screenshots/templates.png) | ![Billing & plans](docs/screenshots/billing.png) |
+> Full set in [`docs/screenshots/`](docs/screenshots). Captured from a local Pro
+> install with demo data.
 
-> Live demo & walkthrough GIF coming soon.
+<p align="center">
+  <img src="docs/screenshots/dashboard.png" alt="Projects dashboard" width="900" />
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/deploy.gif" alt="Deploying a service with live build logs" width="900" />
+</p>
+
+| Project overview | Service & build logs |
+|---|---|
+| ![Project with service and database](docs/screenshots/project.png) | ![Service detail with live metrics](docs/screenshots/service-logs.png) |
+
+| Nodes | Members & roles |
+|---|---|
+| ![Nodes with agent and workloads](docs/screenshots/nodes.png) | ![Project members and RBAC](docs/screenshots/members.png) |
+
+| Templates | App catalog |
+|---|---|
+| ![Template management](docs/screenshots/templates.png) | ![One-click app catalog](docs/screenshots/catalog.png) |
+
+| Plans | Certificates |
+|---|---|
+| ![Billing plans Free Home-Lab Pro](docs/screenshots/billing.png) | ![HTTPS certificates and custom PEM](docs/screenshots/certificates.png) |
+
+| Alerts | Offsite backups |
+|---|---|
+| ![Alert channels Discord Slack Telegram](docs/screenshots/alerts.png) | ![Offsite S3 GCS Azure SFTP](docs/screenshots/offsite.png) |
+
+| Git App / PR previews | Exposure (tunnels) |
+|---|---|
+| ![GitHub GitLab PR preview webhooks](docs/screenshots/git-apps.png) | ![Reverse tunnels exposure](docs/screenshots/exposure.png) |
+
+| Metrics history | Account & 2FA |
+|---|---|
+| ![Node metrics history](docs/screenshots/metrics.png) | ![Account settings and 2FA](docs/screenshots/settings-2fa.png) |
 
 ### 🚀 Quick start
 

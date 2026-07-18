@@ -874,7 +874,7 @@ export const ru: Dict = {
 
   // Billing / licensing
   'billing.subtitle':
-    'Управление тарифом этой установки. Бесплатное ядро — без ограничений; платные тарифы открывают дополнительные модули.',
+    'Управление тарифом этой установки. Free — базовый PaaS; Home-Lab и Pro открывают туннели, cron и дополнительные модули.',
   'billing.currentPlan': 'Текущий тариф',
   'billing.active': 'Активна',
   'billing.free': 'Бесплатно',
@@ -914,12 +914,18 @@ export const ru: Dict = {
   'billing.tier.homelab': 'Home-Lab',
   'billing.tier.pro': 'Pro',
   // Тариф Free — базовый PaaS, лицензия не нужна.
-  'billing.feat.free.deploy.title': 'Деплой из Git, шаблонов и Docker',
+  'billing.feat.free.deploy.title': 'Git, образ и Compose-деплой',
   'billing.feat.free.deploy.desc':
-    'Push-to-deploy любого репозитория, запуск из готовых шаблонов приложений или любого Docker-образа — без ручной настройки сервера.',
-  'billing.feat.free.https.title': 'Автоматический HTTPS',
+    'Клонируйте и собирайте из Git (шаблон, Dockerfile в репо или Nixpacks), запускайте готовый образ или поднимайте Docker Compose — с live-логами сборки.',
+  'billing.feat.free.catalog.title': 'Каталог приложений (стартовый набор)',
+  'billing.feat.free.catalog.desc':
+    'Установка в один клик курируемых приложений (Uptime Kuma, MinIO, Gitea, n8n и др.) с томами и пресетами env.',
+  'billing.feat.free.volumes.title': 'Постоянные тома',
+  'billing.feat.free.volumes.desc':
+    'Подключайте именованные тома к сервисам, чтобы данные переживали редеплои, и делайте бэкапы томов из панели.',
+  'billing.feat.free.https.title': 'HTTPS и сертификаты',
   'billing.feat.free.https.desc':
-    'Traefik выпускает и продлевает сертификаты Let’s Encrypt для каждого поддомена, поэтому все сервисы работают по TLS из коробки.',
+    'Автоматический Let’s Encrypt через Traefik, страница сертификатов со статусом TLS по доменам и опциональная загрузка своего PEM.',
   'billing.feat.free.databases.title': 'Managed-базы данных',
   'billing.feat.free.databases.desc':
     'Разворачивайте PostgreSQL или MySQL для каждого проекта — с бэкапами по расписанию и восстановлением в один клик.',
@@ -932,10 +938,13 @@ export const ru: Dict = {
   'billing.feat.free.node.title': '1 нода включена',
   'billing.feat.free.node.desc':
     'Запускайте всю платформу на одном сервере — идеально для личного проекта или знакомства.',
-  // Тариф Home-Lab — ядро Free плюс reverse-туннели.
+  // Тариф Home-Lab — ядро Free плюс reverse-туннели, cron, полный каталог.
   'billing.feat.homelab.allFree.title': 'Всё из Free',
   'billing.feat.homelab.allFree.desc':
     'Полное бесплатное ядро плюс возможности для домашней лаборатории ниже.',
+  'billing.feat.homelab.catalog.title': 'Полный каталог приложений',
+  'billing.feat.homelab.catalog.desc':
+    'Открывает приложения Home-Lab каталога (Vaultwarden, SFTPGo, Umami и др.) сверх стартового набора Free.',
   'billing.feat.homelab.tunnels.title': 'Защищённые reverse-туннели',
   'billing.feat.homelab.cron.title': 'Cron-задачи на сервис',
   'billing.feat.homelab.limits.title': '3 ноды + 3 туннеля',
@@ -944,7 +953,7 @@ export const ru: Dict = {
   // Тариф Pro — всё, без ограничений, все модули.
   'billing.feat.pro.allHomelab.title': 'Всё из Free и Home-Lab',
   'billing.feat.pro.allHomelab.desc':
-    'Полное бесплатное ядро и reverse-туннели плюс все дополнительные модули ниже.',
+    'Полный каталог, reverse-туннели, cron на сервис плюс все модули Pro ниже.',
   'billing.feat.pro.unlimited.title': 'Неограниченные ноды и туннели',
   'billing.feat.pro.unlimited.desc':
     'Масштабируйтесь на любое число серверов и публикуйте сколько угодно сервисов — без ограничений.',
@@ -955,11 +964,11 @@ export const ru: Dict = {
   'billing.moduleDesc.service-cron':
     'Планируйте повторяющиеся команды внутри запущенного контейнера сервиса (бэкапы, прогрев кэша, скрипты обслуживания) со статусом последнего запуска в панели.',
   'billing.moduleDesc.preview-envs':
-    'Разворачивайте любую ветку как одноразовую изолированную копию с собственным поддоменом и авто-удалением по TTL — безопасно проверяйте изменения до релиза.',
+    'Поднимайте одноразовые preview из любой ветки и автоматически создавайте/обновляйте/удаляйте их по webhook GitHub или GitLab для pull request — с опциональными комментариями в PR.',
   'billing.moduleDesc.offsite-backups':
-    'Копируйте бэкапы managed-баз в любой S3-совместимый бакет с шифрованием доступов, чтобы данные уцелели, даже если нода потеряна.',
+    'Зеркалируйте бэкапы в S3, GCS (S3-совместимый), Azure Blob или SFTP с шифрованием доступов — данные уцелеют, даже если нода потеряна.',
   'billing.moduleDesc.alerts':
-    'Отправляйте уведомления по webhook (Slack, Discord, Telegram, свой endpoint) о падении нод, неудачных деплоях и бэкапах, превышении порогов — узнавайте об инцидентах раньше пользователей.',
+    'Каналы Discord, Slack, Telegram и произвольный webhook для падения нод, неудачных деплоев/бэкапов и порогов ресурсов — узнавайте об инцидентах раньше пользователей.',
   'billing.moduleDesc.metrics-history':
     'Периодически собирайте и храните CPU, RAM и диск по каждой ноде с историческими графиками для планирования ёмкости и диагностики.',
   'billing.moduleDesc.sso':
