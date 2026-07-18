@@ -26,9 +26,9 @@ The panel supports two modes, chosen by the operator via `.env`:
 
 | Tier | Price (suggested) | What it unlocks |
 |------|-------------------|-----------------|
-| **Free** | $0 forever | Full core: deploy from git, templates, HTTPS, managed DBs, logs & live metrics, projects, RBAC, 2FA (limited to **1 node**) |
-| **Home-Lab** | ~$3 / mo | Everything in Free **+ Reverse-tunnels module**, up to **3 nodes** and **3 tunnels** |
-| **Pro** | ~$15 / mo | Everything + **all 10 modules** below, **unlimited** nodes & tunnels |
+| **Free** | $0 forever | Full core: git / image / compose deploys, templates & Nixpacks, app catalog (basic), HTTPS + custom PEMs, managed DBs, volumes, logs & live metrics, projects, RBAC, 2FA (**1 node**, **0 tunnels**) |
+| **Home-Lab** | ~$3 / mo | Everything in Free **+** `reverse-tunnels` **+** `service-cron`, full catalog, up to **3 nodes** and **3 tunnels** |
+| **Pro** | ~$15 / mo | Everything + **all 11 modules** below, **unlimited** nodes & tunnels |
 
 ### Quantitative limits
 
@@ -50,9 +50,10 @@ the key payload).
 | Module id | From tier | Description |
 |-----------|-----------|-------------|
 | `reverse-tunnels` | Home-Lab | Expose services on NAT / home-lab nodes to the internet through a lightweight public relay. |
-| `preview-envs` | Pro | Deploy any branch as a disposable, isolated environment (a cloned child service) with its own optional subdomain; auto-torn down by TTL. |
-| `offsite-backups` | Pro | Mirror managed-database backups to any S3-compatible bucket, with encrypted credentials and a background upload worker. |
-| `alerts` | Pro | Webhook alerts for node-offline, deploy-failed, backup-failed and resource-threshold events, via configurable channels & rules. |
+| `service-cron` | Home-Lab | Schedule commands inside a running service container (cron expressions via BullMQ). |
+| `preview-envs` | Pro | Deploy any branch as a disposable, isolated environment (a cloned child service) with its own optional subdomain; auto-torn down by TTL. GitHub/GitLab PR webhooks (`/git-apps`) create/update previews. |
+| `offsite-backups` | Pro | Mirror managed-database backups to S3, GCS, Azure Blob, or SFTP, with encrypted credentials and a background upload worker. |
+| `alerts` | Pro | Alerts for node-offline, deploy-failed, backup-failed and resource-threshold events via webhook, Discord, Slack, or Telegram channels. |
 | `metrics-history` | Pro | Periodically sample and store per-node CPU / RAM / disk usage, with history charts. |
 | `sso` | Pro | OpenID Connect single sign-on with JWKS verification, domain allow-list and just-in-time user provisioning. |
 | `audit-export` | Pro | Organization-wide audit log with server-side filters and CSV / JSON export. |
@@ -61,9 +62,9 @@ the key payload).
 | `email` | Pro | Outbound email over your own SMTP provider: send test messages and broadcast announcements to all users or a specific list, with encrypted credentials and a delivery log. |
 
 Tier → modules mapping lives in `packages/shared/src/licensing.ts`
-(`TIER_MODULES`); `Home-Lab = [reverse-tunnels]`, `Pro = all modules`. Adding a
-new gated module is a one-line change there plus a `@RequiresModule('...')` on
-the backend and (optionally) a nav/page guard.
+(`TIER_MODULES`); `Home-Lab = [reverse-tunnels, service-cron]`, `Pro = all
+modules`. Adding a new gated module is a one-line change there plus a
+`@RequiresModule('...')` on the backend and (optionally) a nav/page guard.
 
 ## Architecture
 

@@ -22,19 +22,26 @@
 
 ## English
 
-> Open-core, self-hosted platform to deploy backends and frontends straight from Git into Docker — with managed databases, HTTPS, multi-tenant projects, RBAC, 2FA, live logs & metrics, backups, and reverse tunnels for home-lab / NAT nodes.
+> Open-core, self-hosted platform to deploy backends and frontends into Docker —
+> from **git**, a **container image**, or **Compose**, with managed databases,
+> HTTPS (ACME or custom PEM), multi-tenant projects, RBAC, 2FA, live logs &
+> metrics, backups, an app catalog, and reverse tunnels for home-lab / NAT nodes.
 
 ### ✨ Features
 
-- **Git-to-Docker deploys** — build & run services from a repo with isolated build steps and one-click redeploys.
-- **Stack templates** — curated, editable templates (Java, Node/Next.js, …) grouped by category; create your own.
+- **Deploy kinds** — `git` (build from repo), `image` (run a registry image), or `compose` (Compose stack).
+- **Build modes (git)** — curated **templates**, repo **Dockerfile**, or **Nixpacks** auto-detect.
+- **App catalog** (`/catalog`) — one-click install; Free gets basic apps, Home-Lab unlocks the full catalog.
 - **Managed databases** — provision Postgres/MySQL per project, with scheduled backups & restore.
+- **Persistent volumes** — attach named volumes to services for durable data.
 - **Zero-downtime releases** — blue-green deploys with health-gating.
 - **Multi-tenant projects + quotas** — CPU/RAM limits per project.
 - **RBAC** — `OWNER / ADMIN / MEMBER / VIEWER` roles, plus an append-only audit log.
 - **Accounts & security** — two-stage registration, TOTP 2FA, strict password policy, soft-forced rotation of weak passwords.
 - **Nodes** — run the Go agent on any server; local dev agent, remote self-enrollment with TLS pinning & heartbeats.
-- **Reverse tunnels** — expose NAT / home-lab nodes to the internet through a lightweight public relay *(Home-Lab / Pro module)*.
+- **Certificates** (`/certificates`) — ACME status plus custom PEM upload (encrypted at rest).
+- **Reverse tunnels** — expose NAT / home-lab nodes to the internet through a lightweight public relay *(Home-Lab / Pro)*.
+- **Service cron** — schedule commands inside running containers *(Home-Lab / Pro)*.
 - **Live logs, metrics & web exec** — real-time container logs, resource usage, and an in-browser terminal.
 - **Automatic HTTPS** — Traefik + Let's Encrypt (HTTP-01 or DNS-01 wildcard).
 - **Localized UI** — English & Russian out of the box.
@@ -88,34 +95,33 @@ Open **http://localhost:3000** and sign in with the seeded admin.
 
 ### 🧩 Tiers & pricing
 
-Open-core: the **core is free forever and unlimited**. Paid tiers unlock add-on
-modules via a single signed license key — activate it under **Billing → License
-key** (admin) or set `LICENSE_KEY`. One key upgrades the whole instance; the
-core has no per-seat metering.
+Open-core: the **core is free forever**. Paid tiers unlock add-on modules via a
+single signed license key — activate it under **Billing → License key** (admin)
+or set `LICENSE_KEY`. One key upgrades the whole instance; the core has no
+per-seat metering.
 
 | Tier | Price* | What you get |
 |------|--------|--------------|
-| **Free** | $0 forever | The complete core (see below) |
-| **Home-Lab** | ~$3 / mo | Core **+ Reverse tunnels** module |
-| **Pro** | ~$15 / mo | Core **+ every module** (all 10 below) |
+| **Free** | $0 forever | Full core (see below); **1 node**, **0 tunnels** |
+| **Home-Lab** | ~$3 / mo | Core **+** reverse tunnels **+** service cron **+** full catalog; **3 nodes / 3 tunnels** |
+| **Pro** | ~$15 / mo | Core **+ every module** (all 11 below); unlimited nodes & tunnels |
 
 <sub>*Suggested pricing — you set the final numbers in your own store. Details in [`docs/LICENSING.md`](docs/LICENSING.md).</sub>
 
-**The free core includes:** git-to-Docker deploys, stack templates, automatic
-HTTPS, managed Postgres/MySQL with backups, multi-tenant projects & quotas,
-RBAC, 2FA, live logs / metrics / web-exec, and a localized (EN/RU) UI.
-
-**Plan limits:** Free = **1 node**; Home-Lab = **3 nodes + 3 reverse tunnels**;
-Pro = **unlimited** nodes & tunnels.
+**The free core includes:** git / image / compose deploys, templates & Nixpacks,
+basic app catalog, automatic HTTPS + custom PEMs, managed Postgres/MySQL with
+backups, persistent volumes, multi-tenant projects & quotas, RBAC, 2FA, live
+logs / metrics / web-exec, and a localized (EN/RU) UI.
 
 #### Add-on modules
 
 | Module | From tier | What it does |
 |--------|-----------|--------------|
 | **Reverse tunnels** (`reverse-tunnels`) | Home-Lab | Expose services on NAT / home-lab nodes to the internet through a lightweight public relay. |
-| **Preview environments** (`preview-envs`) | Pro | Deploy any branch as a disposable, isolated copy with its own optional subdomain; auto-torn down by TTL. Ideal for PR review. |
-| **Off-site backups** (`offsite-backups`) | Pro | Mirror managed-database backups to any S3-compatible bucket, with encrypted credentials. |
-| **Alerts** (`alerts`) | Pro | Webhook alerts for node-offline, deploy-failed, backup-failed and resource thresholds, via configurable channels & rules. |
+| **Service cron** (`service-cron`) | Home-Lab | Schedule commands inside a running service container (cron expressions). |
+| **Preview environments** (`preview-envs`) | Pro | Disposable branch previews with optional subdomain and TTL cleanup. **Git Apps** (`/git-apps`) — GitHub/GitLab PR webhooks create/update previews. |
+| **Off-site backups** (`offsite-backups`) | Pro | Mirror managed-database backups to **S3**, **GCS**, **Azure Blob**, or **SFTP** (encrypted credentials). |
+| **Alerts** (`alerts`) | Pro | Channels: **webhook**, **Discord**, **Slack**, **Telegram** — for node-offline, deploy/backup failures and resource thresholds. |
 | **Metrics history** (`metrics-history`) | Pro | Collect and chart historical CPU / RAM / disk usage per node. |
 | **SSO / OIDC** (`sso`) | Pro | OpenID Connect single sign-on (Google, Entra, Okta, Keycloak…) with a domain allow-list and just-in-time user provisioning. |
 | **Audit export** (`audit-export`) | Pro | Organization-wide audit log with filters and CSV / JSON export. |
@@ -123,7 +129,7 @@ Pro = **unlimited** nodes & tunnels.
 | **White-label** (`white-label`) | Pro | Customize the app name, logo, accent color and attribution. |
 | **Email** (`email`) | Pro | Send and broadcast messages to your users over your own SMTP provider — outbound relay, not an inbound mail server. |
 
-<sub>All modules are implemented and shipping. Home-Lab unlocks Reverse tunnels; Pro unlocks everything.</sub>
+<sub>Home-Lab unlocks reverse tunnels + service cron (+ full catalog). Pro unlocks everything.</sub>
 
 ### 🏗️ Architecture
 
@@ -135,7 +141,9 @@ Pro = **unlimited** nodes & tunnels.
 
 ### 🔐 Security
 
-- Secrets (PATs, env secrets, tokens) encrypted at rest (AES-256-GCM).
+Practical hardening (not a third-party audit claim):
+
+- Secrets (PATs, env secrets, custom TLS PEMs, tokens) encrypted at rest (AES-256-GCM).
 - JWT sessions, TOTP 2FA, strict password policy.
 - Per-project RBAC + append-only audit log.
 - TLS pinning for remote agents.
@@ -154,19 +162,26 @@ Source-available under the [Elastic License 2.0](LICENSE): use, copy, modify and
 
 ## Русский
 
-> Open-core платформа для self-hosting: деплой бэкендов и фронтендов прямо из Git в Docker — с managed-базами, HTTPS, мульти-тенант проектами, RBAC, 2FA, live-логами и метриками, бэкапами и обратными туннелями для home-lab / NAT-нод.
+> Open-core платформа для self-hosting: деплой бэкендов и фронтендов в Docker —
+> из **git**, **образа** или **Compose**, с managed-базами, HTTPS (ACME или
+> свой PEM), мульти-тенант проектами, RBAC, 2FA, live-логами и метриками,
+> бэкапами, каталогом приложений и обратными туннелями для home-lab / NAT-нод.
 
 ### ✨ Возможности
 
-- **Деплой Git → Docker** — сборка и запуск сервисов из репозитория с изолированным шагом сборки и редеплоем в один клик.
-- **Шаблоны стеков** — готовые редактируемые шаблоны (Java, Node/Next.js, …) по категориям; можно создавать свои.
+- **Типы деплоя** — `git` (сборка из репо), `image` (образ из registry) или `compose` (Compose-стек).
+- **Режимы сборки (git)** — **шаблоны**, **Dockerfile** репозитория или **Nixpacks**.
+- **Каталог приложений** (`/catalog`) — установка в один клик; Free — базовые приложения, Home-Lab — полный каталог.
 - **Managed-базы** — Postgres/MySQL на проект, с бэкапами по расписанию и восстановлением.
+- **Постоянные тома** — именованные volumes для данных сервисов.
 - **Zero-downtime релизы** — blue-green деплой с проверкой health.
 - **Мульти-тенант проекты + квоты** — лимиты CPU/RAM на проект.
 - **RBAC** — роли `OWNER / ADMIN / MEMBER / VIEWER` и append-only аудит-лог.
 - **Аккаунты и безопасность** — двухэтапная регистрация, TOTP 2FA, строгая парольная политика, мягкое принуждение к смене слабых паролей.
 - **Ноды** — Go-агент на любом сервере; локальный dev-агент и удалённое самоподключение с TLS-пиннингом и heartbeat.
-- **Обратные туннели** — публикация NAT / home-lab нод в интернет через лёгкий публичный релей *(модуль Home-Lab / Pro)*.
+- **Сертификаты** (`/certificates`) — статус ACME и загрузка своего PEM (шифрование at rest).
+- **Обратные туннели** — публикация NAT / home-lab нод в интернет через лёгкий публичный релей *(Home-Lab / Pro)*.
+- **Service cron** — расписание команд внутри контейнеров *(Home-Lab / Pro)*.
 - **Live-логи, метрики и web-exec** — логи контейнеров в реальном времени, потребление ресурсов и терминал в браузере.
 - **Автоматический HTTPS** — Traefik + Let's Encrypt (HTTP-01 или DNS-01 wildcard).
 - **Локализация** — английский и русский «из коробки».
@@ -219,35 +234,33 @@ npm run dev:web                        # веб-интерфейс       -> :300
 
 ### 🧩 Тарифы и цены
 
-Open-core: **ядро бесплатно навсегда и без ограничений**. Платные тарифы
-открывают дополнительные модули по одному подписанному ключу лицензии —
-активируйте его в **Тарифы → Ключ лицензии** (админ) или задайте `LICENSE_KEY`.
-Один ключ повышает тариф всего инстанса; в ядре нет поштучного учёта мест.
+Open-core: **ядро бесплатно навсегда**. Платные тарифы открывают дополнительные
+модули по одному подписанному ключу лицензии — активируйте его в **Тарифы →
+Ключ лицензии** (админ) или задайте `LICENSE_KEY`. Один ключ повышает тариф
+всего инстанса; в ядре нет поштучного учёта мест.
 
 | Тариф | Цена* | Что вы получаете |
 |-------|-------|------------------|
-| **Free** | $0 навсегда | Полное ядро (см. ниже) |
-| **Home-Lab** | ~$3 / мес | Ядро **+ модуль Reverse tunnels** |
-| **Pro** | ~$15 / мес | Ядро **+ все модули** (все 10 ниже) |
+| **Free** | $0 навсегда | Полное ядро (см. ниже); **1 нода**, **0 туннелей** |
+| **Home-Lab** | ~$3 / мес | Ядро **+** обратные туннели **+** service cron **+** полный каталог; **3 ноды / 3 туннеля** |
+| **Pro** | ~$15 / мес | Ядро **+ все модули** (все 11 ниже); без лимитов по нодам и туннелям |
 
 <sub>*Рекомендованные цены — финальные вы задаёте в своём магазине. Подробнее в [`docs/LICENSING.md`](docs/LICENSING.md).</sub>
 
-**Бесплатное ядро включает:** деплой Git → Docker, шаблоны стеков,
-автоматический HTTPS, managed Postgres/MySQL с бэкапами, мульти-тенант проекты и
-квоты, RBAC, 2FA, live-логи / метрики / web-exec и локализованный (EN/RU)
-интерфейс.
-
-**Лимиты тарифов:** Free — **1 нода**; Home-Lab — **3 ноды + 3 обратных
-туннеля**; Pro — **без ограничений** по нодам и туннелям.
+**Бесплатное ядро включает:** деплой git / image / compose, шаблоны и Nixpacks,
+базовый каталог приложений, автоматический HTTPS + свой PEM, managed
+Postgres/MySQL с бэкапами, постоянные тома, мульти-тенант проекты и квоты, RBAC,
+2FA, live-логи / метрики / web-exec и локализованный (EN/RU) интерфейс.
 
 #### Дополнительные модули
 
 | Модуль | С тарифа | Что делает |
 |--------|----------|------------|
 | **Обратные туннели** (`reverse-tunnels`) | Home-Lab | Публикация сервисов на NAT / home-lab нодах в интернет через лёгкий публичный релей. |
-| **Превью-среды** (`preview-envs`) | Pro | Деплой любой ветки как одноразовой изолированной копии с отдельным опциональным поддоменом; автоудаление по TTL. Идеально для ревью PR. |
-| **Офсайт-бэкапы** (`offsite-backups`) | Pro | Зеркалирование бэкапов managed-БД в любой S3-совместимый бакет с шифрованными доступами. |
-| **Алерты** (`alerts`) | Pro | Webhook-уведомления о падении ноды, неудачном деплое/бэкапе и порогах ресурсов; настраиваемые каналы и правила. |
+| **Service cron** (`service-cron`) | Home-Lab | Расписание команд внутри контейнера сервиса (cron-выражения). |
+| **Превью-среды** (`preview-envs`) | Pro | Одноразовые превью веток с опциональным поддоменом и TTL. **Git Apps** (`/git-apps`) — webhook GitHub/GitLab для PR-превью. |
+| **Офсайт-бэкапы** (`offsite-backups`) | Pro | Зеркалирование бэкапов managed-БД в **S3**, **GCS**, **Azure Blob** или **SFTP** (шифрованные доступы). |
+| **Алерты** (`alerts`) | Pro | Каналы: **webhook**, **Discord**, **Slack**, **Telegram** — падение ноды, сбой деплоя/бэкапа, пороги ресурсов. |
 | **История метрик** (`metrics-history`) | Pro | Сбор и графики истории CPU / RAM / диска по каждой ноде. |
 | **SSO / OIDC** (`sso`) | Pro | Единый вход через OpenID Connect (Google, Entra, Okta, Keycloak…) с allow-list доменов и автосозданием пользователей. |
 | **Экспорт аудита** (`audit-export`) | Pro | Общеорганизационный аудит-лог с фильтрами и экспортом в CSV / JSON. |
@@ -255,7 +268,7 @@ Open-core: **ядро бесплатно навсегда и без ограни
 | **White-label** (`white-label`) | Pro | Настройка названия приложения, логотипа, акцентного цвета и атрибуции. |
 | **Почта** (`email`) | Pro | Отправка и рассылка сообщений пользователям через ваш SMTP-провайдер — исходящий релей, а не входящий почтовый сервер. |
 
-<sub>Все модули реализованы и доступны. Home-Lab открывает Reverse tunnels; Pro открывает всё.</sub>
+<sub>Home-Lab открывает обратные туннели + service cron (+ полный каталог). Pro открывает всё.</sub>
 
 ### 🏗️ Архитектура
 
@@ -267,7 +280,9 @@ Open-core: **ядро бесплатно навсегда и без ограни
 
 ### 🔐 Безопасность
 
-- Секреты (PAT, env-секреты, токены) шифруются at rest (AES-256-GCM).
+Практическое усиление (без заявления о стороннем аудите):
+
+- Секреты (PAT, env-секреты, свои TLS PEM, токены) шифруются at rest (AES-256-GCM).
 - JWT-сессии, TOTP 2FA, строгая парольная политика.
 - RBAC на проект + append-only аудит-лог.
 - TLS-пиннинг для удалённых агентов.
