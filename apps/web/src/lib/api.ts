@@ -4,6 +4,7 @@ export const API_URL =
 // ---- Domain types (mirror the control plane responses) ----
 
 export type ServiceType = 'BACKEND' | 'FRONTEND';
+export type DeployKind = 'git' | 'image' | 'compose';
 export type ServiceStatus =
   | 'CREATED'
   | 'BUILDING'
@@ -24,8 +25,12 @@ export interface Service {
   status: ServiceStatus;
   projectId: string;
   nodeId: string;
-  templateId: string;
-  repoUrl: string;
+  templateId: string | null;
+  deployKind: DeployKind;
+  repoUrl: string | null;
+  image: string | null;
+  composeFile: string | null;
+  composeYaml: string | null;
   branch: string;
   useRepoDockerfile: boolean;
   port: number | null;
@@ -55,6 +60,9 @@ export interface UpdateServiceBody {
   branch?: string;
   gitCredId?: string;
   useRepoDockerfile?: boolean;
+  image?: string;
+  composeFile?: string;
+  composeYaml?: string;
   port?: number;
   cpuLimit?: number;
   memLimit?: number;
@@ -200,16 +208,30 @@ export interface AlertEventGroup {
 export const listAlertMeta = () =>
   api<{ events: string[]; groups: AlertEventGroup[] }>('/alerts/meta');
 
+export type AlertChannelType = 'webhook' | 'discord' | 'slack' | 'telegram';
+
 export const listAlertChannels = () =>
   api<AlertChannel[]>('/alerts/channels');
-export const createAlertChannel = (body: { name: string; url: string }) =>
+export const createAlertChannel = (body: {
+  name: string;
+  type?: AlertChannelType;
+  url?: string;
+  botToken?: string;
+  chatId?: string;
+}) =>
   api<AlertChannel>('/alerts/channels', {
     method: 'POST',
     body: JSON.stringify(body),
   });
 export const updateAlertChannel = (
   id: string,
-  body: { name?: string; url?: string; enabled?: boolean },
+  body: {
+    name?: string;
+    url?: string;
+    botToken?: string;
+    chatId?: string;
+    enabled?: boolean;
+  },
 ) =>
   api<AlertChannel>(`/alerts/channels/${id}`, {
     method: 'PATCH',
@@ -1122,8 +1144,12 @@ export interface CreateServiceBody {
   name: string;
   type: ServiceType;
   nodeId: string;
-  templateId: string;
-  repoUrl: string;
+  templateId?: string;
+  deployKind?: DeployKind;
+  repoUrl?: string;
+  image?: string;
+  composeFile?: string;
+  composeYaml?: string;
   branch?: string;
   gitCredId?: string;
   useRepoDockerfile?: boolean;
@@ -1149,6 +1175,54 @@ export const powerService = (
   id: string,
   action: 'start' | 'stop' | 'restart',
 ) => api<Service>(`/services/${id}/${action}`, { method: 'POST' });
+
+// ---- Catalog ----
+
+export interface CatalogEnvDefault {
+  key: string;
+  value?: string;
+  secret?: boolean;
+  required?: boolean;
+}
+
+export interface CatalogApp {
+  id: string;
+  slug: string;
+  name: string;
+  description: string | null;
+  category: string | null;
+  icon: string | null;
+  minTier: 'free' | 'homelab';
+  deployKind: DeployKind;
+  image: string | null;
+  composeYaml: string | null;
+  composeGitUrl: string | null;
+  composeFile: string | null;
+  defaultPort: number | null;
+  recommendedVolumes: { mountPath: string }[];
+  envDefaults: CatalogEnvDefault[];
+  locked?: boolean;
+}
+
+export const listCatalog = () =>
+  api<(CatalogApp & { locked: boolean })[]>('/catalog');
+export const getCatalogApp = (slug: string) =>
+  api<CatalogApp & { locked: boolean }>(`/catalog/${slug}`);
+export const installCatalogApp = (
+  slug: string,
+  body: {
+    projectId: string;
+    nodeId: string;
+    name?: string;
+    env?: Record<string, string>;
+    deploy?: boolean;
+  },
+) =>
+  api<{ service: Service; deployment: Deployment | null }>(
+    `/catalog/${slug}/install`,
+    { method: 'POST', body: JSON.stringify(body) },
+  );
+
 /**
  * Opens the live runtime log stream for a service. Returns the raw Response so
  * the caller can read `response.body` as a ReadableStream.

@@ -1,0 +1,16 @@
+{
+  "slug": "gitea",
+  "name": "Gitea",
+  "description": "Lightweight self-hosted Git service with issues and pull requests.",
+  "category": "DevTools",
+  "icon": "git",
+  "minTier": "free",
+  "deployKind": "image",
+  "image": "gitea/gitea:1.22",
+  "defaultPort": 3000,
+  "recommendedVolumes": [{ "mountPath": "/data" }],
+  "envDefaults": [
+    { "key": "USER_UID", "value": "1000" },
+    { "key": "USER_GID", "value": "1000" }
+  ]
+}

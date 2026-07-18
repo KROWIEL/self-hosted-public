@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import {
   AlertChannel,
+  AlertChannelType,
   AlertEvent,
   AlertEventGroup,
   AlertRule,
@@ -33,6 +34,20 @@ import {
   Spinner,
 } from '@/components/ui';
 import { TKey, useErrorText, useI18n } from '@/i18n';
+
+const CHANNEL_TYPES: AlertChannelType[] = [
+  'webhook',
+  'discord',
+  'slack',
+  'telegram',
+];
+
+const TYPE_LABELS: Record<AlertChannelType, TKey> = {
+  webhook: 'alerts.type.webhook',
+  discord: 'alerts.type.discord',
+  slack: 'alerts.type.slack',
+  telegram: 'alerts.type.telegram',
+};
 
 const EVENT_LABELS: Record<string, TKey> = {
   'node.offline': 'alerts.ev.nodeOffline',
@@ -90,7 +105,13 @@ function AlertsContent() {
   const [error, setError] = useState<string | null>(null);
   const [testedId, setTestedId] = useState<string | null>(null);
 
-  const [chForm, setChForm] = useState({ name: '', url: '' });
+  const [chForm, setChForm] = useState({
+    name: '',
+    type: 'webhook' as AlertChannelType,
+    url: '',
+    botToken: '',
+    chatId: '',
+  });
   const [ruleForm, setRuleForm] = useState({
     name: '',
     event: DEFAULT_EVENT,
@@ -144,16 +165,46 @@ function AlertsContent() {
     return GROUP_LABELS[g] ? t(GROUP_LABELS[g]) : g;
   }
 
+  function channelFormReady(): boolean {
+    if (!chForm.name.trim()) return false;
+    if (chForm.type === 'telegram') {
+      return Boolean(chForm.botToken.trim() && chForm.chatId.trim());
+    }
+    return Boolean(chForm.url.trim());
+  }
+
+  function urlPlaceholder(): string {
+    if (chForm.type === 'discord') return t('alerts.channelUrlPlaceholderDiscord');
+    if (chForm.type === 'slack') return t('alerts.channelUrlPlaceholderSlack');
+    return t('alerts.channelUrlPlaceholder');
+  }
+
   async function onAddChannel() {
-    if (!chForm.name.trim() || !chForm.url.trim()) return;
+    if (!channelFormReady()) return;
     setBusy(true);
     setError(null);
     try {
-      await createAlertChannel({
-        name: chForm.name.trim(),
-        url: chForm.url.trim(),
+      if (chForm.type === 'telegram') {
+        await createAlertChannel({
+          name: chForm.name.trim(),
+          type: 'telegram',
+          botToken: chForm.botToken.trim(),
+          chatId: chForm.chatId.trim(),
+        });
+      } else {
+        await createAlertChannel({
+          name: chForm.name.trim(),
+          type: chForm.type,
+          url: chForm.url.trim(),
+        });
+      }
+      setChForm({
+        name: '',
+        type: chForm.type,
+        url: '',
+        botToken: '',
+        chatId: '',
       });
-      setChForm({ name: '', url: '' });
       await reload();
     } catch (e) {
       setError(errorText(e));
@@ -276,26 +327,73 @@ function AlertsContent() {
         <p className="mt-1 text-sm text-neutral-400">
           {t('alerts.channelsHint')}
         </p>
-        <div className="mt-4 grid gap-3 sm:grid-cols-[1fr_2fr_auto] sm:items-end">
-          <Field label={t('alerts.channelName')}>
-            <input
-              value={chForm.name}
-              onChange={(e) => setChForm({ ...chForm, name: e.target.value })}
-              placeholder={t('alerts.channelNamePlaceholder')}
-              className="field w-full"
-            />
-          </Field>
-          <Field label={t('alerts.channelUrl')}>
-            <input
-              value={chForm.url}
-              onChange={(e) => setChForm({ ...chForm, url: e.target.value })}
-              placeholder={t('alerts.channelUrlPlaceholder')}
-              className="field w-full"
-            />
-          </Field>
+        <div className="mt-4 space-y-3">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label={t('alerts.channelName')}>
+              <input
+                value={chForm.name}
+                onChange={(e) => setChForm({ ...chForm, name: e.target.value })}
+                placeholder={t('alerts.channelNamePlaceholder')}
+                className="field w-full"
+              />
+            </Field>
+            <Field label={t('alerts.channelType')}>
+              <select
+                value={chForm.type}
+                onChange={(e) =>
+                  setChForm({
+                    ...chForm,
+                    type: e.target.value as AlertChannelType,
+                  })
+                }
+                className="field w-full"
+              >
+                {CHANNEL_TYPES.map((ty) => (
+                  <option key={ty} value={ty}>
+                    {t(TYPE_LABELS[ty])}
+                  </option>
+                ))}
+              </select>
+            </Field>
+          </div>
+          {chForm.type === 'telegram' ? (
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Field label={t('alerts.botToken')}>
+                <input
+                  type="password"
+                  autoComplete="off"
+                  value={chForm.botToken}
+                  onChange={(e) =>
+                    setChForm({ ...chForm, botToken: e.target.value })
+                  }
+                  placeholder={t('alerts.botTokenPlaceholder')}
+                  className="field w-full"
+                />
+              </Field>
+              <Field label={t('alerts.chatId')}>
+                <input
+                  value={chForm.chatId}
+                  onChange={(e) =>
+                    setChForm({ ...chForm, chatId: e.target.value })
+                  }
+                  placeholder={t('alerts.chatIdPlaceholder')}
+                  className="field w-full"
+                />
+              </Field>
+            </div>
+          ) : (
+            <Field label={t('alerts.channelUrl')}>
+              <input
+                value={chForm.url}
+                onChange={(e) => setChForm({ ...chForm, url: e.target.value })}
+                placeholder={urlPlaceholder()}
+                className="field w-full"
+              />
+            </Field>
+          )}
           <button
             onClick={onAddChannel}
-            disabled={busy || !chForm.name.trim() || !chForm.url.trim()}
+            disabled={busy || !channelFormReady()}
             className="btn-primary"
           >
             {t('alerts.addChannel')}

@@ -187,7 +187,8 @@ export default function ProjectPage() {
                       >
                         <span className="font-medium text-white">{s.name}</span>{' '}
                         <span className="text-sm text-neutral-500">
-                          {typeLabel(s.type)} · {s.repoUrl}
+                          {typeLabel(s.type)} · {s.deployKind ?? 'git'}
+                          {s.repoUrl ? ` · ${s.repoUrl}` : s.image ? ` · ${s.image}` : ''}
                         </span>
                         <span className="mt-1 block font-mono text-xs text-neutral-600">
                           {formatCpu(s.cpuLimit)} CPU · {s.memLimit} MB RAM
@@ -273,8 +274,11 @@ function CreateServiceModal({
     name: '',
     type: firstTemplate?.type ?? 'BACKEND',
     nodeId: nodes[0]?.id ?? '',
+    deployKind: 'git',
     templateId: firstTemplate?.id ?? '',
     repoUrl: '',
+    image: '',
+    composeFile: 'docker-compose.yml',
     branch: 'main',
     port: firstTemplate?.defaultPort,
     cpuLimit: Math.min(100, maxCpu),
@@ -292,15 +296,29 @@ function CreateServiceModal({
     }));
   }
 
+  function onKind(deployKind: CreateServiceBody['deployKind']) {
+    setForm((f) => ({
+      ...f,
+      deployKind,
+      templateId: deployKind === 'git' ? f.templateId || firstTemplate?.id : undefined,
+    }));
+  }
+
   async function onCreate(e: React.FormEvent) {
     e.preventDefault();
     setCreating(true);
     setErr(null);
     try {
+      const kind = form.deployKind ?? 'git';
       await createService(projectId, {
         ...form,
         name: form.name.trim(),
-        repoUrl: form.repoUrl.trim(),
+        deployKind: kind,
+        templateId: kind === 'git' ? form.templateId : undefined,
+        repoUrl:
+          kind === 'image' ? undefined : form.repoUrl?.trim() || undefined,
+        image: kind === 'image' ? form.image?.trim() : undefined,
+        composeFile: kind === 'compose' ? form.composeFile?.trim() : undefined,
       });
       onCreated();
     } catch (e) {
@@ -309,6 +327,8 @@ function CreateServiceModal({
       setCreating(false);
     }
   }
+
+  const kind = form.deployKind ?? 'git';
 
   return (
     <Modal
@@ -327,28 +347,72 @@ function CreateServiceModal({
             className="field w-full"
           />
         </Field>
-        <Field label={t('service.repo')}>
-          <input
-            value={form.repoUrl}
-            onChange={(e) => setForm({ ...form, repoUrl: e.target.value })}
-            placeholder={t('project.repoPlaceholder')}
-            required
-            className="field w-full"
-          />
-        </Field>
-        <Field label={t('field.template')}>
+        <Field label={t('deploy.kind')}>
           <select
-            value={form.templateId}
-            onChange={(e) => onTemplate(e.target.value)}
+            value={kind}
+            onChange={(e) =>
+              onKind(e.target.value as CreateServiceBody['deployKind'])
+            }
             className="field w-full"
           >
-            {templates.map((tpl) => (
-              <option key={tpl.id} value={tpl.id} className="bg-ink-850">
-                {tpl.name} ({tpl.type})
-              </option>
-            ))}
+            <option value="git" className="bg-ink-850">
+              {t('deploy.kind.git')}
+            </option>
+            <option value="image" className="bg-ink-850">
+              {t('deploy.kind.image')}
+            </option>
+            <option value="compose" className="bg-ink-850">
+              {t('deploy.kind.compose')}
+            </option>
           </select>
         </Field>
+        {kind !== 'image' && (
+          <Field label={t('service.repo')}>
+            <input
+              value={form.repoUrl ?? ''}
+              onChange={(e) => setForm({ ...form, repoUrl: e.target.value })}
+              placeholder={t('project.repoPlaceholder')}
+              required
+              className="field w-full"
+            />
+          </Field>
+        )}
+        {kind === 'image' && (
+          <Field label={t('deploy.image')}>
+            <input
+              value={form.image ?? ''}
+              onChange={(e) => setForm({ ...form, image: e.target.value })}
+              placeholder={t('deploy.imagePlaceholder')}
+              required
+              className="field w-full"
+            />
+          </Field>
+        )}
+        {kind === 'compose' && (
+          <Field label={t('deploy.composeFile')} hint={t('deploy.composeFileHint')}>
+            <input
+              value={form.composeFile ?? 'docker-compose.yml'}
+              onChange={(e) => setForm({ ...form, composeFile: e.target.value })}
+              className="field w-full"
+            />
+          </Field>
+        )}
+        {kind === 'git' && (
+          <Field label={t('field.template')}>
+            <select
+              value={form.templateId}
+              onChange={(e) => onTemplate(e.target.value)}
+              className="field w-full"
+              required
+            >
+              {templates.map((tpl) => (
+                <option key={tpl.id} value={tpl.id} className="bg-ink-850">
+                  {tpl.name} ({tpl.type})
+                </option>
+              ))}
+            </select>
+          </Field>
+        )}
         <Field label={t('field.node')}>
           <select
             value={form.nodeId}
@@ -362,14 +426,16 @@ function CreateServiceModal({
             ))}
           </select>
         </Field>
-        <Field label={t('project.branch')}>
-          <input
-            value={form.branch}
-            onChange={(e) => setForm({ ...form, branch: e.target.value })}
-            placeholder={t('project.branch')}
-            className="field w-full"
-          />
-        </Field>
+        {kind !== 'image' && (
+          <Field label={t('project.branch')}>
+            <input
+              value={form.branch}
+              onChange={(e) => setForm({ ...form, branch: e.target.value })}
+              placeholder={t('project.branch')}
+              className="field w-full"
+            />
+          </Field>
+        )}
         <Field label={t('project.port')}>
           <input
             type="number"
@@ -401,51 +467,59 @@ function CreateServiceModal({
           recommendedValue={recommendedMem}
           recommendedLabel={t('resources.recommended')}
         />
-        <Field
-          label={t('project.gitCred')}
-          hint={t('project.gitCredHint')}
-          className="sm:col-span-2"
-        >
-          <select
-            value={form.gitCredId ?? ''}
-            onChange={(e) =>
-              setForm({ ...form, gitCredId: e.target.value || undefined })
-            }
-            className="field w-full"
+        {kind !== 'image' && (
+          <Field
+            label={t('project.gitCred')}
+            hint={t('project.gitCredHint')}
+            className="sm:col-span-2"
           >
-            <option value="" className="bg-ink-850">
-              {t('project.gitCredNone')}
-            </option>
-            {creds.map((c) => (
-              <option key={c.id} value={c.id} className="bg-ink-850">
-                {c.name} ({c.provider})
+            <select
+              value={form.gitCredId ?? ''}
+              onChange={(e) =>
+                setForm({ ...form, gitCredId: e.target.value || undefined })
+              }
+              className="field w-full"
+            >
+              <option value="" className="bg-ink-850">
+                {t('project.gitCredNone')}
               </option>
-            ))}
-          </select>
-        </Field>
-        <label className="flex items-start gap-2 text-sm text-neutral-300 sm:col-span-2">
-          <input
-            type="checkbox"
-            checked={form.useRepoDockerfile ?? false}
-            onChange={(e) =>
-              setForm({ ...form, useRepoDockerfile: e.target.checked })
-            }
-            className="mt-0.5 accent-indigo-500"
-          />
-          <span>
-            {t('project.useRepoDockerfile')}
-            <span className="mt-0.5 block text-xs text-neutral-500">
-              {t('project.useRepoDockerfileHint')}
+              {creds.map((c) => (
+                <option key={c.id} value={c.id} className="bg-ink-850">
+                  {c.name} ({c.provider})
+                </option>
+              ))}
+            </select>
+          </Field>
+        )}
+        {kind === 'git' && (
+          <label className="flex items-start gap-2 text-sm text-neutral-300 sm:col-span-2">
+            <input
+              type="checkbox"
+              checked={form.useRepoDockerfile ?? false}
+              onChange={(e) =>
+                setForm({ ...form, useRepoDockerfile: e.target.checked })
+              }
+              className="mt-0.5 accent-indigo-500"
+            />
+            <span>
+              {t('project.useRepoDockerfile')}
+              <span className="mt-0.5 block text-xs text-neutral-500">
+                {t('project.useRepoDockerfileHint')}
+              </span>
             </span>
-          </span>
-        </label>
+          </label>
+        )}
         <div className="flex justify-end gap-2 sm:col-span-2">
           <button type="button" onClick={onClose} className="btn-ghost">
             {t('common.cancel')}
           </button>
           <button
             type="submit"
-            disabled={creating || nodes.length === 0 || templates.length === 0}
+            disabled={
+              creating ||
+              nodes.length === 0 ||
+              (kind === 'git' && templates.length === 0)
+            }
             className="btn-primary"
           >
             {creating ? t('common.creating') : t('project.createService')}

@@ -23,6 +23,18 @@ export class UpdateServiceDto {
   useRepoDockerfile?: boolean;
 
   @IsOptional()
+  @IsString()
+  image?: string;
+
+  @IsOptional()
+  @IsString()
+  composeFile?: string;
+
+  @IsOptional()
+  @IsString()
+  composeYaml?: string;
+
+  @IsOptional()
   @IsInt()
   @Min(1)
   port?: number;

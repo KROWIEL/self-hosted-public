@@ -1,0 +1,13 @@
+{
+  "slug": "whoami",
+  "name": "Whoami",
+  "description": "Tiny Traefik whoami demo — useful for smoke-testing domains and TLS.",
+  "category": "Demo",
+  "icon": "demo",
+  "minTier": "free",
+  "deployKind": "image",
+  "image": "traefik/whoami:v1.10",
+  "defaultPort": 80,
+  "recommendedVolumes": [],
+  "envDefaults": []
+}

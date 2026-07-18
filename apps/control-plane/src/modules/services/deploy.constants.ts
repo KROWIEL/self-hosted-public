@@ -8,6 +8,11 @@ export function deployLockKey(serviceId: string): string {
   return `deploy:lock:${serviceId}`;
 }
 
+/** Stable docker compose project name derived from a service UUID. */
+export function composeProjectName(serviceId: string): string {
+  return `c${serviceId.replace(/-/g, '').toLowerCase()}`;
+}
+
 /** Auto-expiry so a crashed worker can't wedge a service permanently. */
 export const DEPLOY_LOCK_TTL_MS = 15 * 60 * 1000;
 

@@ -32,6 +32,7 @@ import {
   DEPLOY_QUEUE,
   DEPLOY_LOCK_TTL_MS,
   DeployJobData,
+  composeProjectName,
   deployLockKey,
 } from './deploy.constants';
 
@@ -88,6 +89,26 @@ export class ServicesService implements OnModuleDestroy {
 
   async create(projectId: string, dto: CreateServiceDto) {
     await this.ensureProjectQuota(projectId, dto.cpuLimit ?? 100, dto.memLimit ?? 512);
+    const deployKind = dto.deployKind ?? 'git';
+    if (deployKind === 'git' && !dto.templateId) {
+      throw new BadRequestException('templateId is required for git deploys');
+    }
+    if (deployKind === 'git' && !dto.repoUrl) {
+      throw new BadRequestException('repoUrl is required for git deploys');
+    }
+    if (deployKind === 'image' && !dto.image) {
+      throw new BadRequestException('image is required for image deploys');
+    }
+    if (
+      deployKind === 'compose' &&
+      !dto.composeYaml &&
+      !dto.repoUrl
+    ) {
+      throw new BadRequestException(
+        'repoUrl or composeYaml is required for compose deploys',
+      );
+    }
+
     const rows = await this.db
       .insert(services)
       .values({
@@ -95,8 +116,12 @@ export class ServicesService implements OnModuleDestroy {
         type: dto.type,
         projectId,
         nodeId: dto.nodeId,
-        templateId: dto.templateId,
-        repoUrl: dto.repoUrl,
+        templateId: deployKind === 'git' ? dto.templateId! : null,
+        deployKind,
+        repoUrl: dto.repoUrl ?? null,
+        image: dto.image ?? null,
+        composeFile: dto.composeFile ?? 'docker-compose.yml',
+        composeYaml: dto.composeYaml ?? null,
         branch: dto.branch ?? 'main',
         gitCredId: dto.gitCredId,
         useRepoDockerfile: dto.useRepoDockerfile ?? false,
@@ -136,11 +161,13 @@ export class ServicesService implements OnModuleDestroy {
       .from(nodes)
       .where(eq(nodes.id, service.nodeId))
       .limit(1);
-    const [template] = await this.db
-      .select()
-      .from(templates)
-      .where(eq(templates.id, service.templateId))
-      .limit(1);
+    const [template] = service.templateId
+      ? await this.db
+          .select()
+          .from(templates)
+          .where(eq(templates.id, service.templateId))
+          .limit(1)
+      : [undefined];
     const [domain] = await this.db
       .select()
       .from(domains)
@@ -192,6 +219,9 @@ export class ServicesService implements OnModuleDestroy {
     if (dto.repoUrl !== undefined) set.repoUrl = dto.repoUrl;
     if (dto.branch !== undefined) set.branch = dto.branch;
     if (dto.port !== undefined) set.port = dto.port;
+    if (dto.image !== undefined) set.image = dto.image || null;
+    if (dto.composeFile !== undefined) set.composeFile = dto.composeFile;
+    if (dto.composeYaml !== undefined) set.composeYaml = dto.composeYaml || null;
     if (dto.gitCredId !== undefined) set.gitCredId = dto.gitCredId || null;
     if (dto.useRepoDockerfile !== undefined) {
       set.useRepoDockerfile = dto.useRepoDockerfile;
@@ -348,9 +378,16 @@ export class ServicesService implements OnModuleDestroy {
     const service = await this.get(id);
     try {
       const node = await this.node(service.nodeId);
-      await this.agent.remove(node, id);
-      // Reclaim disk: drop every image of this service (empty keepImage).
-      await this.agent.gc(node, id, '');
+      if (service.deployKind === 'compose') {
+        await this.agent.composeDown(node, id, {
+          projectName: composeProjectName(id),
+          removeVolumes: false,
+        });
+      } else {
+        await this.agent.remove(node, id);
+        // Reclaim disk: drop every image of this service (empty keepImage).
+        await this.agent.gc(node, id, '');
+      }
     } catch {
       // Best-effort: still remove the record even if the agent is unreachable.
     }
@@ -612,7 +649,18 @@ export class ServicesService implements OnModuleDestroy {
   async power(id: string, action: PowerAction) {
     const service = await this.get(id);
     const node = await this.node(service.nodeId);
-    await this.agent.power(node, id, action);
+    if (service.deployKind === 'compose') {
+      const mapped =
+        action === PowerAction.KILL ? PowerAction.STOP : action;
+      await this.agent.composePower(
+        node,
+        id,
+        mapped,
+        composeProjectName(id),
+      );
+    } else {
+      await this.agent.power(node, id, action);
+    }
     const status =
       action === PowerAction.STOP || action === PowerAction.KILL
         ? 'STOPPED'

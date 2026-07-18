@@ -44,6 +44,11 @@ const Icon = {
       <path d="m3 13 9 5 9-5" />
     </Svg>
   ),
+  catalog: (p: IconProps) => (
+    <Svg {...p}>
+      <path d="M4 6h6v6H4zM14 6h6v6h-6zM4 16h6v6H4zM14 16h6v6h-6z" />
+    </Svg>
+  ),
   git: (p: IconProps) => (
     <Svg {...p}>
       <circle cx="7" cy="7" r="2.5" />
@@ -193,6 +198,7 @@ const NAV: NavItem[] = [
     module: 'reverse-tunnels',
   },
   { href: '/templates', label: 'nav.templates', icon: Icon.templates },
+  { href: '/catalog', label: 'nav.catalog', icon: Icon.catalog },
   { href: '/git-credentials', label: 'nav.git', icon: Icon.git },
   {
     href: '/audit',

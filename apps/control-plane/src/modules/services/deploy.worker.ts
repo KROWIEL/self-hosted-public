@@ -25,13 +25,17 @@ import { BuildLogService } from './build-log.service';
 import {
   DEPLOY_QUEUE_NAME,
   DeployJobData,
+  composeProjectName,
   createRedisConnection,
   deployLockKey,
 } from './deploy.constants';
 
+export { composeProjectName };
+
 /**
  * Consumes deploy jobs and drives the full pipeline on the target node:
  * build image from git -> run container -> update service/deployment rows.
+ * Also handles image-pull and docker-compose deploy kinds.
  */
 @Injectable()
 export class DeployWorker implements OnModuleInit, OnModuleDestroy {
@@ -85,14 +89,21 @@ export class DeployWorker implements OnModuleInit, OnModuleDestroy {
     )[0];
     if (!node) throw new Error(`node ${svc.nodeId} not found`);
 
-    const tpl = (
-      await this.db
-        .select()
-        .from(templates)
-        .where(eq(templates.id, svc.templateId))
-        .limit(1)
-    )[0];
-    if (!tpl) throw new Error(`template ${svc.templateId} not found`);
+    const kind = svc.deployKind ?? 'git';
+
+    // Image/compose do not use language-stack templates.
+    let tpl: typeof templates.$inferSelect | null = null;
+    if (kind === 'git') {
+      if (!svc.templateId) throw new Error('templateId required for git deploy');
+      tpl = (
+        await this.db
+          .select()
+          .from(templates)
+          .where(eq(templates.id, svc.templateId))
+          .limit(1)
+      )[0];
+      if (!tpl) throw new Error(`template ${svc.templateId} not found`);
+    }
 
     let patToken: string | undefined;
     let gitUsername: string | undefined;
@@ -109,6 +120,7 @@ export class DeployWorker implements OnModuleInit, OnModuleDestroy {
         gitUsername = cred.username ?? undefined;
       }
     }
+    void gitUsername; // reserved for future clone auth variants
 
     const env = await this.resolveEnv(serviceId);
     const domainRow = (
@@ -123,128 +135,41 @@ export class DeployWorker implements OnModuleInit, OnModuleDestroy {
       .from(volumes)
       .where(eq(volumes.serviceId, serviceId));
 
-    const isRollback = !!rollbackImageTag;
-    const imageTag =
-      rollbackImageTag ??
-      `svc-${serviceId.slice(0, 8)}:${deploymentId.slice(0, 8)}`;
-
     try {
-      if (isRollback) {
-        // Reuse a previously built image — no clone/build step.
-        await this.buildLog.publish(
+      if (kind === 'compose') {
+        await this.deployCompose({
           deploymentId,
-          `>> rollback: redeploying existing image ${imageTag}\n`,
-        );
-        await this.setDeploy(deploymentId, {
-          status: 'DEPLOYING',
-          commitSha: rollbackCommitSha,
-          imageTag,
-          buildLog: `Rollback: reused image ${imageTag}`,
-        });
-        await this.setService(serviceId, { status: 'BUILDING' });
-      } else {
-        await this.setDeploy(deploymentId, { status: 'BUILDING', phase: 'build' });
-        await this.setService(serviceId, { status: 'BUILDING' });
-
-        const build = await this.agent.build(
-          node,
-          {
-            serviceId,
-            repoUrl: svc.repoUrl,
-            branch: svc.branch,
-            patToken,
-            gitUsername,
-            buildImage: tpl.installImage,
-            runImage: tpl.baseImage,
-            dockerfile: tpl.dockerfilePath ?? undefined,
-            useRepoDockerfile: svc.useRepoDockerfile,
-            imageTag,
-          },
-          (chunk) => void this.buildLog.publish(deploymentId, chunk),
-        );
-
-        await this.setDeploy(deploymentId, {
-          status: 'DEPLOYING',
-          commitSha: build.commitSha,
-          imageTag,
-          buildLog: build.buildLog,
-        });
-      }
-
-      const port = svc.port ?? tpl.defaultPort;
-      const volumeMounts = volumeRows.map((v) => ({
-        name: v.name,
-        mountPath: v.mountPath,
-      }));
-
-      // Zero-downtime needs a domain (Traefik does the smooth switchover) and is
-      // unsafe with volumes (two instances would share the same RW volume), so
-      // any such service falls back to the classic replace-in-place run.
-      if (svc.zeroDowntime && volumeRows.length > 0) {
-        await this.buildLog.publish(
-          deploymentId,
-          '>> note: zero-downtime skipped — service has persistent volumes; ' +
-            'using in-place deploy\n',
-        );
-      }
-      if (svc.zeroDowntime && domainRow?.host && volumeRows.length === 0) {
-        await this.zeroDowntimeDeploy({
-          node,
-          svc,
-          tpl,
-          deploymentId,
-          imageTag,
-          port,
-          env,
-          domain: domainRow.host,
-          https: domainRow.https,
-          volumes: volumeMounts,
-        });
-      } else {
-        await this.setDeploy(deploymentId, { phase: 'run' });
-        const run = await this.agent.run(node, {
           serviceId,
-          image: imageTag,
-          port,
-          cpuLimit: svc.cpuLimit,
-          memLimit: svc.memLimit,
+          svc,
+          node,
           env,
-          domain: domainRow?.host,
-          https: domainRow?.https,
-          volumes: volumeMounts,
+          domainRow,
+          patToken,
         });
-        if (!run.ok) {
-          throw new Error(run.error ?? 'agent run failed');
-        }
-        // Sweep any leftover blue-green instances from a prior ZDD run.
-        try {
-          await this.agent.promote(node, serviceId, '');
-        } catch {
-          // best-effort cleanup
-        }
-        await this.setService(serviceId, {
-          status: 'RUNNING',
-          containerId: run.containerId,
-          currentImage: imageTag,
-          activeColor: null,
+      } else if (kind === 'image') {
+        await this.deployImage({
+          deploymentId,
+          serviceId,
+          svc,
+          node,
+          env,
+          domainRow,
+          volumeRows,
         });
-      }
-
-      await this.setDeploy(deploymentId, {
-        status: 'SUCCESS',
-        finishedAt: new Date(),
-      });
-
-      // Housekeeping: drop older images of this service to reclaim disk.
-      // Best-effort — never fail a successful deploy over cleanup.
-      try {
-        await this.agent.gc(node, serviceId, imageTag);
-      } catch (gcErr) {
-        this.logger.warn(
-          `GC for ${serviceId} failed: ${
-            gcErr instanceof Error ? gcErr.message : String(gcErr)
-          }`,
-        );
+      } else {
+        await this.deployGit({
+          deploymentId,
+          serviceId,
+          svc,
+          node,
+          tpl: tpl!,
+          env,
+          domainRow,
+          volumeRows,
+          patToken,
+          rollbackImageTag,
+          rollbackCommitSha,
+        });
       }
     } catch (e) {
       const err = e as Error & { buildLog?: string };
@@ -259,10 +184,265 @@ export class DeployWorker implements OnModuleInit, OnModuleDestroy {
       throw err;
     } finally {
       await this.buildLog.end(deploymentId);
-      // Release the per-service deploy lock so the next deploy can proceed.
       await this.lockRedis
         .del(deployLockKey(serviceId))
         .catch(() => undefined);
+    }
+  }
+
+  private async deployCompose(ctx: {
+    deploymentId: string;
+    serviceId: string;
+    svc: typeof services.$inferSelect;
+    node: typeof nodes.$inferSelect;
+    env: Record<string, string>;
+    domainRow: typeof domains.$inferSelect | undefined;
+    patToken?: string;
+  }) {
+    const { deploymentId, serviceId, svc, node, env, domainRow, patToken } = ctx;
+    const projectName = composeProjectName(serviceId);
+
+    await this.setDeploy(deploymentId, { status: 'BUILDING', phase: 'build' });
+    await this.setService(serviceId, { status: 'BUILDING' });
+
+    const result = await this.agent.composeUp(
+      node,
+      {
+        serviceId,
+        repoUrl: svc.repoUrl ?? undefined,
+        branch: svc.branch,
+        composeFile: svc.composeFile ?? 'docker-compose.yml',
+        composeYaml: svc.composeYaml ?? undefined,
+        patToken,
+        env,
+        projectName,
+        domain: domainRow?.host,
+        https: domainRow?.https,
+      },
+      (chunk) => void this.buildLog.publish(deploymentId, chunk),
+    );
+
+    await this.setDeploy(deploymentId, {
+      status: 'DEPLOYING',
+      imageTag: `compose:${projectName}`,
+      buildLog: result.buildLog,
+      phase: 'run',
+    });
+    await this.setService(serviceId, {
+      status: 'RUNNING',
+      containerId: projectName,
+      currentImage: `compose:${projectName}`,
+      activeColor: null,
+    });
+    await this.setDeploy(deploymentId, {
+      status: 'SUCCESS',
+      finishedAt: new Date(),
+    });
+  }
+
+  private async deployImage(ctx: {
+    deploymentId: string;
+    serviceId: string;
+    svc: typeof services.$inferSelect;
+    node: typeof nodes.$inferSelect;
+    env: Record<string, string>;
+    domainRow: typeof domains.$inferSelect | undefined;
+    volumeRows: (typeof volumes.$inferSelect)[];
+  }) {
+    const { deploymentId, serviceId, svc, node, env, domainRow, volumeRows } =
+      ctx;
+    if (!svc.image) throw new Error('image is required for image deploy');
+
+    await this.setDeploy(deploymentId, {
+      status: 'DEPLOYING',
+      phase: 'run',
+      imageTag: svc.image,
+      buildLog: `Pulling image ${svc.image}`,
+    });
+    await this.setService(serviceId, { status: 'BUILDING' });
+    await this.buildLog.publish(
+      deploymentId,
+      `>> deploying image ${svc.image}\n`,
+    );
+
+    const port = svc.port ?? 80;
+    const volumeMounts = volumeRows.map((v) => ({
+      name: v.name,
+      mountPath: v.mountPath,
+    }));
+
+    const run = await this.agent.runImage(node, {
+      serviceId,
+      image: svc.image,
+      port,
+      cpuLimit: svc.cpuLimit,
+      memLimit: svc.memLimit,
+      env,
+      domain: domainRow?.host,
+      https: domainRow?.https,
+      volumes: volumeMounts,
+    });
+    if (!run.ok) {
+      throw new Error(run.error ?? 'agent run-image failed');
+    }
+    if (run.log) {
+      await this.buildLog.publish(deploymentId, run.log);
+    }
+
+    await this.setService(serviceId, {
+      status: 'RUNNING',
+      containerId: run.containerId,
+      currentImage: svc.image,
+      activeColor: null,
+    });
+    await this.setDeploy(deploymentId, {
+      status: 'SUCCESS',
+      finishedAt: new Date(),
+    });
+  }
+
+  private async deployGit(ctx: {
+    deploymentId: string;
+    serviceId: string;
+    svc: typeof services.$inferSelect;
+    node: typeof nodes.$inferSelect;
+    tpl: typeof templates.$inferSelect;
+    env: Record<string, string>;
+    domainRow: typeof domains.$inferSelect | undefined;
+    volumeRows: (typeof volumes.$inferSelect)[];
+    patToken?: string;
+    rollbackImageTag?: string;
+    rollbackCommitSha?: string;
+  }) {
+    const {
+      deploymentId,
+      serviceId,
+      svc,
+      node,
+      tpl,
+      env,
+      domainRow,
+      volumeRows,
+      patToken,
+      rollbackImageTag,
+      rollbackCommitSha,
+    } = ctx;
+
+    if (!svc.repoUrl) throw new Error('repoUrl is required for git deploy');
+
+    const isRollback = !!rollbackImageTag;
+    const imageTag =
+      rollbackImageTag ??
+      `svc-${serviceId.slice(0, 8)}:${deploymentId.slice(0, 8)}`;
+
+    if (isRollback) {
+      await this.buildLog.publish(
+        deploymentId,
+        `>> rollback: redeploying existing image ${imageTag}\n`,
+      );
+      await this.setDeploy(deploymentId, {
+        status: 'DEPLOYING',
+        commitSha: rollbackCommitSha,
+        imageTag,
+        buildLog: `Rollback: reused image ${imageTag}`,
+      });
+      await this.setService(serviceId, { status: 'BUILDING' });
+    } else {
+      await this.setDeploy(deploymentId, { status: 'BUILDING', phase: 'build' });
+      await this.setService(serviceId, { status: 'BUILDING' });
+
+      const build = await this.agent.build(
+        node,
+        {
+          serviceId,
+          repoUrl: svc.repoUrl,
+          branch: svc.branch,
+          patToken,
+          buildImage: tpl.installImage,
+          runImage: tpl.baseImage,
+          dockerfile: tpl.dockerfilePath ?? undefined,
+          useRepoDockerfile: svc.useRepoDockerfile,
+          imageTag,
+        },
+        (chunk) => void this.buildLog.publish(deploymentId, chunk),
+      );
+
+      await this.setDeploy(deploymentId, {
+        status: 'DEPLOYING',
+        commitSha: build.commitSha,
+        imageTag,
+        buildLog: build.buildLog,
+      });
+    }
+
+    const port = svc.port ?? tpl.defaultPort;
+    const volumeMounts = volumeRows.map((v) => ({
+      name: v.name,
+      mountPath: v.mountPath,
+    }));
+
+    if (svc.zeroDowntime && volumeRows.length > 0) {
+      await this.buildLog.publish(
+        deploymentId,
+        '>> note: zero-downtime skipped — service has persistent volumes; ' +
+          'using in-place deploy\n',
+      );
+    }
+    if (svc.zeroDowntime && domainRow?.host && volumeRows.length === 0) {
+      await this.zeroDowntimeDeploy({
+        node,
+        svc,
+        tpl,
+        deploymentId,
+        imageTag,
+        port,
+        env,
+        domain: domainRow.host,
+        https: domainRow.https,
+        volumes: volumeMounts,
+      });
+    } else {
+      await this.setDeploy(deploymentId, { phase: 'run' });
+      const run = await this.agent.run(node, {
+        serviceId,
+        image: imageTag,
+        port,
+        cpuLimit: svc.cpuLimit,
+        memLimit: svc.memLimit,
+        env,
+        domain: domainRow?.host,
+        https: domainRow?.https,
+        volumes: volumeMounts,
+      });
+      if (!run.ok) {
+        throw new Error(run.error ?? 'agent run failed');
+      }
+      try {
+        await this.agent.promote(node, serviceId, '');
+      } catch {
+        // best-effort cleanup
+      }
+      await this.setService(serviceId, {
+        status: 'RUNNING',
+        containerId: run.containerId,
+        currentImage: imageTag,
+        activeColor: null,
+      });
+    }
+
+    await this.setDeploy(deploymentId, {
+      status: 'SUCCESS',
+      finishedAt: new Date(),
+    });
+
+    try {
+      await this.agent.gc(node, serviceId, imageTag);
+    } catch (gcErr) {
+      this.logger.warn(
+        `GC for ${serviceId} failed: ${
+          gcErr instanceof Error ? gcErr.message : String(gcErr)
+        }`,
+      );
     }
   }
 

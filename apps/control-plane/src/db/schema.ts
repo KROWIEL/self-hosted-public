@@ -24,6 +24,10 @@ export const memberRoleEnum = pgEnum('member_role', [
 export const nodeStatusEnum = pgEnum('node_status', ['ONLINE', 'OFFLINE']);
 export const gitProviderEnum = pgEnum('git_provider', ['GITHUB', 'GITLAB']);
 export const serviceTypeEnum = pgEnum('service_type', ['BACKEND', 'FRONTEND']);
+/** How a service is deployed onto a node. */
+export const deployKindEnum = pgEnum('deploy_kind', ['git', 'image', 'compose']);
+/** Lowest commercial tier that can install a catalog app. */
+export const catalogTierEnum = pgEnum('catalog_tier', ['free', 'homelab']);
 export const serviceStatusEnum = pgEnum('service_status', [
   'CREATED',
   'BUILDING',
@@ -213,11 +217,19 @@ export const services = pgTable('services', {
   nodeId: uuid('node_id')
     .notNull()
     .references(() => nodes.id),
-  templateId: uuid('template_id')
-    .notNull()
-    .references(() => templates.id),
-  repoUrl: text('repo_url').notNull(),
+  // Null for image/compose deploy kinds (no language-stack template).
+  templateId: uuid('template_id').references(() => templates.id),
+  // How the service is built/run on the node. Default 'git' = template Dockerfile.
+  deployKind: deployKindEnum('deploy_kind').notNull().default('git'),
+  // Git clone URL. Required for git/compose (unless composeYaml is inline); null for image.
+  repoUrl: text('repo_url'),
   branch: text('branch').notNull().default('main'),
+  // Docker image ref when deployKind=image (e.g. louislam/uptime-kuma:1).
+  image: text('image'),
+  // Path to the compose file inside the repo (deployKind=compose).
+  composeFile: text('compose_file').default('docker-compose.yml'),
+  // Inline compose YAML for catalog-owned stacks (no git clone needed).
+  composeYaml: text('compose_yaml'),
   gitCredId: uuid('git_cred_id').references(() => gitCredentials.id),
   // When true, build from the repo's own Dockerfile (if present) instead of the
   // selected template's Dockerfile. Default: use the template (predictable builds).
@@ -246,6 +258,33 @@ export const services = pgTable('services', {
     onDelete: 'cascade',
   }),
   status: serviceStatusEnum('status').notNull().default('CREATED'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+});
+
+/// One-click app catalog entry (seeded from catalog/apps/*.json).
+export const catalogApps = pgTable('catalog_apps', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  slug: text('slug').notNull().unique(),
+  name: text('name').notNull(),
+  description: text('description'),
+  category: text('category'),
+  icon: text('icon'),
+  minTier: catalogTierEnum('min_tier').notNull().default('free'),
+  deployKind: deployKindEnum('deploy_kind').notNull(),
+  image: text('image'),
+  composeYaml: text('compose_yaml'),
+  composeGitUrl: text('compose_git_url'),
+  composeFile: text('compose_file'),
+  defaultPort: integer('default_port'),
+  // JSON array of { mountPath: string }.
+  recommendedVolumes: jsonb('recommended_volumes')
+    .notNull()
+    .default(sql`'[]'::jsonb`),
+  // JSON array of { key, value?, secret?, required? }.
+  envDefaults: jsonb('env_defaults')
+    .notNull()
+    .default(sql`'[]'::jsonb`),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });
@@ -430,8 +469,9 @@ export const installation = pgTable('installation', {
 export const alertChannels = pgTable('alert_channels', {
   id: uuid('id').primaryKey().defaultRandom(),
   name: text('name').notNull(),
-  type: text('type').notNull().default('webhook'), // 'webhook'
-  // Encrypted JSON config, e.g. {"url":"https://…"} — may embed secrets.
+  // webhook | discord | slack | telegram
+  type: text('type').notNull().default('webhook'),
+  // Encrypted JSON: {url} or telegram {botToken,chatId} — may embed secrets.
   configEnc: text('config_enc').notNull(),
   enabled: boolean('enabled').notNull().default(true),
   createdAt: timestamp('created_at').notNull().defaultNow(),
@@ -643,6 +683,7 @@ export type DbSchema = {
   gitCredentials: typeof gitCredentials;
   templates: typeof templates;
   services: typeof services;
+  catalogApps: typeof catalogApps;
   envVars: typeof envVars;
   deployments: typeof deployments;
   domains: typeof domains;

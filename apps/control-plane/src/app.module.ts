@@ -27,6 +27,7 @@ import { MetricsModule } from './modules/metrics/metrics.module';
 import { SsoModule } from './modules/sso/sso.module';
 import { PreviewModule } from './modules/preview/preview.module';
 import { EmailModule } from './modules/email/email.module';
+import { CatalogModule } from './modules/catalog/catalog.module';
 
 @Module({
   imports: [
@@ -57,6 +58,7 @@ import { EmailModule } from './modules/email/email.module';
     BackupsModule,
     TunnelsModule,
     TemplatesModule,
+    CatalogModule,
     GitModule,
     AlertsModule,
     OffsiteModule,

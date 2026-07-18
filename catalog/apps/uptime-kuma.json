@@ -1,0 +1,13 @@
+{
+  "slug": "uptime-kuma",
+  "name": "Uptime Kuma",
+  "description": "Self-hosted uptime monitoring with a clean status dashboard.",
+  "category": "Monitoring",
+  "icon": "monitor",
+  "minTier": "free",
+  "deployKind": "image",
+  "image": "louislam/uptime-kuma:1",
+  "defaultPort": 3001,
+  "recommendedVolumes": [{ "mountPath": "/app/data" }],
+  "envDefaults": []
+}

@@ -284,6 +284,11 @@ export class DatabasesService {
    */
   async inspectService(serviceId: string) {
     const svc = await this.serviceRow(serviceId);
+    if (!svc.repoUrl) {
+      throw new BadRequestException(
+        'Service has no repository URL to inspect (image/compose without git).',
+      );
+    }
     const node = await this.nodeRow(svc.nodeId);
     const patToken = await this.patFor(svc.gitCredId);
 

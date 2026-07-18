@@ -1,0 +1,16 @@
+{
+  "slug": "umami",
+  "name": "Umami",
+  "description": "Privacy-friendly web analytics with a bundled Postgres (compose stack).",
+  "category": "Analytics",
+  "icon": "chart",
+  "minTier": "homelab",
+  "deployKind": "compose",
+  "composeFile": "docker-compose.yml",
+  "composeYaml": "services:\n  umami:\n    image: ghcr.io/umami-software/umami:postgresql-latest\n    ports:\n      - \"3000:3000\"\n    environment:\n      DATABASE_URL: postgresql://umami:umami@db:5432/umami\n      APP_SECRET: ${APP_SECRET:-replace-me}\n    depends_on:\n      - db\n    restart: unless-stopped\n  db:\n    image: postgres:15-alpine\n    environment:\n      POSTGRES_DB: umami\n      POSTGRES_USER: umami\n      POSTGRES_PASSWORD: umami\n    volumes:\n      - umami-db:/var/lib/postgresql/data\n    restart: unless-stopped\nvolumes:\n  umami-db:\n",
+  "defaultPort": 3000,
+  "recommendedVolumes": [],
+  "envDefaults": [
+    { "key": "APP_SECRET", "secret": true, "required": true }
+  ]
+}

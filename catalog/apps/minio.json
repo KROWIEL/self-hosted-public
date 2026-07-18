@@ -1,0 +1,16 @@
+{
+  "slug": "minio",
+  "name": "MinIO",
+  "description": "S3-compatible object storage. Set a strong root password before deploy.",
+  "category": "Storage",
+  "icon": "storage",
+  "minTier": "free",
+  "deployKind": "image",
+  "image": "bitnami/minio:latest",
+  "defaultPort": 9000,
+  "recommendedVolumes": [{ "mountPath": "/bitnami/minio/data" }],
+  "envDefaults": [
+    { "key": "MINIO_ROOT_USER", "value": "minioadmin", "required": true },
+    { "key": "MINIO_ROOT_PASSWORD", "secret": true, "required": true }
+  ]
+}

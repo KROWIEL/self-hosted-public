@@ -1,0 +1,17 @@
+{
+  "slug": "n8n",
+  "name": "n8n",
+  "description": "Workflow automation — connect APIs and run self-hosted automations.",
+  "category": "Automation",
+  "icon": "workflow",
+  "minTier": "free",
+  "deployKind": "image",
+  "image": "n8nio/n8n:latest",
+  "defaultPort": 5678,
+  "recommendedVolumes": [{ "mountPath": "/home/node/.n8n" }],
+  "envDefaults": [
+    { "key": "N8N_HOST", "value": "0.0.0.0" },
+    { "key": "N8N_PORT", "value": "5678" },
+    { "key": "N8N_PROTOCOL", "value": "https" }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "slug": "vaultwarden",
+  "name": "Vaultwarden",
+  "description": "Bitwarden-compatible password manager for home labs.",
+  "category": "Security",
+  "icon": "lock",
+  "minTier": "homelab",
+  "deployKind": "image",
+  "image": "vaultwarden/server:latest",
+  "defaultPort": 80,
+  "recommendedVolumes": [{ "mountPath": "/data" }],
+  "envDefaults": [
+    { "key": "SIGNUPS_ALLOWED", "value": "true" },
+    { "key": "ADMIN_TOKEN", "secret": true, "required": false }
+  ]
+}

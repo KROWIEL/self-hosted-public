@@ -113,6 +113,19 @@ export interface AgentRunInput {
   healthPath?: string;
 }
 
+export interface AgentComposeInput {
+  serviceId: string;
+  repoUrl?: string;
+  branch?: string;
+  composeFile?: string;
+  composeYaml?: string;
+  patToken?: string;
+  env: Record<string, string>;
+  projectName?: string;
+  domain?: string;
+  https?: boolean;
+}
+
 export interface AgentHealthInput {
   serviceId: string;
   color?: string;
@@ -483,6 +496,128 @@ export class AgentClient {
           volumes: input.volumes ?? [],
           color: input.color ?? '',
           healthPath: input.healthPath ?? '',
+        }),
+      },
+    );
+  }
+
+  /** Pull + run a pre-built image (no git build). Same shape as {@link run}. */
+  runImage(node: NodeRow, input: AgentRunInput) {
+    return this.request<{
+      ok: boolean;
+      containerId: string;
+      error?: string;
+      log?: string;
+    }>(node, `/servers/${input.serviceId}/run-image`, {
+      method: 'POST',
+      body: JSON.stringify({
+        image: input.image,
+        port: input.port,
+        cpuLimit: input.cpuLimit,
+        memLimit: input.memLimit,
+        env: input.env,
+        domain: input.domain ?? '',
+        https: input.https ?? false,
+        network: input.network ?? '',
+        volumes: input.volumes ?? [],
+        color: input.color ?? '',
+        healthPath: input.healthPath ?? '',
+      }),
+    });
+  }
+
+  /**
+   * Clone (or write inline YAML) and `docker compose up -d --build`. Streams
+   * NDJSON logs like {@link build}.
+   */
+  async composeUp(
+    node: NodeRow,
+    input: AgentComposeInput,
+    onChunk?: (text: string) => void,
+  ): Promise<{ projectName: string; buildLog: string }> {
+    const token = this.agentToken.authToken(node);
+    const res = await this.doFetch(
+      node,
+      `${this.baseUrl(node)}/servers/${input.serviceId}/compose`,
+      {
+        method: 'POST',
+        dispatcher: this.dispatcher(node),
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          repoUrl: input.repoUrl ?? '',
+          branch: input.branch ?? 'main',
+          composeFile: input.composeFile ?? 'docker-compose.yml',
+          composeYaml: input.composeYaml ?? '',
+          patToken: input.patToken ?? '',
+          env: input.env,
+          projectName: input.projectName ?? '',
+          domain: input.domain ?? '',
+          https: input.https ?? false,
+        }),
+      },
+    );
+
+    const text = await this.readBuildStream(res, onChunk);
+    if (!res.ok) {
+      throw new Error(`Agent ${node.name} compose HTTP ${res.status}: ${text}`);
+    }
+    const lines = text.split('\n').filter((l) => l.trim().length > 0);
+    const last = lines[lines.length - 1] ?? '{}';
+    let result: { ok?: boolean; projectName?: string; error?: string };
+    try {
+      result = JSON.parse(last);
+    } catch {
+      throw new Error(`Agent ${node.name} compose: malformed response`);
+    }
+    const buildLog = lines.slice(0, -1).join('\n');
+    if (result.error || result.ok === false) {
+      const err = new Error(result.error ?? 'compose failed') as Error & {
+        buildLog?: string;
+      };
+      err.buildLog = buildLog;
+      throw err;
+    }
+    return {
+      projectName: result.projectName ?? input.projectName ?? '',
+      buildLog,
+    };
+  }
+
+  composeDown(
+    node: NodeRow,
+    serviceId: string,
+    opts: { projectName?: string; removeVolumes?: boolean } = {},
+  ) {
+    return this.request<{ ok: boolean; error?: string }>(
+      node,
+      `/servers/${serviceId}/compose/down`,
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          projectName: opts.projectName ?? '',
+          removeVolumes: !!opts.removeVolumes,
+        }),
+      },
+    );
+  }
+
+  composePower(
+    node: NodeRow,
+    serviceId: string,
+    action: string,
+    projectName?: string,
+  ) {
+    return this.request<{ ok: boolean; error?: string }>(
+      node,
+      `/servers/${serviceId}/compose/power`,
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          projectName: projectName ?? '',
+          action: action.toLowerCase(),
         }),
       },
     );

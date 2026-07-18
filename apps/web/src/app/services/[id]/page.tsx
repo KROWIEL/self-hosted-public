@@ -170,7 +170,12 @@ export default function ServicePage() {
                 <StatusText status={service.status} className="text-sm" />
               </div>
               <p className="mt-1 font-mono text-sm text-neutral-500">
-                {typeLabel(service.type)} · {service.repoUrl} · {service.branch}
+                {typeLabel(service.type)} · {service.deployKind ?? 'git'}
+                {service.repoUrl
+                  ? ` · ${service.repoUrl} · ${service.branch}`
+                  : service.image
+                    ? ` · ${service.image}`
+                    : ''}
               </p>
               {service.currentImage && (
                 <p className="mt-1 font-mono text-xs text-neutral-600">
@@ -1145,18 +1150,32 @@ function OverviewPanel({ service }: { service: Service }) {
             '—'
           )}
         </Fact>
+        <Fact label={t('deploy.kind')}>
+          {t(`deploy.kind.${service.deployKind ?? 'git'}` as 'deploy.kind.git')}
+        </Fact>
         <Fact label={t('service.template')}>
           {service.template?.name ?? '—'}
         </Fact>
         <Fact label={t('service.port')}>{port ?? '—'}</Fact>
-        <Fact label={t('service.repo')}>
-          <span className="break-all font-mono text-xs text-neutral-300">
-            {service.repoUrl}
-          </span>
-          <span className="block font-mono text-xs text-neutral-500">
-            {service.branch}
-          </span>
-        </Fact>
+        {(service.deployKind ?? 'git') === 'image' ? (
+          <Fact label={t('deploy.image')}>
+            <span className="break-all font-mono text-xs text-neutral-300">
+              {service.image ?? '—'}
+            </span>
+          </Fact>
+        ) : (
+          <Fact label={t('service.repo')}>
+            <span className="break-all font-mono text-xs text-neutral-300">
+              {service.repoUrl ?? '—'}
+            </span>
+            <span className="block font-mono text-xs text-neutral-500">
+              {service.branch}
+              {service.deployKind === 'compose' && service.composeFile
+                ? ` · ${service.composeFile}`
+                : ''}
+            </span>
+          </Fact>
+        )}
         <Fact label={t('service.domain')}>
           {service.domain?.host ? (
             <span className="font-mono text-xs">
@@ -1216,11 +1235,13 @@ function SettingsBox({
   const initialForm = useCallback(
     () => ({
       name: service.name,
-      repoUrl: service.repoUrl,
+      repoUrl: service.repoUrl ?? '',
       branch: service.branch,
       port: service.port ?? undefined,
       gitCredId: service.gitCredId ?? '',
       useRepoDockerfile: service.useRepoDockerfile,
+      image: service.image ?? '',
+      composeFile: service.composeFile ?? 'docker-compose.yml',
       cpuLimit: service.cpuLimit,
       memLimit: service.memLimit,
       zeroDowntime: service.zeroDowntime,
@@ -1280,11 +1301,13 @@ function SettingsBox({
     try {
       await updateService(service.id, {
         name: form.name.trim(),
-        repoUrl: form.repoUrl.trim(),
+        repoUrl: form.repoUrl.trim() || undefined,
         branch: form.branch.trim(),
         port: form.port ? Number(form.port) : undefined,
         gitCredId: form.gitCredId,
         useRepoDockerfile: form.useRepoDockerfile,
+        image: form.image.trim() || undefined,
+        composeFile: form.composeFile.trim() || undefined,
         cpuLimit: Number(form.cpuLimit),
         memLimit: Number(form.memLimit),
         zeroDowntime: form.zeroDowntime,
@@ -1338,23 +1361,56 @@ function SettingsBox({
               className={field}
             />
           </Labeled>
-          <Labeled label={t('service.repo')}>
+          <Labeled label={t('deploy.kind')}>
             <input
-              value={form.repoUrl}
-              onChange={(e) => setForm({ ...form, repoUrl: e.target.value })}
-              disabled={ro}
+              value={t(`deploy.kind.${service.deployKind ?? 'git'}` as 'deploy.kind.git')}
+              disabled
               className={field}
             />
           </Labeled>
-          <div className="grid grid-cols-2 gap-3">
-            <Labeled label={t('project.branch')}>
+          {(service.deployKind ?? 'git') !== 'image' && (
+            <Labeled label={t('service.repo')}>
               <input
-                value={form.branch}
-                onChange={(e) => setForm({ ...form, branch: e.target.value })}
+                value={form.repoUrl}
+                onChange={(e) => setForm({ ...form, repoUrl: e.target.value })}
                 disabled={ro}
                 className={field}
               />
             </Labeled>
+          )}
+          {service.deployKind === 'image' && (
+            <Labeled label={t('deploy.image')}>
+              <input
+                value={form.image}
+                onChange={(e) => setForm({ ...form, image: e.target.value })}
+                disabled={ro}
+                className={field}
+              />
+            </Labeled>
+          )}
+          {service.deployKind === 'compose' && (
+            <Labeled label={t('deploy.composeFile')}>
+              <input
+                value={form.composeFile}
+                onChange={(e) =>
+                  setForm({ ...form, composeFile: e.target.value })
+                }
+                disabled={ro}
+                className={field}
+              />
+            </Labeled>
+          )}
+          <div className="grid grid-cols-2 gap-3">
+            {(service.deployKind ?? 'git') !== 'image' && (
+              <Labeled label={t('project.branch')}>
+                <input
+                  value={form.branch}
+                  onChange={(e) => setForm({ ...form, branch: e.target.value })}
+                  disabled={ro}
+                  className={field}
+                />
+              </Labeled>
+            )}
             <Labeled label={t('service.port')}>
               <input
                 type="number"

@@ -41,6 +41,11 @@ func (c *Client) BuildImage(ctx context.Context, contextDir, dockerfile, tag str
 	return c.run(ctx, w, args...)
 }
 
+// PullImage fetches an image from a registry, streaming progress to w.
+func (c *Client) PullImage(ctx context.Context, image string, w io.Writer) error {
+	return c.run(ctx, w, "pull", image)
+}
+
 // Baseline container hardening applied to every managed run (services + managed
 // databases). App containers additionally get a read-only rootfs + tmpfs for
 // /tmp and /var/tmp (see RunOptions.ReadOnlyRootfs). Optional gVisor

@@ -1,6 +1,8 @@
 import 'reflect-metadata';
 import { config as loadEnv } from 'dotenv';
 import { drizzle } from 'drizzle-orm/postgres-js';
+import { readdirSync, readFileSync } from 'node:fs';
+import { join, resolve } from 'node:path';
 
 loadEnv({ path: '../../.env' });
 loadEnv();
@@ -8,7 +10,78 @@ import { eq } from 'drizzle-orm';
 import postgres from 'postgres';
 import * as bcrypt from 'bcrypt';
 import * as schema from './schema';
-import { templates, users } from './schema';
+import { catalogApps, templates, users } from './schema';
+
+async function seedCatalogApps(
+  db: ReturnType<typeof drizzle<typeof schema>>,
+) {
+  // Manifests live at <repo>/catalog/apps/*.json (two levels up from src/db).
+  const dir = resolve(__dirname, '../../../../catalog/apps');
+  let files: string[];
+  try {
+    files = readdirSync(dir).filter((f) => f.endsWith('.json'));
+  } catch {
+    console.warn(`Catalog apps directory not found: ${dir}`);
+    return;
+  }
+
+  for (const file of files) {
+    const raw = JSON.parse(readFileSync(join(dir, file), 'utf8')) as {
+      slug: string;
+      name: string;
+      description?: string;
+      category?: string;
+      icon?: string;
+      minTier?: 'free' | 'homelab';
+      deployKind: 'image' | 'compose' | 'git';
+      image?: string;
+      composeYaml?: string;
+      composeGitUrl?: string;
+      composeFile?: string;
+      defaultPort?: number;
+      recommendedVolumes?: { mountPath: string }[];
+      envDefaults?: {
+        key: string;
+        value?: string;
+        secret?: boolean;
+        required?: boolean;
+      }[];
+    };
+    const values = {
+      slug: raw.slug,
+      name: raw.name,
+      description: raw.description ?? null,
+      category: raw.category ?? null,
+      icon: raw.icon ?? null,
+      minTier: raw.minTier ?? 'free',
+      deployKind: raw.deployKind,
+      image: raw.image ?? null,
+      composeYaml: raw.composeYaml ?? null,
+      composeGitUrl: raw.composeGitUrl ?? null,
+      composeFile: raw.composeFile ?? null,
+      defaultPort: raw.defaultPort ?? null,
+      recommendedVolumes: raw.recommendedVolumes ?? [],
+      envDefaults: raw.envDefaults ?? [],
+      updatedAt: new Date(),
+    };
+    const existing = await db
+      .select({ id: catalogApps.id })
+      .from(catalogApps)
+      .where(eq(catalogApps.slug, raw.slug))
+      .limit(1);
+    if (existing.length === 0) {
+      await db.insert(catalogApps).values(values);
+      console.log(`Catalog app created: ${raw.slug}`);
+    } else {
+      await db
+        .update(catalogApps)
+        .set(values)
+        .where(eq(catalogApps.id, existing[0].id));
+      console.log(`Catalog app updated: ${raw.slug}`);
+    }
+  }
+  console.log(`Seeded ${files.length} catalog app(s).`);
+}
 
 async function main() {
   const url =
@@ -197,6 +270,7 @@ async function main() {
   }
 
   console.log('Seeded built-in templates.');
+  await seedCatalogApps(db);
   await client.end();
 }
 

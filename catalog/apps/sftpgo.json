@@ -1,0 +1,16 @@
+{
+  "slug": "sftpgo",
+  "name": "SFTPGo",
+  "description": "Fully featured SFTP / WebDAV / FTP server with a web admin UI.",
+  "category": "Storage",
+  "icon": "storage",
+  "minTier": "homelab",
+  "deployKind": "image",
+  "image": "drakkan/sftpgo:v2",
+  "defaultPort": 8080,
+  "recommendedVolumes": [
+    { "mountPath": "/srv/sftpgo" },
+    { "mountPath": "/var/lib/sftpgo" }
+  ],
+  "envDefaults": []
+}
