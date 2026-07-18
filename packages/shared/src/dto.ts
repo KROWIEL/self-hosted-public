@@ -50,6 +50,8 @@ export interface CreateServiceDto {
   branch?: string;
   gitCredId?: string;
   useRepoDockerfile?: boolean;
+  /** How to build git services: template (default), dockerfile, or nixpacks. */
+  buildMode?: 'template' | 'dockerfile' | 'nixpacks';
   buildCommand?: string;
   runCommand?: string;
   port?: number;

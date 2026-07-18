@@ -18,6 +18,7 @@ export type LicenseTier = 'free' | 'homelab' | 'pro';
  */
 export type LicenseModule =
   | 'reverse-tunnels'
+  | 'service-cron'
   | 'preview-envs'
   | 'offsite-backups'
   | 'alerts'
@@ -31,6 +32,7 @@ export type LicenseModule =
 /** Every known module, ordered for display. */
 export const ALL_MODULES: LicenseModule[] = [
   'reverse-tunnels',
+  'service-cron',
   'preview-envs',
   'offsite-backups',
   'alerts',
@@ -45,7 +47,7 @@ export const ALL_MODULES: LicenseModule[] = [
 /** Modules automatically granted by each tier. */
 export const TIER_MODULES: Record<LicenseTier, LicenseModule[]> = {
   free: [],
-  homelab: ['reverse-tunnels'],
+  homelab: ['reverse-tunnels', 'service-cron'],
   pro: [...ALL_MODULES],
 };
 

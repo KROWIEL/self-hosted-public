@@ -165,6 +165,7 @@ func (s *Server) routes() {
 	s.mux.HandleFunc("GET /api/servers/{uuid}/stats", s.handleStats)
 	s.mux.HandleFunc("POST /api/servers/{uuid}/gc", s.handleGC)
 	s.mux.HandleFunc("GET /api/servers/{uuid}/exec", s.handleExec)
+	s.mux.HandleFunc("POST /api/servers/{uuid}/exec-cmd", s.handleExecCmd)
 	s.mux.HandleFunc("POST /api/databases", s.handleDBCreate)
 	s.mux.HandleFunc("POST /api/databases/power", s.handleDBPower)
 	s.mux.HandleFunc("POST /api/databases/status", s.handleDBStatus)
@@ -471,6 +472,7 @@ type buildBody struct {
 	RunImage          string `json:"runImage"`
 	Dockerfile        string `json:"dockerfile"`
 	UseRepoDockerfile bool   `json:"useRepoDockerfile"`
+	BuildMode         string `json:"buildMode"`
 	BuildScript       string `json:"buildScript"`
 	ImageTag          string `json:"imageTag"`
 }
@@ -510,6 +512,7 @@ func (s *Server) handleBuild(w http.ResponseWriter, r *http.Request) {
 		RunImage:          body.RunImage,
 		Dockerfile:        body.Dockerfile,
 		UseRepoDockerfile: body.UseRepoDockerfile,
+		BuildMode:         body.BuildMode,
 		ImageTag:          body.ImageTag,
 	}, &flushWriter{w: w, f: flusher})
 	if err != nil {

@@ -514,6 +514,12 @@ export const en = {
   'project.useRepoDockerfile': "Use the repo's own Dockerfile (if present)",
   'project.useRepoDockerfileHint':
     'Off: build with the selected template. On: use a Dockerfile from the repository (must build from source).',
+  'project.buildMode': 'Build mode',
+  'project.buildModeHint':
+    'Template uses the language stack Dockerfile. Repo Dockerfile builds from the repository. Nixpacks auto-detects the stack (requires nixpacks on the node).',
+  'project.buildMode.template': 'Template Dockerfile',
+  'project.buildMode.dockerfile': 'Repo Dockerfile',
+  'project.buildMode.nixpacks': 'Nixpacks',
   'project.gitCred': 'Git access',
   'project.gitCredNone': 'Public (no token)',
   'project.gitCredHint': 'Select a credential to clone a private repository.',
@@ -639,6 +645,25 @@ export const en = {
   'service.webhook': 'Auto-deploy webhook',
   'service.webhookHint':
     'Send a POST to this URL (e.g. from a Git push webhook) to trigger a deploy. Keep the token secret.',
+  'service.cron': 'Scheduled jobs',
+  'service.cronHint':
+    'Run a command inside the service container on a cron schedule. The service must be running.',
+  'service.cronLockedTitle': 'Per-service cron is a Home-Lab module',
+  'service.cronLockedBody':
+    'Schedule recurring commands inside running containers — maintenance scripts, cache warmers, and more. Upgrade to Home-Lab or Pro to unlock it.',
+  'service.cronName': 'Name',
+  'service.cronNamePlaceholder': 'e.g. nightly cleanup',
+  'service.cronExpr': 'Cron',
+  'service.cronExprPlaceholder': '0 3 * * *',
+  'service.cronCommand': 'Command',
+  'service.cronCommandPlaceholder': 'npm run cleanup',
+  'service.cronAdd': 'Add job',
+  'service.cronNone': 'No scheduled jobs yet.',
+  'service.cronEnabled': 'Enabled',
+  'service.cronLastRun': 'Last run',
+  'service.cronNever': 'Never',
+  'service.cronDelete': 'Delete',
+  'service.cronDeleteConfirm': 'Delete this scheduled job?',
   'service.copy': 'Copy',
   'service.copied': 'Copied',
   'service.info': 'Overview',
@@ -905,6 +930,7 @@ export const en = {
   'billing.feat.homelab.allFree.desc':
     'The complete free core, plus the home-lab additions below.',
   'billing.feat.homelab.tunnels.title': 'Secure reverse tunnels',
+  'billing.feat.homelab.cron.title': 'Per-service cron jobs',
   'billing.feat.homelab.limits.title': '3 nodes + 3 tunnels',
   'billing.feat.homelab.limits.desc':
     'Connect up to three servers and publish up to three tunneled services — enough for a real multi-machine home lab.',
@@ -919,6 +945,8 @@ export const en = {
   // Per-module value propositions (what it does + why it matters).
   'billing.moduleDesc.reverse-tunnels':
     'Publish services behind NAT or a home/LAN network to the internet through a lightweight public relay — no port-forwarding, static IP or router changes needed.',
+  'billing.moduleDesc.service-cron':
+    'Schedule recurring commands inside a running service container (backups, cache warmers, maintenance scripts) with last-run status in the panel.',
   'billing.moduleDesc.preview-envs':
     'Deploy any branch as a disposable, isolated copy with its own optional subdomain, auto-torn down by TTL — review changes safely before they ship.',
   'billing.moduleDesc.offsite-backups':
@@ -938,6 +966,7 @@ export const en = {
   'billing.moduleDesc.email':
     'Connect your SMTP provider to send transactional and broadcast email from the panel — configure the sender identity, send test messages, notify all users or specific recipients, and review a delivery log.',
   'billing.module.reverse-tunnels': 'Reverse-tunnels',
+  'billing.module.service-cron': 'Per-service cron',
   'billing.module.preview-envs': 'Preview environments',
   'billing.module.offsite-backups': 'Off-site backups',
   'billing.module.alerts': 'Alerts',

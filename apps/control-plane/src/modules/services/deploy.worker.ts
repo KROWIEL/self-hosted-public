@@ -362,6 +362,7 @@ export class DeployWorker implements OnModuleInit, OnModuleDestroy {
           runImage: tpl.baseImage,
           dockerfile: tpl.dockerfilePath ?? undefined,
           useRepoDockerfile: svc.useRepoDockerfile,
+          buildMode: svc.buildMode ?? undefined,
           imageTag,
         },
         (chunk) => void this.buildLog.publish(deploymentId, chunk),

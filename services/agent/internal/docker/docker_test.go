@@ -97,3 +97,19 @@ func containsPair(args []string, flag, value string) bool {
 	}
 	return false
 }
+
+func TestCappedBuffer(t *testing.T) {
+	var b cappedBuffer
+	b.max = 8
+	n, err := b.Write([]byte("hello world"))
+	if err != nil || n != 11 {
+		t.Fatalf("write: n=%d err=%v", n, err)
+	}
+	if b.String() != "hello wo" {
+		t.Fatalf("got %q", b.String())
+	}
+	_, _ = b.Write([]byte("more"))
+	if b.String() != "hello wo" {
+		t.Fatalf("should stay capped, got %q", b.String())
+	}
+}

@@ -514,6 +514,12 @@ export const ru: Dict = {
   'project.useRepoDockerfile': 'Использовать Dockerfile из репозитория (если есть)',
   'project.useRepoDockerfileHint':
     'Выкл: сборка по выбранному шаблону. Вкл: использовать Dockerfile из репозитория (он должен собирать из исходников).',
+  'project.buildMode': 'Режим сборки',
+  'project.buildModeHint':
+    'Шаблон — Dockerfile языкового стека. Repo Dockerfile — из репозитория. Nixpacks — автоопределение стека (нужен nixpacks на ноде).',
+  'project.buildMode.template': 'Dockerfile шаблона',
+  'project.buildMode.dockerfile': 'Dockerfile репозитория',
+  'project.buildMode.nixpacks': 'Nixpacks',
   'project.gitCred': 'Git-доступ',
   'project.gitCredNone': 'Публичный (без токена)',
   'project.gitCredHint': 'Выберите доступ для клонирования приватного репозитория.',
@@ -640,6 +646,25 @@ export const ru: Dict = {
   'service.webhook': 'Webhook авто-деплоя',
   'service.webhookHint':
     'Отправьте POST на этот URL (например, из webhook git-пуша), чтобы запустить деплой. Держите токен в секрете.',
+  'service.cron': 'Расписание задач',
+  'service.cronHint':
+    'Запускайте команду внутри контейнера сервиса по cron. Сервис должен быть запущен.',
+  'service.cronLockedTitle': 'Cron на сервис — модуль Home-Lab',
+  'service.cronLockedBody':
+    'Планируйте повторяющиеся команды в запущенных контейнерах — скрипты обслуживания, прогрев кэша и другое. Обновитесь до Home-Lab или Pro, чтобы разблокировать.',
+  'service.cronName': 'Имя',
+  'service.cronNamePlaceholder': 'напр. ночная очистка',
+  'service.cronExpr': 'Cron',
+  'service.cronExprPlaceholder': '0 3 * * *',
+  'service.cronCommand': 'Команда',
+  'service.cronCommandPlaceholder': 'npm run cleanup',
+  'service.cronAdd': 'Добавить',
+  'service.cronNone': 'Пока нет запланированных задач.',
+  'service.cronEnabled': 'Вкл.',
+  'service.cronLastRun': 'Последний запуск',
+  'service.cronNever': 'Никогда',
+  'service.cronDelete': 'Удалить',
+  'service.cronDeleteConfirm': 'Удалить эту задачу?',
   'service.copy': 'Копировать',
   'service.copied': 'Скопировано',
   'service.info': 'Обзор',
@@ -907,6 +932,7 @@ export const ru: Dict = {
   'billing.feat.homelab.allFree.desc':
     'Полное бесплатное ядро плюс возможности для домашней лаборатории ниже.',
   'billing.feat.homelab.tunnels.title': 'Защищённые reverse-туннели',
+  'billing.feat.homelab.cron.title': 'Cron-задачи на сервис',
   'billing.feat.homelab.limits.title': '3 ноды + 3 туннеля',
   'billing.feat.homelab.limits.desc':
     'Подключайте до трёх серверов и публикуйте до трёх туннелируемых сервисов — достаточно для полноценной домашней лаборатории на нескольких машинах.',
@@ -921,6 +947,8 @@ export const ru: Dict = {
   // Ценность каждого модуля (что делает + зачем это нужно).
   'billing.moduleDesc.reverse-tunnels':
     'Публикуйте сервисы за NAT или в домашней/локальной сети в интернет через лёгкий публичный релей — без проброса портов, статического IP и настройки роутера.',
+  'billing.moduleDesc.service-cron':
+    'Планируйте повторяющиеся команды внутри запущенного контейнера сервиса (бэкапы, прогрев кэша, скрипты обслуживания) со статусом последнего запуска в панели.',
   'billing.moduleDesc.preview-envs':
     'Разворачивайте любую ветку как одноразовую изолированную копию с собственным поддоменом и авто-удалением по TTL — безопасно проверяйте изменения до релиза.',
   'billing.moduleDesc.offsite-backups':
@@ -940,6 +968,7 @@ export const ru: Dict = {
   'billing.moduleDesc.email':
     'Подключите свой SMTP-провайдер, чтобы панель рассылала письма — задайте отправителя, отправляйте тестовые сообщения, уведомляйте всех пользователей или выбранных получателей и смотрите журнал доставки.',
   'billing.module.reverse-tunnels': 'Reverse-tunnels',
+  'billing.module.service-cron': 'Cron на сервис',
   'billing.module.preview-envs': 'Preview-окружения',
   'billing.module.offsite-backups': 'Офсайт-бэкапы',
   'billing.module.alerts': 'Алерты',

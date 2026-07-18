@@ -20,6 +20,11 @@ import {
   listDeployments,
   listEnv,
   listGitCredentials,
+  listServiceCrons,
+  createServiceCron,
+  updateServiceCron,
+  deleteServiceCron,
+  ServiceCron,
   powerService,
   rollbackDeployment,
   setDomain,
@@ -44,6 +49,8 @@ import {
 import '@xterm/xterm/css/xterm.css';
 import { AppShell } from '@/components/shell';
 import { BackupsPanel } from '@/components/backups-panel';
+import { useEntitlements } from '@/components/entitlements';
+import { UpgradeNotice } from '@/components/upgrade-notice';
 import {
   Card,
   EmptyState,
@@ -289,6 +296,9 @@ export default function ServicePage() {
             </MasonryItem>
             <MasonryItem>
               <VolumesBox id={id} />
+            </MasonryItem>
+            <MasonryItem>
+              <CronBox id={id} />
             </MasonryItem>
             <MasonryItem>
               <WebhookBox id={id} />
@@ -1240,6 +1250,7 @@ function SettingsBox({
       port: service.port ?? undefined,
       gitCredId: service.gitCredId ?? '',
       useRepoDockerfile: service.useRepoDockerfile,
+      buildMode: service.buildMode ?? (service.useRepoDockerfile ? 'dockerfile' : 'template'),
       image: service.image ?? '',
       composeFile: service.composeFile ?? 'docker-compose.yml',
       cpuLimit: service.cpuLimit,
@@ -1305,7 +1316,8 @@ function SettingsBox({
         branch: form.branch.trim(),
         port: form.port ? Number(form.port) : undefined,
         gitCredId: form.gitCredId,
-        useRepoDockerfile: form.useRepoDockerfile,
+        useRepoDockerfile: form.buildMode === 'dockerfile',
+        buildMode: form.buildMode,
         image: form.image.trim() || undefined,
         composeFile: form.composeFile.trim() || undefined,
         cpuLimit: Number(form.cpuLimit),
@@ -1468,18 +1480,36 @@ function SettingsBox({
               ))}
             </select>
           </Labeled>
-          <label className="flex items-start gap-2 text-sm text-neutral-300">
-            <input
-              type="checkbox"
-              checked={form.useRepoDockerfile}
-              onChange={(e) =>
-                setForm({ ...form, useRepoDockerfile: e.target.checked })
-              }
+          {(service.deployKind ?? 'git') === 'git' && (
+          <Labeled label={t('project.buildMode')} hint={t('project.buildModeHint')}>
+            <select
+              value={form.buildMode}
+              onChange={(e) => {
+                const buildMode = e.target.value as
+                  | 'template'
+                  | 'dockerfile'
+                  | 'nixpacks';
+                setForm({
+                  ...form,
+                  buildMode,
+                  useRepoDockerfile: buildMode === 'dockerfile',
+                });
+              }}
               disabled={ro}
-              className="mt-0.5 accent-indigo-500 disabled:cursor-not-allowed disabled:opacity-60"
-            />
-            <span>{t('project.useRepoDockerfile')}</span>
-          </label>
+              className={field}
+            >
+              <option value="template" className="bg-ink-850">
+                {t('project.buildMode.template')}
+              </option>
+              <option value="dockerfile" className="bg-ink-850">
+                {t('project.buildMode.dockerfile')}
+              </option>
+              <option value="nixpacks" className="bg-ink-850">
+                {t('project.buildMode.nixpacks')}
+              </option>
+            </select>
+          </Labeled>
+          )}
           <div className="rounded-lg border border-white/5 bg-white/[0.02] p-3">
             <label className="flex items-start gap-2 text-sm text-neutral-300">
               <input
@@ -1712,6 +1742,182 @@ function VolumesBox({ id }: { id: string }) {
           </button>
         </form>
         <p className="mt-2 text-xs text-neutral-500">{t('volume.hint')}</p>
+      {dialog}
+    </PanelCard>
+  );
+}
+
+function CronBox({ id }: { id: string }) {
+  const { t } = useI18n();
+  const errorText = useErrorText();
+  const { has } = useEntitlements();
+  const { confirm, dialog } = useConfirmDialog();
+  const [items, setItems] = useState<ServiceCron[]>([]);
+  const [name, setName] = useState('');
+  const [cron, setCron] = useState('0 3 * * *');
+  const [command, setCommand] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  const unlocked = has('service-cron');
+
+  const refresh = useCallback(() => {
+    listServiceCrons(id)
+      .then(setItems)
+      .catch(() => setItems([]));
+  }, [id]);
+
+  useEffect(() => {
+    if (unlocked) refresh();
+  }, [unlocked, refresh]);
+
+  if (!unlocked) {
+    return (
+      <PanelCard title={t('service.cron')}>
+        <UpgradeNotice
+          tier="homelab"
+          featureTitle={t('service.cronLockedTitle')}
+          featureBody={t('service.cronLockedBody')}
+        />
+      </PanelCard>
+    );
+  }
+
+  async function add(e: React.FormEvent) {
+    e.preventDefault();
+    if (!name.trim() || !cron.trim() || !command.trim()) return;
+    setBusy(true);
+    setErr(null);
+    try {
+      await createServiceCron(id, {
+        name: name.trim(),
+        cron: cron.trim(),
+        command: command.trim(),
+      });
+      setName('');
+      setCommand('');
+      refresh();
+    } catch (e) {
+      setErr(errorText(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function toggle(row: ServiceCron) {
+    setBusy(true);
+    try {
+      await updateServiceCron(id, row.id, { enabled: !row.enabled });
+      refresh();
+    } catch (e) {
+      setErr(errorText(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function remove(row: ServiceCron) {
+    if (
+      !(await confirm({
+        title: t('service.cronDelete'),
+        message: t('service.cronDeleteConfirm'),
+        confirmLabel: t('service.cronDelete'),
+        tone: 'danger',
+      }))
+    ) {
+      return;
+    }
+    setBusy(true);
+    try {
+      await deleteServiceCron(id, row.id);
+      refresh();
+    } catch (e) {
+      setErr(errorText(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <PanelCard title={t('service.cron')}>
+      {err && <ErrorBox message={err} />}
+      {items.length === 0 ? (
+        <p className="text-xs text-neutral-500">{t('service.cronNone')}</p>
+      ) : (
+        <ul className="mb-3 space-y-2">
+          {items.map((row) => (
+            <li
+              key={row.id}
+              className="rounded-lg border border-white/5 bg-white/[0.02] px-3 py-2 text-xs"
+            >
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="font-medium text-neutral-200">{row.name}</span>
+                <span className="font-mono text-neutral-400">{row.cron}</span>
+                <label className="ml-auto flex items-center gap-1.5 text-neutral-400">
+                  <input
+                    type="checkbox"
+                    checked={row.enabled}
+                    disabled={busy}
+                    onChange={() => void toggle(row)}
+                  />
+                  {t('service.cronEnabled')}
+                </label>
+                <button
+                  type="button"
+                  onClick={() => void remove(row)}
+                  disabled={busy}
+                  className="text-red-400 hover:text-red-300"
+                >
+                  {t('service.cronDelete')}
+                </button>
+              </div>
+              <p className="mt-1 font-mono text-neutral-500">{row.command}</p>
+              <p className="mt-1 text-neutral-500">
+                {t('service.cronLastRun')}:{' '}
+                {row.lastRunAt
+                  ? new Date(row.lastRunAt).toLocaleString()
+                  : t('service.cronNever')}
+                {row.lastStatus ? ` · ${row.lastStatus}` : ''}
+              </p>
+              {row.lastOutput && (
+                <pre className="mt-1 max-h-24 overflow-auto whitespace-pre-wrap text-[10px] text-neutral-600">
+                  {row.lastOutput}
+                </pre>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+      <form onSubmit={add} className="space-y-2">
+        <input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder={t('service.cronNamePlaceholder')}
+          className="field w-full text-xs"
+        />
+        <div className="flex gap-2">
+          <input
+            value={cron}
+            onChange={(e) => setCron(e.target.value)}
+            placeholder={t('service.cronExprPlaceholder')}
+            className="field w-36 font-mono text-xs"
+          />
+          <input
+            value={command}
+            onChange={(e) => setCommand(e.target.value)}
+            placeholder={t('service.cronCommandPlaceholder')}
+            className="field flex-1 font-mono text-xs"
+          />
+          <button
+            type="submit"
+            disabled={busy || !name.trim() || !command.trim()}
+            className="btn-ghost"
+          >
+            {t('service.cronAdd')}
+          </button>
+        </div>
+      </form>
+      <p className="mt-2 text-xs text-neutral-500">{t('service.cronHint')}</p>
       {dialog}
     </PanelCard>
   );

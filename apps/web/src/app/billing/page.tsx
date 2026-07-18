@@ -26,6 +26,7 @@ const BUY_URL: Record<Exclude<LicenseTier, 'free'>, string> = {
 /** Pro add-on modules, in display order (mirrors ALL_MODULES in shared). */
 const PRO_MODULES = [
   'reverse-tunnels',
+  'service-cron',
   'preview-envs',
   'offsite-backups',
   'alerts',
@@ -305,6 +306,10 @@ function BillingContent() {
             {
               title: t('billing.feat.homelab.tunnels.title'),
               desc: t('billing.moduleDesc.reverse-tunnels'),
+            },
+            {
+              title: t('billing.feat.homelab.cron.title'),
+              desc: t('billing.moduleDesc.service-cron'),
             },
             feat('billing.feat.homelab.limits'),
           ]}

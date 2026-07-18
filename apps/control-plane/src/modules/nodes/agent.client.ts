@@ -25,6 +25,8 @@ export interface AgentBuildInput {
   dockerfile?: string;
   /** Prefer the repo's own Dockerfile (if present) over the template. */
   useRepoDockerfile?: boolean;
+  /** template | dockerfile | nixpacks — how the agent builds the image. */
+  buildMode?: string;
   imageTag: string;
 }
 
@@ -409,6 +411,7 @@ export class AgentClient {
           runImage: input.runImage,
           dockerfile: input.dockerfile ?? '',
           useRepoDockerfile: input.useRepoDockerfile ?? false,
+          buildMode: input.buildMode ?? '',
           imageTag: input.imageTag,
         }),
       },
@@ -758,6 +761,33 @@ export class AgentClient {
       `/servers/${serviceId}/power`,
       { method: 'POST', body: JSON.stringify({ action: action.toLowerCase() }) },
     );
+  }
+
+  /**
+   * Runs a one-shot command inside a service container (per-service cron).
+   * When `container` is empty the agent resolves the live container by service id.
+   */
+  execCmd(
+    node: NodeRow,
+    serviceId: string,
+    input: {
+      container?: string;
+      command: string | string[];
+      timeoutSec?: number;
+    },
+  ) {
+    return this.request<{
+      exitCode: number;
+      stdout: string;
+      stderr: string;
+    }>(node, `/servers/${serviceId}/exec-cmd`, {
+      method: 'POST',
+      body: JSON.stringify({
+        container: input.container ?? '',
+        command: input.command,
+        timeoutSec: input.timeoutSec ?? 300,
+      }),
+    });
   }
 
   remove(node: NodeRow, serviceId: string) {

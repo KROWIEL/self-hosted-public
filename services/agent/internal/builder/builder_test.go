@@ -50,6 +50,17 @@ func TestResolveDockerfile(t *testing.T) {
 	})
 }
 
+func TestNixpacksBin(t *testing.T) {
+	t.Setenv("AGENT_NIXPACKS_BIN", "")
+	if got := nixpacksBin(); got != "nixpacks" {
+		t.Fatalf("default: got %q", got)
+	}
+	t.Setenv("AGENT_NIXPACKS_BIN", "/opt/nixpacks")
+	if got := nixpacksBin(); got != "/opt/nixpacks" {
+		t.Fatalf("env override: got %q", got)
+	}
+}
+
 func TestTokenCloneEnv(t *testing.T) {
 	if env := tokenCloneEnv(""); env != nil {
 		t.Fatalf("expected nil env without a token, got %v", env)

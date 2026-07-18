@@ -59,7 +59,9 @@ type BuildRequest struct {
 	RunImage          string
 	Dockerfile        string // path relative to the templates tree, shipped with the agent
 	UseRepoDockerfile bool   // prefer the repo's own Dockerfile over the template
-	ImageTag          string
+	// BuildMode selects the build strategy: "template" (default), "dockerfile", or "nixpacks".
+	BuildMode string
+	ImageTag  string
 }
 
 // Build clones the repo and builds the image, streaming output to w.
@@ -118,7 +120,26 @@ func (b *Builder) Build(ctx context.Context, req BuildRequest, w io.Writer) (str
 		return "", err
 	}
 
-	dockerfilePath := resolveDockerfile(dir, req.Dockerfile, req.UseRepoDockerfile)
+	mode := strings.ToLower(strings.TrimSpace(req.BuildMode))
+	if mode == "" {
+		if req.UseRepoDockerfile {
+			mode = "dockerfile"
+		} else {
+			mode = "template"
+		}
+	}
+
+	if mode == "nixpacks" {
+		fmt.Fprintf(w, ">> building image %s with nixpacks\n", req.ImageTag)
+		if err := runNixpacks(ctx, w, dir, req.ImageTag); err != nil {
+			return "", err
+		}
+		fmt.Fprintf(w, ">> build complete: %s @ %s\n", req.ImageTag, sha)
+		return sha, nil
+	}
+
+	useRepo := req.UseRepoDockerfile || mode == "dockerfile"
+	dockerfilePath := resolveDockerfile(dir, req.Dockerfile, useRepo)
 	fmt.Fprintf(w, ">> building image %s (dockerfile: %s)\n", req.ImageTag, dockerfilePath)
 	buildArgs := map[string]string{
 		"BUILD_IMAGE": req.BuildImage,
@@ -130,6 +151,25 @@ func (b *Builder) Build(ctx context.Context, req BuildRequest, w io.Writer) (str
 
 	fmt.Fprintf(w, ">> build complete: %s @ %s\n", req.ImageTag, sha)
 	return sha, nil
+}
+
+// nixpacksBin resolves the nixpacks CLI path (AGENT_NIXPACKS_BIN or PATH).
+func nixpacksBin() string {
+	if v := strings.TrimSpace(os.Getenv("AGENT_NIXPACKS_BIN")); v != "" {
+		return v
+	}
+	return "nixpacks"
+}
+
+// runNixpacks builds an image with the nixpacks CLI. Clear error if missing.
+func runNixpacks(ctx context.Context, w io.Writer, workDir, imageTag string) error {
+	bin := nixpacksBin()
+	path, err := exec.LookPath(bin)
+	if err != nil {
+		fmt.Fprintf(w, "!! nixpacks binary not found (%s). Install nixpacks on the node or set AGENT_NIXPACKS_BIN.\n", bin)
+		return fmt.Errorf("nixpacks not found: %w (set AGENT_NIXPACKS_BIN or install nixpacks on PATH)", err)
+	}
+	return run(ctx, w, workDir, path, "build", ".", "--name", imageTag)
 }
 
 // resolveDockerfile decides which Dockerfile to build with.

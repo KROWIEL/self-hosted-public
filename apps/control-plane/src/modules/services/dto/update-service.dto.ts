@@ -1,4 +1,4 @@
-import { IsBoolean, IsInt, IsOptional, IsString, Min } from 'class-validator';
+import { IsBoolean, IsIn, IsInt, IsOptional, IsString, Min } from 'class-validator';
 
 /** All fields optional — only the provided ones are updated. */
 export class UpdateServiceDto {
@@ -21,6 +21,10 @@ export class UpdateServiceDto {
   @IsOptional()
   @IsBoolean()
   useRepoDockerfile?: boolean;
+
+  @IsOptional()
+  @IsIn(['template', 'dockerfile', 'nixpacks'])
+  buildMode?: 'template' | 'dockerfile' | 'nixpacks';
 
   @IsOptional()
   @IsString()

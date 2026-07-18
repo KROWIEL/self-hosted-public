@@ -3,6 +3,7 @@ package docker
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -198,6 +199,72 @@ func (c *Client) ExecCapture(ctx context.Context, name string, out io.Writer, cm
 	command.Stdout = out
 	command.Stderr = io.Discard
 	return command.Run()
+}
+
+// maxExecOutput caps captured stdout/stderr from ExecCmd (64 KiB each).
+const maxExecOutput = 64 * 1024
+
+// ExecCmdResult is the outcome of a one-shot docker exec.
+type ExecCmdResult struct {
+	ExitCode int
+	Stdout   string
+	Stderr   string
+}
+
+// cappedBuffer writes at most max bytes, then discards further input.
+type cappedBuffer struct {
+	buf bytes.Buffer
+	max int
+}
+
+func (c *cappedBuffer) Write(p []byte) (int, error) {
+	if c.max <= 0 {
+		c.max = maxExecOutput
+	}
+	remain := c.max - c.buf.Len()
+	if remain <= 0 {
+		return len(p), nil
+	}
+	if len(p) > remain {
+		_, _ = c.buf.Write(p[:remain])
+		return len(p), nil
+	}
+	return c.buf.Write(p)
+}
+
+func (c *cappedBuffer) String() string { return c.buf.String() }
+
+// ExecCmd runs a command inside a container and returns exit code + capped
+// stdout/stderr. Non-zero exit from the command is not an error — only
+// failures to start docker / context cancel are.
+func (c *Client) ExecCmd(ctx context.Context, name string, cmd []string) (ExecCmdResult, error) {
+	if len(cmd) == 0 {
+		return ExecCmdResult{}, fmt.Errorf("empty command")
+	}
+	args := append([]string{"exec", name}, cmd...)
+	command := exec.CommandContext(ctx, "docker", args...)
+	var stdout, stderr cappedBuffer
+	stdout.max = maxExecOutput
+	stderr.max = maxExecOutput
+	command.Stdout = &stdout
+	command.Stderr = &stderr
+	err := command.Run()
+	result := ExecCmdResult{
+		Stdout: stdout.String(),
+		Stderr: stderr.String(),
+	}
+	if err != nil {
+		if ctx.Err() != nil {
+			return result, ctx.Err()
+		}
+		var ee *exec.ExitError
+		if errors.As(err, &ee) {
+			result.ExitCode = ee.ExitCode()
+			return result, nil
+		}
+		return result, err
+	}
+	return result, nil
 }
 
 // ExecStdin runs a command inside a container, feeding in to its stdin.

@@ -124,7 +124,7 @@ export class ServicesService implements OnModuleDestroy {
         composeYaml: dto.composeYaml ?? null,
         branch: dto.branch ?? 'main',
         gitCredId: dto.gitCredId,
-        useRepoDockerfile: dto.useRepoDockerfile ?? false,
+        ...resolveBuildFields(dto.buildMode, dto.useRepoDockerfile),
         buildCommand: dto.buildCommand,
         runCommand: dto.runCommand,
         port: dto.port,
@@ -223,8 +223,17 @@ export class ServicesService implements OnModuleDestroy {
     if (dto.composeFile !== undefined) set.composeFile = dto.composeFile;
     if (dto.composeYaml !== undefined) set.composeYaml = dto.composeYaml || null;
     if (dto.gitCredId !== undefined) set.gitCredId = dto.gitCredId || null;
-    if (dto.useRepoDockerfile !== undefined) {
+    if (dto.buildMode !== undefined) {
+      const fields = resolveBuildFields(dto.buildMode, undefined);
+      set.buildMode = fields.buildMode;
+      set.useRepoDockerfile = fields.useRepoDockerfile;
+    } else if (dto.useRepoDockerfile !== undefined) {
       set.useRepoDockerfile = dto.useRepoDockerfile;
+      if (dto.useRepoDockerfile) {
+        set.buildMode = 'dockerfile';
+      } else if (current.buildMode === 'dockerfile') {
+        set.buildMode = 'template';
+      }
     }
     if (dto.cpuLimit !== undefined || dto.memLimit !== undefined) {
       const nextCpu = dto.cpuLimit ?? current.cpuLimit;
@@ -694,4 +703,22 @@ function parseMemoryMb(value?: string): number {
   if (unit === 'GB' || unit === 'GIB') return amount * 1024;
   if (unit === 'TB' || unit === 'TIB') return amount * 1024 * 1024;
   return 0;
+}
+
+/** Resolve buildMode + keep useRepoDockerfile in sync for back-compat. */
+function resolveBuildFields(
+  buildMode?: string,
+  useRepoDockerfile?: boolean,
+): { buildMode: string; useRepoDockerfile: boolean } {
+  let mode = buildMode;
+  if (!mode) {
+    mode = useRepoDockerfile ? 'dockerfile' : 'template';
+  }
+  if (mode !== 'template' && mode !== 'dockerfile' && mode !== 'nixpacks') {
+    mode = 'template';
+  }
+  return {
+    buildMode: mode,
+    useRepoDockerfile: mode === 'dockerfile',
+  };
 }

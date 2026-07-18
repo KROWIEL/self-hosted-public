@@ -33,6 +33,7 @@ export interface Service {
   composeYaml: string | null;
   branch: string;
   useRepoDockerfile: boolean;
+  buildMode: 'template' | 'dockerfile' | 'nixpacks';
   port: number | null;
   cpuLimit: number;
   memLimit: number;
@@ -60,6 +61,7 @@ export interface UpdateServiceBody {
   branch?: string;
   gitCredId?: string;
   useRepoDockerfile?: boolean;
+  buildMode?: 'template' | 'dockerfile' | 'nixpacks';
   image?: string;
   composeFile?: string;
   composeYaml?: string;
@@ -869,6 +871,7 @@ export type LicenseTier = 'free' | 'homelab' | 'pro';
 
 export type LicenseModule =
   | 'reverse-tunnels'
+  | 'service-cron'
   | 'preview-envs'
   | 'offsite-backups'
   | 'alerts'
@@ -1153,6 +1156,7 @@ export interface CreateServiceBody {
   branch?: string;
   gitCredId?: string;
   useRepoDockerfile?: boolean;
+  buildMode?: 'template' | 'dockerfile' | 'nixpacks';
   port?: number;
   cpuLimit?: number;
   memLimit?: number;
@@ -1414,6 +1418,62 @@ export const rollbackDeployment = (deploymentId: string) =>
 
 export const getWebhook = (id: string) =>
   api<{ token: string; path: string }>(`/services/${id}/webhook`);
+
+// ---- Per-service cron (Home-Lab: service-cron) ----
+
+export interface ServiceCron {
+  id: string;
+  serviceId: string;
+  name: string;
+  cron: string;
+  command: string;
+  enabled: boolean;
+  timeoutSec: number;
+  lastRunAt: string | null;
+  lastStatus: string | null;
+  lastOutput: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const listServiceCrons = (serviceId: string) =>
+  api<ServiceCron[]>(`/services/${serviceId}/crons`);
+
+export const createServiceCron = (
+  serviceId: string,
+  body: {
+    name: string;
+    cron: string;
+    command: string;
+    enabled?: boolean;
+    timeoutSec?: number;
+  },
+) =>
+  api<ServiceCron>(`/services/${serviceId}/crons`, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+
+export const updateServiceCron = (
+  serviceId: string,
+  id: string,
+  body: Partial<{
+    name: string;
+    cron: string;
+    command: string;
+    enabled: boolean;
+    timeoutSec: number;
+  }>,
+) =>
+  api<ServiceCron>(`/services/${serviceId}/crons/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(body),
+  });
+
+export const deleteServiceCron = (serviceId: string, id: string) =>
+  api<{ ok: boolean }>(`/services/${serviceId}/crons/${id}`, {
+    method: 'DELETE',
+  });
 
 export const listEnv = (id: string) => api<EnvVar[]>(`/services/${id}/env`);
 export const setEnv = (

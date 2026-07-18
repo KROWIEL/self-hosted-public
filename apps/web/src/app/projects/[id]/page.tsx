@@ -284,6 +284,7 @@ function CreateServiceModal({
     cpuLimit: Math.min(100, maxCpu),
     memLimit: Math.min(512, maxMem),
     useRepoDockerfile: false,
+    buildMode: 'template',
   });
 
   function onTemplate(templateId: string) {
@@ -492,22 +493,37 @@ function CreateServiceModal({
           </Field>
         )}
         {kind === 'git' && (
-          <label className="flex items-start gap-2 text-sm text-neutral-300 sm:col-span-2">
-            <input
-              type="checkbox"
-              checked={form.useRepoDockerfile ?? false}
-              onChange={(e) =>
-                setForm({ ...form, useRepoDockerfile: e.target.checked })
-              }
-              className="mt-0.5 accent-indigo-500"
-            />
-            <span>
-              {t('project.useRepoDockerfile')}
-              <span className="mt-0.5 block text-xs text-neutral-500">
-                {t('project.useRepoDockerfileHint')}
-              </span>
-            </span>
-          </label>
+          <Field
+            label={t('project.buildMode')}
+            hint={t('project.buildModeHint')}
+            className="sm:col-span-2"
+          >
+            <select
+              value={form.buildMode ?? 'template'}
+              onChange={(e) => {
+                const buildMode = e.target.value as
+                  | 'template'
+                  | 'dockerfile'
+                  | 'nixpacks';
+                setForm({
+                  ...form,
+                  buildMode,
+                  useRepoDockerfile: buildMode === 'dockerfile',
+                });
+              }}
+              className="field w-full"
+            >
+              <option value="template" className="bg-ink-850">
+                {t('project.buildMode.template')}
+              </option>
+              <option value="dockerfile" className="bg-ink-850">
+                {t('project.buildMode.dockerfile')}
+              </option>
+              <option value="nixpacks" className="bg-ink-850">
+                {t('project.buildMode.nixpacks')}
+              </option>
+            </select>
+          </Field>
         )}
         <div className="flex justify-end gap-2 sm:col-span-2">
           <button type="button" onClick={onClose} className="btn-ghost">

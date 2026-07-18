@@ -72,6 +72,10 @@ export class CreateServiceDto {
   useRepoDockerfile?: boolean;
 
   @IsOptional()
+  @IsIn(['template', 'dockerfile', 'nixpacks'])
+  buildMode?: 'template' | 'dockerfile' | 'nixpacks';
+
+  @IsOptional()
   @IsString()
   buildCommand?: string;
 
